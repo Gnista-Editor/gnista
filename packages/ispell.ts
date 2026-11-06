@@ -1,11 +1,11 @@
 // Spell checking with an external checker, after Emacs's ispell.el: the
 // word at point with M-$, and the checking that flyspell.ts does as you
 // type. The checker is ispell, aspell or hunspell, whichever is found, run
-// in ispell's pipe mode, `-a`; ispell.el keeps one running, where Gnista runs
+// in ispell's pipe mode, `-a`; ispell.el keeps one running, where E8 runs
 // it once a check, which takes a few milliseconds.
 //
 // Copyright (C) 1994-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -14,7 +14,7 @@
 
 import { PerBuffer, allMatches, executableFind } from "subr";
 
-const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
+const defvar = (name: string, value: e8.Value, doc: string) => e8.defineVariable({ name, value, doc });
 defvar(
   "ispell-program-name",
   ["aspell", "ispell", "hunspell", "enchant-2"].find((p) => executableFind(p) !== undefined) ?? "ispell",
@@ -36,13 +36,13 @@ export type Poss = true | string | [string, number, string[], string[]] | undefi
 
 /** The arguments the checker is run with, as ispell-start-process gives it. */
 function checkerArgs(): string[] {
-  const dict = gnista.variable("ispell-local-dictionary") ?? gnista.variable("ispell-dictionary");
-  const personal = gnista.variable("ispell-personal-dictionary");
-  const extra = gnista.variable("ispell-extra-args");
+  const dict = e8.variable("ispell-local-dictionary") ?? e8.variable("ispell-dictionary");
+  const personal = e8.variable("ispell-personal-dictionary");
+  const extra = e8.variable("ispell-extra-args");
   return [
     "-a",
     ...(typeof dict === "string" ? ["-d", dict] : []),
-    ...(typeof personal === "string" ? ["-p", gnista.expandFileName(personal)] : []),
+    ...(typeof personal === "string" ? ["-p", e8.expandFileName(personal)] : []),
     ...(Array.isArray(extra) ? extra.map(String) : []),
   ];
 }
@@ -50,7 +50,7 @@ function checkerArgs(): string[] {
 /** The words this buffer accepts: those LocalWords: lines name, as ispell-buffer-local-words reads them. */
 function localWords(): string[] {
   const words: string[] = [];
-  const text = gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax());
+  const text = e8.bufferSubstringNoProperties(e8.pointMin(), e8.pointMax());
   for (const m of allMatches(/LocalWords: (.*)$/gm, text)) words.push(...m[1].split(/\s+/).filter((w) => w !== ""));
   return words;
 }
@@ -60,8 +60,8 @@ export function parseOutput(output: string): Poss {
   if (output === "" || output === "*" || output === "-") return true;
   if (output[0] === "+") return output.slice(2);
   if (/^[\ra-zA-Z]/.test(output)) {
-    gnista.ding();
-    gnista.message(`Ispell error: ${output}`);
+    e8.ding();
+    e8.message(`Ispell error: ${output}`);
     return undefined;
   }
   const type = output[0];
@@ -75,11 +75,11 @@ export function parseOutput(output: string): Poss {
 /** Checks words, each on its own, as ispell's ^ lines send them. */
 export function checkWords(words: string[]): Poss[] {
   if (words.length === 0) return [];
-  const program = String(gnista.variable("ispell-program-name"));
-  if (executableFind(program) === undefined) gnista.userError(`Searching for program: No such file or directory, ${program}`);
-  const accepted = [...sessionWords, ...(bufferSessionWords.get(gnista.currentBuffer()) ?? []), ...localWords()];
+  const program = String(e8.variable("ispell-program-name"));
+  if (executableFind(program) === undefined) e8.userError(`Searching for program: No such file or directory, ${program}`);
+  const accepted = [...sessionWords, ...(bufferSessionWords.get(e8.currentBuffer()) ?? []), ...localWords()];
   const input = accepted.map((w) => `@${w}\n`).join("") + words.map((w) => `^${w}\n`).join("");
-  const { output } = gnista.callProcess([program, ...checkerArgs()], { input, directory: gnista.expandFileName("~/") });
+  const { output } = e8.callProcess([program, ...checkerArgs()], { input, directory: e8.expandFileName("~/") });
   // The first line is the checker's banner; then each word's answer, ended by an empty line.
   const blocks = output.split("\n").slice(1).join("\n").split("\n\n");
   return words.map((_, i) => {
@@ -90,8 +90,8 @@ export function checkWords(words: string[]): Poss[] {
 
 /** Adds a word to your personal dictionary, as ispell's * and # do. */
 export function insertPersonal(word: string): void {
-  const program = String(gnista.variable("ispell-program-name"));
-  gnista.callProcess([program, ...checkerArgs()], { input: `*${word}\n#\n`, directory: gnista.expandFileName("~/") });
+  const program = String(e8.variable("ispell-program-name"));
+  e8.callProcess([program, ...checkerArgs()], { input: `*${word}\n#\n`, directory: e8.expandFileName("~/") });
 }
 
 /** Accepts a word for the rest of the session, in every buffer, as ispell's @ does. */
@@ -101,49 +101,49 @@ export function acceptForSession(word: string): void {
 
 /** Accepts a word for the session in this buffer, as ispell-buffer-session-localwords. */
 export function acceptInBuffer(word: string): void {
-  const words = bufferSessionWords.get(gnista.currentBuffer()) ?? new Set<string>();
+  const words = bufferSessionWords.get(e8.currentBuffer()) ?? new Set<string>();
   words.add(word);
-  bufferSessionWords.set(gnista.currentBuffer(), words);
+  bufferSessionWords.set(e8.currentBuffer(), words);
 }
 
 /** Adds a word to the buffer's LocalWords: line at its end, as ispell-add-per-file-word-list. */
 export function addPerFileWord(word: string): void {
-  gnista.saveExcursion(() => {
-    const comment = String(gnista.variable("comment-start") ?? "").trim();
+  e8.saveExcursion(() => {
+    const comment = String(e8.variable("comment-start") ?? "").trim();
     const prefix = comment === "" ? "" : `${comment} `;
-    const end = gnista.pointMax();
-    const text = gnista.bufferSubstringNoProperties(gnista.pointMin(), end);
+    const end = e8.pointMax();
+    const text = e8.bufferSubstringNoProperties(e8.pointMin(), end);
     const m = /LocalWords: .*$/m.exec(text);
     if (m && [...m[0]].length + word.length < 70) {
-      gnista.gotoChar(gnista.pointMin() + [...text.slice(0, m.index + m[0].length)].length);
-      gnista.insert(` ${word}`);
+      e8.gotoChar(e8.pointMin() + [...text.slice(0, m.index + m[0].length)].length);
+      e8.insert(` ${word}`);
     } else {
-      gnista.gotoChar(end);
-      gnista.insert(`${text.endsWith("\n") || text === "" ? "" : "\n"}\n${prefix}LocalWords: ${word}\n`);
+      e8.gotoChar(end);
+      e8.insert(`${text.endsWith("\n") || text === "" ? "" : "\n"}\n${prefix}LocalWords: ${word}\n`);
     }
   });
 }
 
 /** The word at point, or before it, and where it is, as ispell-get-word: letters, with an apostrophe inside. */
 export function getWord(following = false): { word: string; start: number; end: number } | undefined {
-  return gnista.saveExcursion(() => {
+  return e8.saveExcursion(() => {
     const letter = "[[:alpha:]]";
-    if (!gnista.lookingAt(letter)) {
-      const found = following ? gnista.reSearchForward(letter, { noerror: true }) : gnista.reSearchBackward(letter, { noerror: true });
+    if (!e8.lookingAt(letter)) {
+      const found = following ? e8.reSearchForward(letter, { noerror: true }) : e8.reSearchBackward(letter, { noerror: true });
       if (found === undefined) return undefined;
-      if (following) gnista.gotoChar(gnista.point() - 1);
+      if (following) e8.gotoChar(e8.point() - 1);
     }
-    if (gnista.reSearchBackward("[^[:alpha:]]", { noerror: true }) === undefined) gnista.gotoChar(gnista.pointMin());
+    if (e8.reSearchBackward("[^[:alpha:]]", { noerror: true }) === undefined) e8.gotoChar(e8.pointMin());
     // Back over an apostrophe inside a word, once, as ispell-otherchars allows.
-    if (gnista.lookingAt("'") && gnista.point() > gnista.pointMin()) {
-      gnista.gotoChar(gnista.point() - 1);
-      if (gnista.lookingAt(letter) && gnista.reSearchBackward("[^[:alpha:]]", { noerror: true }) === undefined) gnista.gotoChar(gnista.pointMin());
-      else if (!gnista.lookingAt(letter)) gnista.gotoChar(gnista.point() + 1);
+    if (e8.lookingAt("'") && e8.point() > e8.pointMin()) {
+      e8.gotoChar(e8.point() - 1);
+      if (e8.lookingAt(letter) && e8.reSearchBackward("[^[:alpha:]]", { noerror: true }) === undefined) e8.gotoChar(e8.pointMin());
+      else if (!e8.lookingAt(letter)) e8.gotoChar(e8.point() + 1);
     }
-    if (gnista.reSearchForward("[[:alpha:]]+\\('?[[:alpha:]]+\\)?", { noerror: true }) === undefined) return undefined;
-    const start = gnista.matchBeginning(0)!;
-    const end = gnista.point();
-    return { word: gnista.bufferSubstringNoProperties(start, end), start, end };
+    if (e8.reSearchForward("[[:alpha:]]+\\('?[[:alpha:]]+\\)?", { noerror: true }) === undefined) return undefined;
+    const start = e8.matchBeginning(0)!;
+    const end = e8.point();
+    return { word: e8.bufferSubstringNoProperties(start, end), start, end };
   });
 }
 
@@ -165,23 +165,23 @@ function choiceKeys(n: number): string[] {
 export function commandLoop(misses: string[], guesses: string[], word: string): string | true | 0 | undefined {
   const keys = choiceKeys(misses.length);
   const name = "*Choices*";
-  gnista.getBufferCreate(name);
-  gnista.withCurrentBuffer(name, () => {
-    gnista.letBind({ "inhibit-read-only": true }, () => {
-      gnista.deleteRegion(0, gnista.bufferSize());
+  e8.getBufferCreate(name);
+  e8.withCurrentBuffer(name, () => {
+    e8.letBind({ "inhibit-read-only": true }, () => {
+      e8.deleteRegion(0, e8.bufferSize());
       if (guesses.length > 0) {
-        gnista.insert(`Affix rules generate and capitalize this word as shown below:\n\t${guesses.join("    ")}    \n`);
-        gnista.insert("Use option `i' to accept this spelling and put it in your personal dictionary.\n");
+        e8.insert(`Affix rules generate and capitalize this word as shown below:\n\t${guesses.join("    ")}    \n`);
+        e8.insert("Use option `i' to accept this spelling and put it in your personal dictionary.\n");
       }
-      gnista.insert(misses.map((m, i) => `(${keys[i]}) ${m}  `).join(""));
+      e8.insert(misses.map((m, i) => `(${keys[i]}) ${m}  `).join(""));
     });
   });
-  const here = gnista.selectedWindow();
-  gnista.call("display-buffer", name);
-  gnista.selectWindow(here);
+  const here = e8.selectedWindow();
+  e8.call("display-buffer", name);
+  e8.selectWindow(here);
   try {
     for (;;) {
-      const key = gnista.readKey("C-h or ? for more options; SPC to leave unchanged, Character to replace word");
+      const key = e8.readKey("C-h or ? for more options; SPC to leave unchanged, Character to replace word");
       const i = keys.indexOf(key);
       if (i >= 0 && i < misses.length) return misses[i];
       switch (key) {
@@ -200,58 +200,58 @@ export function commandLoop(misses: string[], guesses: string[], word: string): 
           return 0;
         case "r":
         case "R":
-          return gnista.readString("Replacement for: ", { initial: word });
+          return e8.readString("Replacement for: ", { initial: word });
         case "x":
-          gnista.message("Exited spell-checking");
+          e8.message("Exited spell-checking");
           return undefined;
         case "X":
         case "C-g":
-          gnista.message("Spell-checking suspended; use C-u M-$ to resume");
+          e8.message("Spell-checking suspended; use C-u M-$ to resume");
           return undefined;
         default:
-          gnista.ding();
+          e8.ding();
       }
     }
   } finally {
-    for (const w of gnista.windowList()) if (gnista.windowBuffer(w) === name && gnista.windowList().length > 1) gnista.deleteWindow(w);
+    for (const w of e8.windowList()) if (e8.windowBuffer(w) === name && e8.windowList().length > 1) e8.deleteWindow(w);
   }
 }
 
 /** Checks the word at point and offers corrections if it is wrong, as ispell-word. */
 export function ispellWord(following = false): void {
   const found = getWord(following);
-  if (found === undefined) gnista.userError("No word found to check!");
+  if (found === undefined) e8.userError("No word found to check!");
   const { word, start, end } = found;
   // Words are shown in capitals, as ispell-format-word-function writes them.
   const shown = (w: string) => w.toUpperCase();
-  gnista.message(`Checking spelling of ${shown(word)}...`);
+  e8.message(`Checking spelling of ${shown(word)}...`);
   const [poss] = checkWords([word]);
-  if (poss === true) gnista.message(`${shown(word)} is correct`);
-  else if (typeof poss === "string") gnista.message(`${shown(word)} is correct because of root ${shown(poss)}`);
+  if (poss === true) e8.message(`${shown(word)} is correct`);
+  else if (typeof poss === "string") e8.message(`${shown(word)} is correct because of root ${shown(poss)}`);
   else if (poss === undefined) {
-    gnista.message(`Error checking word ${shown(word)} using ${gnista.fileNameNondirectory(String(gnista.variable("ispell-program-name")))} with default dictionary`);
+    e8.message(`Error checking word ${shown(word)} using ${e8.fileNameNondirectory(String(e8.variable("ispell-program-name")))} with default dictionary`);
   } else {
     const replace = commandLoop(poss[2], poss[3], poss[0]);
     if (replace === 0) addPerFileWord(poss[0]);
     else if (typeof replace === "string" && replace !== poss[0]) {
-      gnista.gotoChar(start);
-      gnista.insert(replace);
-      gnista.deleteRegion(gnista.point(), end + [...replace].length);
+      e8.gotoChar(start);
+      e8.insert(replace);
+      e8.deleteRegion(e8.point(), end + [...replace].length);
     }
-    gnista.runHooks("ispell-update-post-hook");
+    e8.runHooks("ispell-update-post-hook");
   }
 }
 
-gnista.defineHook("ispell-update-post-hook", "Functions called after ispell changes or accepts a word, as flyspell uses to take its highlight off.");
+e8.defineHook("ispell-update-post-hook", "Functions called after ispell changes or accepts a word, as flyspell uses to take its highlight off.");
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "ispell-word",
   doc:
     "Check the spelling of the word at point, or before it, and offer corrections in *Choices* if it is wrong: " +
     "a character picks one, SPC leaves the word, i adds it to your dictionary, a accepts it for this session, " +
     "A in this file's LocalWords, and r types a replacement.",
   params: [{ name: "following", kind: "prefix" }],
-  run: (following: gnista.PrefixArg) => ispellWord(following !== null),
+  run: (following: e8.PrefixArg) => ispellWord(following !== null),
 });
 
-gnista.bindKey("M-$", "ispell-word");
+e8.bindKey("M-$", "ispell-word");

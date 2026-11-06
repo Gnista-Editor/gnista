@@ -7,15 +7,15 @@
 
 import { keyChar } from "simple";
 
-gnista.defineVariable({ name: "only-global-abbrevs", doc: "Whether the abbrev commands define only global abbrevs, not ones for the major mode.", value: false });
-gnista.defineVariable({ name: "abbrev-all-caps", doc: "Whether an abbrev typed in capitals expands all in capitals, rather than with each word capitalized.", value: false });
+e8.defineVariable({ name: "only-global-abbrevs", doc: "Whether the abbrev commands define only global abbrevs, not ones for the major mode.", value: false });
+e8.defineVariable({ name: "abbrev-all-caps", doc: "Whether an abbrev typed in capitals expands all in capitals, rather than with each word capitalized.", value: false });
 
 /** The abbrev tables, by name, each abbrev's name in lower case to its expansion and how often it was used. */
 const tables = new Map<string, Map<string, { expansion: string; count: number }>>();
 
 const GLOBAL = "global-abbrev-table";
 /** The major mode's table, as local-abbrev-table names it. */
-const localTable = (): string => `${String(gnista.variable("major-mode"))}-abbrev-table`;
+const localTable = (): string => `${String(e8.variable("major-mode"))}-abbrev-table`;
 const table = (name: string) => {
   let t = tables.get(name);
   if (t === undefined) {
@@ -39,14 +39,14 @@ const activeTables = (): string[] => [localTable(), GLOBAL];
 
 /** The word before point and the abbrev it names, if any, as abbrev--before-point. */
 function abbrevBeforePoint(): { table: string; name: string; start: number; end: number } | undefined {
-  const pos = gnista.point();
-  return gnista.saveExcursion(() => {
-    gnista.call("backward-word");
-    const start = gnista.point();
-    gnista.call("forward-word");
-    const end = Math.min(gnista.point(), pos);
+  const pos = e8.point();
+  return e8.saveExcursion(() => {
+    e8.call("backward-word");
+    const start = e8.point();
+    e8.call("forward-word");
+    const end = Math.min(e8.point(), pos);
     if (end <= start) return undefined;
-    const name = gnista.bufferSubstringNoProperties(start, end);
+    const name = e8.bufferSubstringNoProperties(start, end);
     for (const t of activeTables()) {
       if (abbrevExpansion(name, t) !== undefined) return { table: t, name, start, end };
     }
@@ -58,45 +58,45 @@ function abbrevBeforePoint(): { table: string; name: string; start: number; end:
 function abbrevInsert(t: string, name: string, start: number, wordEnd: number): void {
   const entry = tables.get(t)!.get(name.toLowerCase())!;
   entry.count++;
-  gnista.gotoChar(start);
+  e8.gotoChar(start);
   // Inserted first, so markers at the end, point among them, stay after it.
-  gnista.insert(entry.expansion);
-  const endMarker = gnista.makeMarker(gnista.point());
-  gnista.deleteRegion(gnista.point(), gnista.point() + (wordEnd - start));
-  const end = gnista.markerPosition(endMarker)!;
+  e8.insert(entry.expansion);
+  const endMarker = e8.makeMarker(e8.point());
+  e8.deleteRegion(e8.point(), e8.point() + (wordEnd - start));
+  const end = e8.markerPosition(endMarker)!;
   if (name !== name.toLowerCase() && /\p{Lu}/u.test(name)) {
     if (!/\p{Ll}/u.test(name)) {
       // All in capitals: each word capitalized if there are several, else all capitals.
-      const severalWords = gnista.saveExcursion(() => {
-        gnista.call("backward-word");
-        const last = gnista.point();
+      const severalWords = e8.saveExcursion(() => {
+        e8.call("backward-word");
+        const last = e8.point();
         return last > start;
       });
-      if (gnista.variable("abbrev-all-caps") !== true && severalWords) gnista.call("upcase-initials-region", start, end);
-      else gnista.call("upcase-region", start, end);
+      if (e8.variable("abbrev-all-caps") !== true && severalWords) e8.call("upcase-initials-region", start, end);
+      else e8.call("upcase-region", start, end);
     } else {
       // Some capitals: the expansion's first initial.
-      gnista.gotoChar(start);
-      gnista.skipSyntaxForward("^w", end - 1);
-      gnista.call("upcase-initials-region", gnista.point(), gnista.point() + 1);
+      e8.gotoChar(start);
+      e8.skipSyntaxForward("^w", end - 1);
+      e8.call("upcase-initials-region", e8.point(), e8.point() + 1);
     }
   }
-  gnista.gotoChar(gnista.markerPosition(endMarker)!);
-  gnista.deleteMarker(endMarker);
+  e8.gotoChar(e8.markerPosition(endMarker)!);
+  e8.deleteMarker(endMarker);
 }
 
 /** Expands the abbrev before point, if there is one, as expand-abbrev; returns whether it did. */
 function expandAbbrev(): boolean {
   const found = abbrevBeforePoint();
   if (found === undefined) return false;
-  const pos = gnista.point();
+  const pos = e8.point();
   const after = pos - found.end;
   abbrevInsert(found.table, found.name, found.start, found.end);
-  gnista.gotoChar(gnista.point() + after);
+  e8.gotoChar(e8.point() + after);
   return true;
 }
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "abbrev-mode",
   lighter: " Abbrev",
   doc: "Expand abbrevs as they are typed: a character that ends a word expands the word before it if it is an abbrev.",
@@ -104,15 +104,15 @@ gnista.defineMinorMode({
 
 // Typing a character that is not part of a word, after a word, expands it
 // first, as self-insert-command does in Emacs.
-gnista.adviceAdd("self-insert-command", "before", () => {
-  if (gnista.variable("abbrev-mode") !== true) return;
-  const c = keyChar(gnista.lastKey() ?? "");
-  if (c === undefined || gnista.charSyntax(c) === "w") return;
-  if (gnista.point() === gnista.pointMin() || gnista.charSyntax(gnista.charAfter(gnista.point() - 1) ?? "") !== "w") return;
+e8.adviceAdd("self-insert-command", "before", () => {
+  if (e8.variable("abbrev-mode") !== true) return;
+  const c = keyChar(e8.lastKey() ?? "");
+  if (c === undefined || e8.charSyntax(c) === "w") return;
+  if (e8.point() === e8.pointMin() || e8.charSyntax(e8.charAfter(e8.point() - 1) ?? "") !== "w") return;
   expandAbbrev();
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "expand-abbrev",
   doc: "Expand the abbrev before point, if there is one.",
   run: () => {
@@ -121,74 +121,74 @@ gnista.defineCommand({
 });
 
 /** Defines an abbrev for the words before point, or the region, as add-abbrev; a prefix argument of 0 means the region. */
-async function addAbbrev(tableName: string, type: string, arg: gnista.PrefixArg): Promise<void> {
-  const n = gnista.prefixNumericValue(arg);
-  const mark = gnista.mark();
+async function addAbbrev(tableName: string, type: string, arg: e8.PrefixArg): Promise<void> {
+  const n = e8.prefixNumericValue(arg);
+  const mark = e8.mark();
   let exp: string | undefined;
-  if ((arg === null && gnista.regionActive() && mark !== undefined) || n === 0) {
-    exp = gnista.bufferSubstringNoProperties(Math.min(mark!, gnista.point()), Math.max(mark!, gnista.point()));
+  if ((arg === null && e8.regionActive() && mark !== undefined) || n === 0) {
+    exp = e8.bufferSubstringNoProperties(Math.min(mark!, e8.point()), Math.max(mark!, e8.point()));
   } else if (n > 0) {
-    const start = gnista.saveExcursion(() => {
-      gnista.callWithPrefix(-n, "forward-word");
-      return gnista.point();
+    const start = e8.saveExcursion(() => {
+      e8.callWithPrefix(-n, "forward-word");
+      return e8.point();
     });
-    exp = gnista.bufferSubstringNoProperties(start, gnista.point());
+    exp = e8.bufferSubstringNoProperties(start, e8.point());
   }
-  const name = await gnista.readString(exp !== undefined ? `${type} abbrev that expands into "${exp}": ` : `Undefine ${type} abbrev: `);
+  const name = await e8.readString(exp !== undefined ? `${type} abbrev that expands into "${exp}": ` : `Undefine ${type} abbrev: `);
   const old = abbrevExpansion(name, tableName);
-  if (exp === undefined || old === undefined || (await gnista.yOrNP(`${name} expands into "${old}"; redefine? `))) {
+  if (exp === undefined || old === undefined || (await e8.yOrNP(`${name} expands into "${old}"; redefine? `))) {
     defineAbbrev(tableName, name, exp ?? "");
   }
 }
 
 /** Defines the word before point as an abbrev for an expansion asked for, and expands it, as inverse-add-abbrev. */
 async function inverseAddAbbrev(tableName: string, type: string, arg: number): Promise<void> {
-  const [start, end] = gnista.saveExcursion(() => {
-    gnista.callWithPrefix(1 - arg, "forward-word");
-    const e = gnista.point();
-    gnista.call("backward-word");
-    return [gnista.point(), e];
+  const [start, end] = e8.saveExcursion(() => {
+    e8.callWithPrefix(1 - arg, "forward-word");
+    const e = e8.point();
+    e8.call("backward-word");
+    return [e8.point(), e];
   });
-  const name = gnista.bufferSubstringNoProperties(start, end);
-  const exp = await gnista.readString(`${type} expansion for "${name}": `);
+  const name = e8.bufferSubstringNoProperties(start, end);
+  const exp = await e8.readString(`${type} expansion for "${name}": `);
   const old = abbrevExpansion(name, tableName);
-  if (old === undefined || (await gnista.yOrNP(`${name} expands into "${old}"; redefine? `))) {
+  if (old === undefined || (await e8.yOrNP(`${name} expands into "${old}"; redefine? `))) {
     defineAbbrev(tableName, name, exp);
-    gnista.saveExcursion(() => {
-      gnista.gotoChar(end);
+    e8.saveExcursion(() => {
+      e8.gotoChar(end);
       expandAbbrev();
     });
   }
 }
 
-const modeTable = () => (gnista.variable("only-global-abbrevs") === true ? GLOBAL : localTable());
+const modeTable = () => (e8.variable("only-global-abbrevs") === true ? GLOBAL : localTable());
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "add-global-abbrev",
   doc: "Define a global abbrev for the word before point, or that many words, or the region with 0, asking for its name.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => addAbbrev(GLOBAL, "Global", arg),
+  run: (arg: e8.PrefixArg) => addAbbrev(GLOBAL, "Global", arg),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "add-mode-abbrev",
   doc: "Define an abbrev for the major mode for the word before point, or that many words, or the region with 0, asking for its name.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => addAbbrev(modeTable(), gnista.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
+  run: (arg: e8.PrefixArg) => addAbbrev(modeTable(), e8.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "inverse-add-global-abbrev",
   doc: "Make the word before point a global abbrev for an expansion asked for, and expand it.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => inverseAddAbbrev(GLOBAL, "Global", arg),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "inverse-add-mode-abbrev",
   doc: "Make the word before point an abbrev for the major mode for an expansion asked for, and expand it.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg: number) => inverseAddAbbrev(modeTable(), gnista.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
+  run: (arg: number) => inverseAddAbbrev(modeTable(), e8.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "define-global-abbrev",
   doc: "Define a global abbrev, asking for its name and expansion.",
   params: [
@@ -197,7 +197,7 @@ gnista.defineCommand({
   ],
   run: (abbrev: string, expansion: string) => defineAbbrev(GLOBAL, abbrev, expansion),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "define-mode-abbrev",
   doc: "Define an abbrev for the major mode, asking for its name and expansion.",
   params: [
@@ -206,7 +206,7 @@ gnista.defineCommand({
   ],
   run: (abbrev: string, expansion: string) => defineAbbrev(localTable(), abbrev, expansion),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "kill-all-abbrevs",
   doc: "Forget every abbrev in every table.",
   run: () => tables.clear(),
@@ -224,7 +224,7 @@ for (const [keys, command] of [
   ["C-x a '", "expand-abbrev"],
   ["C-x '", "expand-abbrev"],
 ] as const) {
-  gnista.bindKey(keys, command);
+  e8.bindKey(keys, command);
 }
 
 // Listing and editing the abbrevs, as list-abbrevs and edit-abbrevs: each
@@ -264,34 +264,34 @@ const tableNames = (): string[] => [GLOBAL, ...[...tables.keys()].filter((t) => 
 
 function prepareAbbrevList(): string {
   const buffer = "*Abbrevs*";
-  gnista.getBufferCreate(buffer);
-  gnista.withCurrentBuffer(buffer, () => {
-    if (gnista.variable("major-mode") !== "edit-abbrevs-mode") gnista.call("edit-abbrevs-mode");
-    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-    gnista.insert(tableNames().map(tableDescription).join(""));
-    gnista.gotoChar(gnista.pointMin());
-    gnista.setBufferModified(false);
+  e8.getBufferCreate(buffer);
+  e8.withCurrentBuffer(buffer, () => {
+    if (e8.variable("major-mode") !== "edit-abbrevs-mode") e8.call("edit-abbrevs-mode");
+    e8.deleteRegion(e8.pointMin(), e8.pointMax());
+    e8.insert(tableNames().map(tableDescription).join(""));
+    e8.gotoChar(e8.pointMin());
+    e8.setBufferModified(false);
   });
   return buffer;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "list-abbrevs",
   doc: "Show the abbrevs in *Abbrevs*: each table, and each abbrev in it with how often it was used and its expansion.",
-  run: () => gnista.call("display-buffer", prepareAbbrevList()),
+  run: () => e8.call("display-buffer", prepareAbbrevList()),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "edit-abbrevs",
   doc: "Edit the abbrevs in *Abbrevs*; C-c C-c makes them the abbrevs again.",
-  run: () => gnista.call("switch-to-buffer", prepareAbbrevList()),
+  run: () => e8.call("switch-to-buffer", prepareAbbrevList()),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "edit-abbrevs-redefine",
   doc: "Make the abbrevs the ones *Abbrevs* lists now, as edit-abbrevs left them.",
   run: () => {
-    const text = gnista.bufferText(gnista.pointMin(), gnista.pointMax());
+    const text = e8.bufferText(e8.pointMin(), e8.pointMax());
     const read = new Map<string, Map<string, { expansion: string; count: number }>>();
     let current: Map<string, { expansion: string; count: number }> | undefined;
     const unquote = (s: string) => s.slice(1, -1).replace(/\\(.)/g, "$1");
@@ -306,13 +306,13 @@ gnista.defineCommand({
       if (entry !== null && current !== undefined) current.set(unquote(entry[1]!).toLowerCase(), { expansion: unquote(entry[3]!), count: Number(entry[2]) });
     }
     for (const [name, entries] of read) tables.set(name, entries);
-    gnista.setBufferModified(false);
+    e8.setBufferModified(false);
   },
 });
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "edit-abbrevs-mode",
   modeName: "Edit-Abbrevs",
   doc: "The mode of *Abbrevs*: edit the abbrevs listed, then C-c C-c to make them the abbrevs.",
-  bindings: { "C-c C-c": "edit-abbrevs-redefine", "C-x C-s": "edit-abbrevs-redefine" } as Record<string, gnista.CommandName>,
+  bindings: { "C-c C-c": "edit-abbrevs-redefine", "C-x C-s": "edit-abbrevs-redefine" } as Record<string, e8.CommandName>,
 });

@@ -6,11 +6,11 @@ import { insertRectangle, lastKilledRectangle } from "rect";
 
 /** What a register holds. */
 export type RegisterValue =
-  | { kind: "position"; marker: gnista.Marker }
-  | { kind: "text"; text: string | gnista.PropertizedString }
+  | { kind: "position"; marker: e8.Marker }
+  | { kind: "text"; text: string | e8.PropertizedString }
   | { kind: "number"; value: number }
   | { kind: "rectangle"; lines: string[] }
-  | { kind: "window"; configuration: gnista.WindowConfiguration; marker: gnista.Marker };
+  | { kind: "window"; configuration: e8.WindowConfiguration; marker: e8.Marker };
 
 /** The registers, by name, as register-alist. */
 const registers = new Map<string, RegisterValue>();
@@ -22,7 +22,7 @@ export function registerAlist(): [string, RegisterValue][] {
 
 /** Reads a register's name, a character typed after the prompt, as register-read-with-preview does traditionally. */
 async function readRegister(prompt: string): Promise<string> {
-  const key = await gnista.readKey(prompt);
+  const key = await e8.readKey(prompt);
   const c = keyChar(key);
   if (c === undefined) throw new Error("Non-character input-event");
   return c!;
@@ -31,50 +31,50 @@ async function readRegister(prompt: string): Promise<string> {
 /** A register's name as single-key-description writes it. */
 const describe = (r: string): string => (r === " " ? "SPC" : r);
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "point-to-register",
   doc: "Store point's position in a register, to go back to with C-x r j.",
   run: async () => {
     const r = await readRegister("Point to register: ");
-    registers.set(r, { kind: "position", marker: gnista.makeMarker(gnista.point()) });
+    registers.set(r, { kind: "position", marker: e8.makeMarker(e8.point()) });
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "window-configuration-to-register",
   doc: "Store the frame's windows and what they show in a register, to restore with C-x r j.",
   run: async () => {
     const r = await readRegister("Window configuration to register: ");
-    registers.set(r, { kind: "window", configuration: gnista.currentWindowConfiguration(), marker: gnista.makeMarker(gnista.point()) });
+    registers.set(r, { kind: "window", configuration: e8.currentWindowConfiguration(), marker: e8.makeMarker(e8.point()) });
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "jump-to-register",
   doc: "Go to the position or restore the window configuration stored in a register.",
   run: async () => {
     const r = await readRegister("Jump to register: ");
     const val = registers.get(r);
     if (val?.kind === "position") {
-      const buffer = gnista.markerBuffer(val.marker);
-      if (buffer === undefined) gnista.userError("That register’s buffer no longer exists");
-      gnista.call("switch-to-buffer", buffer!);
-      const pos = gnista.markerPosition(val.marker)!;
-      if (gnista.point() !== pos && gnista.lastCommand() !== "jump-to-register") gnista.pushMark(gnista.point());
-      gnista.gotoChar(pos);
+      const buffer = e8.markerBuffer(val.marker);
+      if (buffer === undefined) e8.userError("That register’s buffer no longer exists");
+      e8.call("switch-to-buffer", buffer!);
+      const pos = e8.markerPosition(val.marker)!;
+      if (e8.point() !== pos && e8.lastCommand() !== "jump-to-register") e8.pushMark(e8.point());
+      e8.gotoChar(pos);
     } else if (val?.kind === "window") {
-      gnista.setWindowConfiguration(val.configuration);
-      const pos = gnista.markerPosition(val.marker);
-      if (pos !== undefined) gnista.gotoChar(pos);
+      e8.setWindowConfiguration(val.configuration);
+      const pos = e8.markerPosition(val.marker);
+      if (pos !== undefined) e8.gotoChar(pos);
     } else {
-      gnista.userError("Register doesn’t contain a buffer position or configuration");
+      e8.userError("Register doesn’t contain a buffer position or configuration");
     }
   },
 });
 
 /** The region's text into a register, deleted with `del`, joined onto what it holds with `join`. */
 function textToRegister(r: string, start: number, end: number, del: boolean, join?: "append" | "prepend"): void {
-  const text = gnista.bufferSubstring(start, end);
+  const text = e8.bufferSubstring(start, end);
   const old = registers.get(r);
   if (join === undefined || old === undefined) {
     registers.set(r, { kind: "text", text });
@@ -82,10 +82,10 @@ function textToRegister(r: string, start: number, end: number, del: boolean, joi
     const [a, b] = join === "append" ? [String(old.text), String(text)] : [String(text), String(old.text)];
     registers.set(r, { kind: "text", text: a + b });
   } else {
-    gnista.userError("Register does not contain text");
+    e8.userError("Register does not contain text");
   }
-  if (del) gnista.deleteRegion(start, end);
-  gnista.deactivateMark();
+  if (del) e8.deleteRegion(start, end);
+  e8.deactivateMark();
 }
 
 const region = [
@@ -99,93 +99,93 @@ for (const [name, doc, prompt, join] of [
   ["append-to-register", "Add the region's text to the end of the text in a register; with a prefix argument, delete it too.", "Append to register: ", "append"],
   ["prepend-to-register", "Add the region's text to the start of the text in a register; with a prefix argument, delete it too.", "Prepend to register: ", "prepend"],
 ] as const) {
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     params: [...region],
-    run: async (start: number, end: number, del: gnista.PrefixArg) => {
+    run: async (start: number, end: number, del: e8.PrefixArg) => {
       const r = await readRegister(prompt);
       textToRegister(r, start, end, del !== null, join);
     },
   });
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "copy-rectangle-to-register",
   doc: "Copy the rectangle between point and the mark into a register, to insert with C-x r i; with a prefix argument, delete it too.",
   params: [...region],
-  run: async (start: number, end: number, del: gnista.PrefixArg) => {
+  run: async (start: number, end: number, del: e8.PrefixArg) => {
     const r = await readRegister("Copy rectangle to register: ");
-    gnista.saveExcursion(() => {
-      gnista.call(del !== null ? "kill-rectangle" : "copy-rectangle-as-kill", start, end);
+    e8.saveExcursion(() => {
+      e8.call(del !== null ? "kill-rectangle" : "copy-rectangle-as-kill", start, end);
     });
     registers.set(r, { kind: "rectangle", lines: lastKilledRectangle() ?? [] });
-    gnista.deactivateMark();
+    e8.deactivateMark();
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "number-to-register",
   doc: "Store a number in a register: the prefix argument, or else the number after point, which point moves past.",
   params: [{ name: "number", kind: "prefix" }],
-  run: async (number: gnista.PrefixArg) => {
+  run: async (number: e8.PrefixArg) => {
     const r = await readRegister("Number to register: ");
     let value = 0;
     if (number !== null) {
-      value = gnista.prefixNumericValue(number);
-    } else if (gnista.lookingAt("\\s-*-?[0-9]+")) {
-      value = parseInt(gnista.matchString(0)!.trim(), 10);
-      gnista.gotoChar(gnista.matchEnd(0)!);
+      value = e8.prefixNumericValue(number);
+    } else if (e8.lookingAt("\\s-*-?[0-9]+")) {
+      value = parseInt(e8.matchString(0)!.trim(), 10);
+      e8.gotoChar(e8.matchEnd(0)!);
     }
     registers.set(r, { kind: "number", value });
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "increment-register",
   doc: "Add the prefix argument, 1 by default, to the number in a register; to one with text, or none, add the region's text.",
   params: [{ name: "prefix", kind: "prefix" }],
-  run: async (prefix: gnista.PrefixArg) => {
+  run: async (prefix: e8.PrefixArg) => {
     const r = await readRegister("Increment register: ");
     const val = registers.get(r);
     if (val?.kind === "number") {
-      registers.set(r, { kind: "number", value: val.value + gnista.prefixNumericValue(prefix) });
+      registers.set(r, { kind: "number", value: val.value + e8.prefixNumericValue(prefix) });
     } else if (val === undefined || val.kind === "text") {
       // The region only now, as a number needs none.
-      const mark = gnista.mark();
-      if (mark === undefined) gnista.userError("The mark is not set now, so there is no region");
-      textToRegister(r, Math.min(mark!, gnista.point()), Math.max(mark!, gnista.point()), prefix !== null, "append");
+      const mark = e8.mark();
+      if (mark === undefined) e8.userError("The mark is not set now, so there is no region");
+      textToRegister(r, Math.min(mark!, e8.point()), Math.max(mark!, e8.point()), prefix !== null, "append");
     }
-    else gnista.userError("Register does not contain a number or text");
+    else e8.userError("Register does not contain a number or text");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "insert-register",
   doc: "Insert what a register holds, leaving point before it and the mark after; with a prefix argument, point after it.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: async (arg: gnista.PrefixArg) => {
-    if (gnista.bufferReadOnly()) gnista.signal("buffer-read-only", `Buffer is read-only: ${gnista.bufferName()}`);
+  run: async (arg: e8.PrefixArg) => {
+    if (e8.bufferReadOnly()) e8.signal("buffer-read-only", `Buffer is read-only: ${e8.bufferName()}`);
     const r = await readRegister("Insert register: ");
-    gnista.pushMark(gnista.point());
+    e8.pushMark(e8.point());
     const val = registers.get(r);
-    if (val?.kind === "text") gnista.insertForYank(val.text);
-    else if (val?.kind === "number") gnista.insert(String(val.value));
+    if (val?.kind === "text") e8.insertForYank(val.text);
+    else if (val?.kind === "number") e8.insert(String(val.value));
     else if (val?.kind === "rectangle") insertRectangle(val.lines);
-    else if (val?.kind === "position" && gnista.markerPosition(val.marker) !== undefined) gnista.insert(String(gnista.markerPosition(val.marker)! + 1));
-    else gnista.userError("Register does not contain text");
-    if (arg === null) gnista.call("exchange-point-and-mark");
+    else if (val?.kind === "position" && e8.markerPosition(val.marker) !== undefined) e8.insert(String(e8.markerPosition(val.marker)! + 1));
+    else e8.userError("Register does not contain text");
+    if (arg === null) e8.call("exchange-point-and-mark");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "view-register",
   doc: "Say what a register holds.",
   run: async () => {
     const r = await readRegister("View register: ");
     const val = registers.get(r);
     if (val === undefined) {
-      gnista.message(`Register ${describe(r)} is empty`);
+      e8.message(`Register ${describe(r)} is empty`);
       return;
     }
     let text = `Register ${describe(r)} contains `;
@@ -193,8 +193,8 @@ gnista.defineCommand({
     else if (val.kind === "text") text += `text:\n${String(val.text)}`;
     else if (val.kind === "rectangle") text += `the rectangle:\n${val.lines.join("\n")}`;
     else if (val.kind === "window") text += "a window configuration.";
-    else text += `a buffer position:\nbuffer ${gnista.markerBuffer(val.marker) ?? "(killed)"}, position ${(gnista.markerPosition(val.marker) ?? 0) + 1}`;
-    gnista.showHelp(text);
+    else text += `a buffer position:\nbuffer ${e8.markerBuffer(val.marker) ?? "(killed)"}, position ${(e8.markerPosition(val.marker) ?? 0) + 1}`;
+    e8.showHelp(text);
   },
 });
 
@@ -212,5 +212,5 @@ for (const [keys, command] of [
   ["C-x r +", "increment-register"],
   ["C-x r w", "window-configuration-to-register"],
 ] as const) {
-  gnista.bindKey(keys, command);
+  e8.bindKey(keys, command);
 }

@@ -1,0 +1,147 @@
+//! Coding systems and charsets as scripts use them, checked against what
+//! Emacs 30.2 gives (its buffer positions count from 1, scripts' from 0).
+
+use e8_core::Editor;
+use e8_script::Scripting;
+
+fn setup() -> (Editor, Scripting) {
+    let mut ed = Editor::new();
+    let scripting = Scripting::new(&mut ed).unwrap();
+    (ed, scripting)
+}
+
+fn eval(ed: &mut Editor, s: &Scripting, code: &str) -> String {
+    let got = s.eval_expression(ed, code).unwrap_or_else(|e| panic!("{code}: {e}"));
+    serde_json::from_str::<String>(&got).unwrap_or(got)
+}
+
+/// The bytes a script's byte string holds.
+const BYTES: &str = "(globalThis.bytes = (s) => [...s].map((c) => c.codePointAt(0)), true)";
+
+#[test]
+fn coding_systems_by_name_as_emacs_has_them() {
+    let (mut ed, s) = setup();
+    let got = eval(
+        &mut ed,
+        &s,
+        r#"JSON.stringify([
+          e8.codingSystemP("sjis"), e8.codingSystemP("klingon"), e8.checkCodingSystem("latin-1"), e8.checkCodingSystem(null) ?? null,
+          e8.codingSystemBase("gb18030"), e8.codingSystemAliases("utf-8"), e8.codingSystemAliases("utf-8-unix"),
+          e8.codingSystemType("japanese-shift-jis"), e8.codingSystemType("euc-jp"), e8.codingSystemMnemonic("koi8-u"),
+          e8.codingSystemGet("iso-latin-1", ":mime-charset"), e8.codingSystemEolType("utf-8"), e8.codingSystemEolType("utf-8-mac"),
+          e8.codingSystemEolType("binary"), e8.codingSystemChangeEolConversion("utf-8", "dos"),
+          e8.codingSystemChangeEolConversion("utf-8-dos", null), e8.codingSystemChangeTextConversion("utf-8-dos", "iso-latin-1"),
+        ])"#,
+    );
+    assert_eq!(
+        got,
+        r#"[true,false,"iso-latin-1","utf-8",null,"chinese-gb18030",["utf-8","mule-utf-8","cp65001"],["utf-8-unix","mule-utf-8-unix","cp65001-unix"],"shift-jis","iso-2022","У","iso-8859-1",["utf-8-unix","utf-8-dos","utf-8-mac"],2,0,"utf-8-dos","utf-8","iso-latin-1-dos"]"#
+            .replace(r#""iso-latin-1","utf-8",null"#, r#""iso-latin-1",null"#)
+    );
+    let err = s.eval_expression(&mut ed, r#"e8.conditionCase(() => e8.checkCodingSystem("klingon"), { "coding-system-error": (e) => e.data })"#).unwrap();
+    assert!(err.contains("klingon"), "{err}");
+}
+
+#[test]
+fn encoding_and_decoding_strings() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, BYTES);
+    let got = eval(
+        &mut ed,
+        &s,
+        r#"JSON.stringify([
+          bytes(e8.encodeCodingString("a€é", "iso-latin-1")), bytes(e8.encodeCodingString("aあ", "us-ascii")),
+          bytes(e8.encodeCodingString("aあ", "japanese-shift-jis")), bytes(e8.encodeCodingString("x", "utf-16")),
+          bytes(e8.encodeCodingString("中文", "chinese-gbk")), bytes(e8.encodeCodingString("a\n", "utf-8-mac")),
+          bytes(e8.encodeCodingString("é\n", "undecided-dos")), e8.variable("last-coding-system-used"),
+          e8.decodeCodingString("\x82\xa0", "japanese-shift-jis"), e8.decodeCodingString("a\r\nb\r\n", "utf-8"),
+          e8.decodeCodingString("\xfe\xff\0x", "utf-16"), e8.decodeCodingString("\x80", "windows-1252"),
+          bytes(e8.decodeCodingString("caf\xe9", "utf-8")).slice(3), bytes(e8.encodeCodingString(e8.decodeCodingString("caf\xe9", "utf-8"), "utf-8")),
+          e8.decodeCodingString("caf\xc3\xa9", "undecided"), e8.decodeCodingString("caf\xe9", "undecided"),
+        ])"#,
+    );
+    // Emacs: (97 32 233) (97 63) (97 130 160) (254 255 0 120) (214 208 206 196) (97 13) (195 169 13 10) "あ" "a\nb\n" "x" "€"
+    assert_eq!(
+        got,
+        r#"[[97,32,233],[97,63],[97,130,160],[254,255,0,120],[214,208,206,196],[97,13],[195,169,13,10],"utf-8-dos","あ","a\nb\n","x","€",[1114089],[99,97,102,233],"café","café"]"#
+    );
+}
+
+#[test]
+fn detecting_and_finding_codings() {
+    let (mut ed, s) = setup();
+    let got = eval(
+        &mut ed,
+        &s,
+        r#"JSON.stringify([
+          e8.detectCodingString("plain"), e8.detectCodingString("caf\xc3\xa9", true), e8.detectCodingString("caf\xe9", true),
+          e8.detectCodingString("\x1b$B$\"\x1b(B", true), e8.detectCodingString("\0\x01\x02", true), e8.detectCodingString("a\r\nb\r\n", true),
+          e8.findCodingSystemsString("abc"), e8.findCodingSystemsString("é€").slice(0, 1),
+          e8.findCodingSystemsString("é€").includes("iso-latin-1"), e8.findCodingSystemsString("é€").includes("windows-1252"),
+          e8.unencodableCharPosition(0, 3, "iso-latin-1", null, "a€b"), e8.unencodableCharPosition(0, 3, "iso-latin-1", 2, "a€€"),
+        ])"#,
+    );
+    // Emacs: (undecided) utf-8 iso-latin-1 iso-2022-7bit no-conversion undecided-dos (undecided) 1 (1 2)
+    assert_eq!(got, r#"[["undecided"],"utf-8","iso-latin-1","iso-2022-7bit","no-conversion","undecided-dos",["undecided"],["utf-8"],false,true,1,[1,2]]"#);
+    let got = eval(
+        &mut ed,
+        &s,
+        r#"(e8.insert("a€é"), JSON.stringify([e8.unencodableCharPosition(0, 3, "iso-latin-1"), e8.checkCodingSystemsRegion(0, 3, ["iso-latin-1", "utf-8"])]))"#,
+    );
+    // Emacs: 2 ((iso-latin-1 2)), counting from 1.
+    assert_eq!(got, r#"[1,[["iso-latin-1",1]]]"#);
+}
+
+#[test]
+fn encoding_a_region_leaves_raw_bytes_to_decode() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, BYTES);
+    let got = eval(
+        &mut ed,
+        &s,
+        r#"(e8.insert("é"), e8.encodeCodingRegion(0, 1, "utf-8"),
+          JSON.stringify([bytes(e8.bufferText()), e8.bufferSize(), e8.charCharset(e8.bufferText(0, 1))]))"#,
+    );
+    // Emacs: "\303\251", point-max 3, a raw byte.
+    assert_eq!(got, r#"[[1114051,1114025],2,"eight-bit"]"#);
+    assert_eq!(eval(&mut ed, &s, r#"(e8.decodeCodingRegion(0, 2, "utf-8"), e8.bufferText())"#), "é");
+    // A raw byte shows as Emacs shows it.
+    eval(&mut ed, &s, r#"e8.insert(e8.decodeCodingString("\xe9", "utf-8"))"#);
+    let row = &ed.window_rows(1, true)[0];
+    let shown: String = e8_core::display::row_glyphs(row, 8).iter().map(|g| g.text.as_str()).collect();
+    assert_eq!(shown, "é\\351");
+}
+
+#[test]
+fn charsets_and_code_points() {
+    let (mut ed, s) = setup();
+    let got = eval(
+        &mut ed,
+        &s,
+        r#"JSON.stringify([
+          e8.charCharset("a"), e8.charCharset("é"), e8.charCharset("あ"), e8.charsetPriorityList(true),
+          e8.encodeChar("あ", "japanese-jisx0208"), e8.decodeChar("japanese-jisx0208", 0x2422), e8.encodeChar("中", "chinese-gb2312"),
+          e8.encodeChar("é", "iso-8859-1"), e8.encodeChar("é", "unicode"), e8.charsetp("japanese-jisx0208"), e8.charsetp("nope"),
+          e8.encodeChar("ｱ", "katakana-jisx0201"), e8.encodeChar("中", "big5"), e8.encodeChar("한", "korean-ksc5601"),
+          e8.decodeChar("ucs", 233), e8.charCharset("é", ["japanese-jisx0208", "iso-8859-1"]),
+        ])"#,
+    );
+    // Emacs: ascii unicode unicode (ascii) 9250 "あ" 22096 233 233 t nil 49 42148 18257 "é" iso-8859-1
+    assert_eq!(got, r#"["ascii","unicode","unicode",["ascii"],9250,"あ",22096,233,233,true,false,49,42148,18257,"é","iso-8859-1"]"#);
+}
+
+#[test]
+fn preferring_a_coding_system_puts_it_first_where_the_bytes_fit() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, BYTES);
+    // Shift_JIS bytes for 日本, which are Latin-1 text too, and bytes that are not Shift_JIS.
+    let detect = r#"JSON.stringify([e8.detectCodingString("\x93\xfa\x96\x7b", true), e8.detectCodingString("\xff\xfe\xff", true)])"#;
+    assert_eq!(eval(&mut ed, &s, detect), r#"["iso-latin-1","iso-latin-1"]"#);
+    eval(&mut ed, &s, r#"e8.setCodingSystemPriority("japanese-shift-jis")"#);
+    assert_eq!(eval(&mut ed, &s, detect), r#"["japanese-shift-jis","iso-latin-1"]"#);
+    assert_eq!(
+        eval(&mut ed, &s, "JSON.stringify(e8.codingSystemPriorityList())"),
+        r#"["japanese-shift-jis","utf-8","iso-2022-7bit","iso-latin-1","iso-2022-jp","undecided"]"#
+    );
+    assert_eq!(eval(&mut ed, &s, "JSON.stringify(e8.codingSystemPriorityList(true))"), r#"["japanese-shift-jis"]"#);
+}

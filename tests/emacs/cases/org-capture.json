@@ -10,7 +10,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",
@@ -38,7 +38,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",
@@ -67,7 +67,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",
@@ -96,7 +96,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",
@@ -124,7 +124,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",
@@ -152,7 +152,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",
@@ -180,7 +180,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-capture.org",
+    "visit": "e8-capture.org",
     "capture_templates": [
       [
         "t",

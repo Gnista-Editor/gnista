@@ -18,16 +18,16 @@ const COLOURS: [string, string, string][] = [
 ];
 
 for (const [name, normal, bright] of COLOURS) {
-  gnista.defineFace({ name: `ansi-color-${name}`, doc: `ANSI ${name}.`, attributes: { foreground: normal } });
-  gnista.defineFace({ name: `ansi-color-bright-${name}`, doc: `ANSI bright ${name}.`, attributes: { foreground: bright } });
-  gnista.defineFace({ name: `ansi-color-bg-${name}`, doc: `ANSI ${name} as a background.`, attributes: { background: normal } });
-  gnista.defineFace({ name: `ansi-color-bg-bright-${name}`, doc: `ANSI bright ${name} as a background.`, attributes: { background: bright } });
+  e8.defineFace({ name: `ansi-color-${name}`, doc: `ANSI ${name}.`, attributes: { foreground: normal } });
+  e8.defineFace({ name: `ansi-color-bright-${name}`, doc: `ANSI bright ${name}.`, attributes: { foreground: bright } });
+  e8.defineFace({ name: `ansi-color-bg-${name}`, doc: `ANSI ${name} as a background.`, attributes: { background: normal } });
+  e8.defineFace({ name: `ansi-color-bg-bright-${name}`, doc: `ANSI bright ${name} as a background.`, attributes: { background: bright } });
 }
-gnista.defineFace({ name: "ansi-color-bold", doc: "ANSI bold.", attributes: { bold: true } });
-gnista.defineFace({ name: "ansi-color-italic", doc: "ANSI italic.", attributes: { italic: true } });
-gnista.defineFace({ name: "ansi-color-underline", doc: "ANSI underline.", attributes: { underline: true } });
+e8.defineFace({ name: "ansi-color-bold", doc: "ANSI bold.", attributes: { bold: true } });
+e8.defineFace({ name: "ansi-color-italic", doc: "ANSI italic.", attributes: { italic: true } });
+e8.defineFace({ name: "ansi-color-underline", doc: "ANSI underline.", attributes: { underline: true } });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "ansi-color-for-comint-mode",
   doc: "What comint does with ANSI escape sequences in output: t colours the text, filter removes them, nil leaves them.",
   value: true,
@@ -45,8 +45,8 @@ interface Rendition {
 /** A colour from the 256-colour palette or as red, green and blue, as a face made for it. */
 function colourFace(rgb: string, background: boolean): string {
   const name = `ansi-color-${background ? "bg-" : ""}rgb-${rgb.slice(1)}`;
-  if (gnista.faceInfo(name) === undefined) {
-    gnista.defineFace({ name, doc: `The colour ${rgb}${background ? " as a background" : ""}.`, attributes: background ? { background: rgb } : { foreground: rgb } });
+  if (e8.faceInfo(name) === undefined) {
+    e8.defineFace({ name, doc: `The colour ${rgb}${background ? " as a background" : ""}.`, attributes: background ? { background: rgb } : { foreground: rgb } });
   }
   return name;
 }
@@ -101,7 +101,7 @@ const faces = (r: Rendition): string[] =>
   [r.bold && "ansi-color-bold", r.italic && "ansi-color-italic", r.underline && "ansi-color-underline", r.fg, r.bg].filter((f): f is string => Boolean(f));
 
 /** Each buffer's rendition, and where an escape sequence not yet ended starts, as ansi-color-context-region. */
-const contexts = new PerBuffer<{ rendition: Rendition; pending?: gnista.Marker }>();
+const contexts = new PerBuffer<{ rendition: Rendition; pending?: e8.Marker }>();
 
 /**
  * Colours the text from start to end by the escape sequences in it, and
@@ -110,26 +110,26 @@ const contexts = new PerBuffer<{ rendition: Rendition; pending?: gnista.Marker }
  * region, and an escape sequence cut off at the end is finished next time.
  */
 export function applyOnRegion(startIn: number, end: number, filter = false): void {
-  const buffer = gnista.bufferName();
+  const buffer = e8.bufferName();
   const context = contexts.get(buffer) ?? { rendition: { bold: false, italic: false, underline: false } };
   contexts.set(buffer, context);
   let start = startIn;
   if (context.pending !== undefined) {
-    start = Math.min(start, gnista.markerPosition(context.pending) ?? start);
-    gnista.deleteMarker(context.pending);
+    start = Math.min(start, e8.markerPosition(context.pending) ?? start);
+    e8.deleteMarker(context.pending);
     context.pending = undefined;
   }
-  const endMarker = gnista.makeMarker(end);
+  const endMarker = e8.makeMarker(end);
   let runStart = start;
   let p = start;
   const paint = (from: number, to: number) => {
     const list = faces(context.rendition);
-    if (!filter && to > from && list.length > 0) gnista.putTextProperty(from, to, "face", list.length === 1 ? list[0]! : list);
+    if (!filter && to > from && list.length > 0) e8.putTextProperty(from, to, "face", list.length === 1 ? list[0]! : list);
   };
-  gnista.letBind({ "inhibit-read-only": true }, () => {
+  e8.letBind({ "inhibit-read-only": true }, () => {
     for (;;) {
-      const limit = gnista.markerPosition(endMarker)!;
-      const text = gnista.bufferText(p, limit);
+      const limit = e8.markerPosition(endMarker)!;
+      const text = e8.bufferText(p, limit);
       const esc = text.indexOf("\x1b");
       if (esc < 0) break;
       const at = p + [...text.slice(0, esc)].length;
@@ -138,19 +138,19 @@ export function applyOnRegion(startIn: number, end: number, filter = false): voi
         // Cut off at the end: finish it with the next output.
         if (/^\x1b(\[[\x30-\x3f]*[\x20-\x2f]*)?$/.test(text.slice(esc))) {
           paint(runStart, at);
-          context.pending = gnista.makeMarker(at);
-          gnista.deleteMarker(endMarker);
+          context.pending = e8.makeMarker(at);
+          e8.deleteMarker(endMarker);
           return;
         }
         p = at + 1;
         continue;
       }
       paint(runStart, at);
-      gnista.deleteRegion(at, at + m[0].length);
+      e8.deleteRegion(at, at + m[0].length);
       if (m[3] === "m") update(context.rendition, m[1] === "" ? [] : m[1]!.split(";").map((x) => Number(x) || 0));
       runStart = p = at;
     }
-    paint(runStart, gnista.markerPosition(endMarker)!);
+    paint(runStart, e8.markerPosition(endMarker)!);
   });
-  gnista.deleteMarker(endMarker);
+  e8.deleteMarker(endMarker);
 }

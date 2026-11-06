@@ -1,4 +1,4 @@
-;;; record.el --- Record what icomplete shows, for Gnista's oracle  -*- lexical-binding: t -*-
+;;; record.el --- Record what icomplete shows, for E8's oracle  -*- lexical-binding: t -*-
 
 ;; Batch Emacs reads the minibuffer from standard input, so icomplete never
 ;; runs there.  This runs in an interactive Emacs on a terminal instead, fed
@@ -11,7 +11,7 @@
 ;; of icomplete's modes on.  After <f5> and after each of its `keys', it
 ;; records the minibuffer's input and what icomplete shows before the prompt
 ;; and after the input, or the answer once the prompt has closed, into
-;; golden.json.  GNISTA_ORACLE_DIR, if set, is used instead of this file's
+;; golden.json.  E8_ORACLE_DIR, if set, is used instead of this file's
 ;; directory, as the fuzzer does.
 
 (require 'icomplete)
@@ -23,7 +23,7 @@
       inhibit-message nil)
 
 (defvar ic-dir (file-name-as-directory
-                (or (getenv "GNISTA_ORACLE_DIR")
+                (or (getenv "E8_ORACLE_DIR")
                     (file-name-directory (or load-file-name buffer-file-name)))))
 (defvar ic-files-dir (expand-file-name "../../../target/icomplete-files/" (file-name-directory (or load-file-name buffer-file-name))))
 (defvar ic-cases (append (json-read-file (expand-file-name "cases.json" ic-dir)) nil))

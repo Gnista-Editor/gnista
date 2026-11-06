@@ -1,16 +1,16 @@
-// An example theme, as a package that does not ship with Gnista: what a
-// theme is, for writing one, and the theme Gnista's own tests load. A theme
+// An example theme, as a package that does not ship with E8: what a
+// theme is, for writing one, and the theme E8's own tests load. A theme
 // is a package named NAME-theme along load-path, which deftheme names,
 // customThemeSetFaces gives its faces and provideTheme announces;
 // load-theme loads and enables it, and disable-theme takes it back:
 //
-//   gnista.call("load-theme", "example", true);
+//   e8.call("load-theme", "example", true);
 //
 // Its colours are a dusk of slate and amber, chosen for these tests; a
 // theme to use, such as Nord, is a package of its own
-// (gnista.usePackage("Gnista-Editor/gnista-nord-theme")).
+// (e8.usePackage("e8-editor/e8-nord-theme")).
 //
-// Copyright (C) 2026 The Gnista contributors
+// Copyright (C) 2026 The E8 contributors
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the

@@ -1,13 +1,13 @@
-;;; annotations.el --- Record marginalia's annotations, for Gnista's oracle  -*- lexical-binding: t -*-
+;;; annotations.el --- Record marginalia's annotations, for E8's oracle  -*- lexical-binding: t -*-
 
 ;; emacs -Q --batch -l tests/emacs/completion/annotations.el
 ;;
 ;; Annotates a command, a variable, a face, a buffer and a file that
-;; Gnista's test makes the same, with marginalia-field-width 40, and writes
+;; E8's test makes the same, with marginalia-field-width 40, and writes
 ;; the annotations, without their properties, into annotations.json.
 
 (require 'json)
-(defvar an-elpa (file-name-as-directory (or (getenv "GNISTA_ELPA") (expand-file-name "~/.emacs.d/elpaca/repos"))))
+(defvar an-elpa (file-name-as-directory (or (getenv "E8_ELPA") (expand-file-name "~/.emacs.d/elpaca/repos"))))
 (add-to-list 'load-path (expand-file-name "marginalia" an-elpa))
 (require 'marginalia)
 (defvar an-dir (file-name-directory (or load-file-name buffer-file-name)))
@@ -20,10 +20,10 @@
 (defvar an-test-list '(1 2 3) "A list.")
 (defvar an-api-key "secret" "Not to be shown.")
 (defface an-test-face '((t :weight bold)) "A face for the test.")
-(make-directory "/tmp/gnista-marginalia" t)
-(with-temp-file "/tmp/gnista-marginalia/notes.txt" (insert "hello"))
-(set-file-times "/tmp/gnista-marginalia/notes.txt" (encode-time 0 4 3 2 1 2020))
-(with-current-buffer (find-file-noselect "/tmp/gnista-marginalia/notes.txt") (fundamental-mode))
+(make-directory "/tmp/e8-marginalia" t)
+(with-temp-file "/tmp/e8-marginalia/notes.txt" (insert "hello"))
+(set-file-times "/tmp/e8-marginalia/notes.txt" (encode-time 0 4 3 2 1 2020))
+(with-current-buffer (find-file-noselect "/tmp/e8-marginalia/notes.txt") (fundamental-mode))
 
 (let ((marginalia-field-width 40)
       (out nil))
@@ -31,7 +31,7 @@
                (variable "an-test-variable") (variable "an-test-string") (variable "an-test-list") (variable "an-api-key")
                (face "an-test-face")
                (buffer "notes.txt")
-               (file "/tmp/gnista-marginalia/notes.txt")))
+               (file "/tmp/e8-marginalia/notes.txt")))
     (let* ((fn (intern (format "marginalia-annotate-%s" (car c))))
            (ann (funcall fn (cadr c))))
       (push `((category . ,(symbol-name (car c))) (candidate . ,(cadr c)) (annotation . ,(and ann (substring-no-properties ann)))) out)))

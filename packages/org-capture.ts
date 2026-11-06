@@ -1,7 +1,7 @@
 // Capture, after Emacs's org-capture.el: a template's entry goes into its target
 // file, which shows narrowed to it in a window of its own until C-c C-c
 // files it or C-c C-k takes it away. Emacs captures in an indirect buffer;
-// Gnista narrows the target buffer itself.
+// E8 narrows the target buffer itself.
 
 import { alignTags, formatTimestamp, type Heading, headings, parseHeading, subtreeRegion, today } from "org";
 import { clockIn, clockOut, runningEntry } from "org-clock";
@@ -9,7 +9,7 @@ import { findDateCreate } from "org-datetree";
 import { lineAt, orgMks } from "org-macs";
 import { charCount } from "subr";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-capture-templates",
   doc:
     "The capture templates: lists of a key, a description, the type (entry), a target such as " +
@@ -17,23 +17,23 @@ gnista.defineVariable({
     '["file+olp+datetree", NAME, HEADING...], the template text, and options such as ":tree-type", "week".',
   value: [],
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-default-notes-file",
   doc: "The file capture templates with an empty file name file into.",
   value: "~/.notes",
 });
 
-type CaptureTemplate = [string, string, string, string[], string, ...gnista.Value[]];
+type CaptureTemplate = [string, string, string, string[], string, ...e8.Value[]];
 
 /** The templates, or Org's one default template if there are none. */
 function captureTemplates(): CaptureTemplate[] {
-  const value = gnista.variable("org-capture-templates");
+  const value = e8.variable("org-capture-templates");
   if (Array.isArray(value) && value.length > 0) return value as unknown as CaptureTemplate[];
   return [["t", "Task", "entry", ["file+headline", "", "Tasks"], "* TODO %?\n  %u\n  %a"]];
 }
 
 /** A template's option, as its properties plist gives it. */
-function option(t: CaptureTemplate, name: string): gnista.Value | undefined {
+function option(t: CaptureTemplate, name: string): e8.Value | undefined {
   const rest = t.slice(5);
   for (let i = 0; i + 1 < rest.length; i += 2) if (rest[i] === name) return rest[i + 1];
   return undefined;
@@ -49,20 +49,20 @@ interface Context {
 
 /** A link to point's place, as org-store-link makes one for %a: the heading in an Org file, else the line. */
 function annotation(): string {
-  const file = gnista.bufferFileName();
+  const file = e8.bufferFileName();
   if (file === undefined) return "";
-  const path = gnista.abbreviateFileName(file);
-  if (gnista.derivedModeP("org-mode")) {
-    const h = headings().filter((x) => x.start <= gnista.point()).at(-1);
+  const path = e8.abbreviateFileName(file);
+  if (e8.derivedModeP("org-mode")) {
+    const h = headings().filter((x) => x.start <= e8.point()).at(-1);
     return h ? `[[file:${path}::*${h.title}][${h.title}]]` : `[[file:${path}]]`;
   }
-  const line = gnista.lineText(lineAt()).trim();
+  const line = e8.lineText(lineAt()).trim();
   return line === "" ? `[[file:${path}]]` : `[[file:${path}::${line}]]`;
 }
 
 /**
  * A template's text with its escapes filled in, as org-capture-fill-template
- * does for the ones Gnista knows: dates (%t, %T, %u, %U), the region (%i),
+ * does for the ones E8 knows: dates (%t, %T, %u, %U), the region (%i),
  * a link back (%a), tags asked for (%^g) and %%; and where %? puts the
  * cursor. Blank lines go from its start, and blanks from its end.
  */
@@ -104,7 +104,7 @@ function fillTemplate(template: string, context: Context = { annotation: "", ini
       case "^":
         if (template[i + 1] === "g" || template[i + 1] === "G") {
           i++;
-          const answer = gnista.completingRead("Tags: ", context.tags, { history: "org-tags-history" });
+          const answer = e8.completingRead("Tags: ", context.tags, { history: "org-tags-history" });
           const tags = answer.split(/[ \t]*:[ \t]*/).filter((t) => t !== "").join(":");
           if (tags !== "") {
             if (!text.endsWith(":")) text += ":";
@@ -137,12 +137,12 @@ let capturing:
   | {
     buffer: string;
     from: string;
-    point: gnista.Marker;
+    point: e8.Marker;
     level: number;
     modified: boolean;
     /** Whether the capture started a clock, and the clock it stopped, to start again with :clock-resume. */
     clocked?: boolean;
-    interrupted?: { buffer: string; marker: gnista.Marker };
+    interrupted?: { buffer: string; marker: e8.Marker };
     resume?: boolean;
   }
   | undefined;
@@ -155,28 +155,28 @@ function captureWith(key: string): void {
   const t = captureTemplates().find((x) => x[0] === key);
   if (!t) throw new Error(`No capture template referred to by "${key}" keys`);
   const [, , type, target, template] = t;
-  if (type !== "entry") throw new Error(`Gnista captures only entries, not ${type}`);
+  if (type !== "entry") throw new Error(`E8 captures only entries, not ${type}`);
   if (capturing) throw new Error("A capture is already under way: C-c C-c or C-c C-k finishes it");
-  const file = target[1] === "" || target[1] === undefined ? String(gnista.variable("org-default-notes-file") ?? "~/.notes") : target[1];
-  const from = gnista.windowBuffer() ?? "";
+  const file = target[1] === "" || target[1] === undefined ? String(e8.variable("org-default-notes-file") ?? "~/.notes") : target[1];
+  const from = e8.windowBuffer() ?? "";
   // A marker, as the buffer the capture came from stays editable below it.
-  const point = gnista.makeMarker(gnista.point());
-  const mark = gnista.mark();
-  const initial = gnista.variable("mark-active") === true && mark !== undefined
-    ? gnista.bufferSubstringNoProperties(Math.min(mark, gnista.point()), Math.max(mark, gnista.point()))
+  const point = e8.makeMarker(e8.point());
+  const mark = e8.mark();
+  const initial = e8.variable("mark-active") === true && mark !== undefined
+    ? e8.bufferSubstringNoProperties(Math.min(mark, e8.point()), Math.max(mark, e8.point()))
     : "";
   const link = annotation();
-  const buffer = gnista.findFileNoselect(file);
-  const modified = gnista.withCurrentBuffer(buffer, () => gnista.bufferModified());
-  const tags = gnista.withCurrentBuffer(buffer, () => [...new Set(headings().flatMap((h) => h.tags))]);
+  const buffer = e8.findFileNoselect(file);
+  const modified = e8.withCurrentBuffer(buffer, () => e8.bufferModified());
+  const tags = e8.withCurrentBuffer(buffer, () => [...new Set(headings().flatMap((h) => h.tags))]);
   const filled = fillTemplate(template, { annotation: link, initial, tags });
-  const placed = gnista.withCurrentBuffer(buffer, () => {
-    gnista.widen();
+  const placed = e8.withCurrentBuffer(buffer, () => {
+    e8.widen();
     let level = 1;
     /** The heading with this title under the one at `under`, as org-find-olp looks for each. */
     const child = (title: string, under: Heading | undefined): Heading | undefined => {
       const all = headings();
-      const [start, end] = under === undefined ? [0, gnista.bufferSize()] : subtreeRegion(all, all.findIndex((x) => x.start === under.start));
+      const [start, end] = under === undefined ? [0, e8.bufferSize()] : subtreeRegion(all, all.findIndex((x) => x.start === under.start));
       const level = under === undefined ? Math.min(...all.map((h) => h.level)) : under.level + 1;
       return all.find((h) => h.start >= start && h.start < end && h.title === title && (under === undefined ? true : h.level === level));
     };
@@ -185,7 +185,7 @@ function captureWith(key: string): void {
       let h: Heading | undefined;
       path.forEach((title, n) => {
         const found = child(title, h);
-        if (!found) gnista.signal("error", `Heading not found on level ${n + 1}: ${title}`);
+        if (!found) e8.signal("error", `Heading not found on level ${n + 1}: ${title}`);
         h = found;
       });
       return h;
@@ -194,36 +194,36 @@ function captureWith(key: string): void {
     const under = (h: Heading) => {
       const all = headings();
       level = h.level + 1;
-      gnista.gotoChar(subtreeRegion(all, all.findIndex((x) => x.start === h.start))[1]);
+      e8.gotoChar(subtreeRegion(all, all.findIndex((x) => x.start === h.start))[1]);
     };
     if (target[0] === "file+headline") {
       const name = target[2] ?? "";
       let h = headings().find((x) => x.title === name);
       if (!h) {
-        gnista.gotoChar(gnista.bufferSize());
-        if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
-        gnista.insert(`* ${name}\n`);
+        e8.gotoChar(e8.bufferSize());
+        if (e8.point() !== e8.lineStart(lineAt())) e8.insert("\n");
+        e8.insert(`* ${name}\n`);
         h = headings().find((x) => x.title === name) as Heading;
       }
       under(h);
     } else if (target[0] === "file+olp") {
       const h = olp(target.slice(2));
       if (h) under(h);
-      else gnista.gotoChar(gnista.bufferSize());
+      else e8.gotoChar(e8.bufferSize());
     } else if (target[0] === "file+olp+datetree") {
       const parent = olp(target.slice(2));
       const all = headings();
-      const [start, end] = parent === undefined ? [0, gnista.bufferSize()] : subtreeRegion(all, all.findIndex((x) => x.start === parent.start));
+      const [start, end] = parent === undefined ? [0, e8.bufferSize()] : subtreeRegion(all, all.findIndex((x) => x.start === parent.start));
       const grouping = option(t, ":tree-type");
       const now = today();
       const at = findDateCreate(now, grouping === "week" ? "week" : grouping === "month" ? "month" : "day", parent === undefined ? 1 : parent.level + 1, start, end);
       under(headings().find((h) => h.start === at) as Heading);
     } else if (target[0] === "file") {
-      gnista.gotoChar(gnista.bufferSize());
+      e8.gotoChar(e8.bufferSize());
     } else {
-      throw new Error(`Gnista does not capture to ${target[0]} targets`);
+      throw new Error(`E8 does not capture to ${target[0]} targets`);
     }
-    if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
+    if (e8.point() !== e8.lineStart(lineAt())) e8.insert("\n");
     // The template as a subtree at the target's level, as org-paste-subtree puts it.
     const first = /^(\*+) /m.exec(filled.text)?.[1].length ?? level;
     const shift = level - first;
@@ -242,41 +242,41 @@ function captureWith(key: string): void {
         return out;
       })
       .join("\n");
-    const beg = gnista.point();
-    gnista.insert(leveled);
-    const end = gnista.point();
+    const beg = e8.point();
+    e8.insert(leveled);
+    const end = e8.point();
     for (let l = lineAt(beg); l < lineAt(end); l++) {
       const h = parseHeading(l);
       if (h && h.tagsAt !== undefined) alignTags(l);
     }
-    gnista.message(`Clipboard pasted as level ${level} subtree`);
-    const endPos = gnista.point();
-    gnista.narrowToRegion(beg, endPos === gnista.bufferSize() ? endPos : endPos - 1);
-    gnista.gotoChar(cursor === undefined ? beg : beg + cursor);
-    gnista.callWithPrefix(1, "org-capture-mode");
-    return { beg, end: endPos, level, cursor: gnista.point() };
+    e8.message(`Clipboard pasted as level ${level} subtree`);
+    const endPos = e8.point();
+    e8.narrowToRegion(beg, endPos === e8.bufferSize() ? endPos : endPos - 1);
+    e8.gotoChar(cursor === undefined ? beg : beg + cursor);
+    e8.callWithPrefix(1, "org-capture-mode");
+    return { beg, end: endPos, level, cursor: e8.point() };
   });
   capturing = { buffer, from, point, level: placed.level, modified };
   // :clock-in starts a clock on the entry, stopping one running, as org-capture does.
   const clockOption = option(t, ":clock-in");
   if (clockOption !== undefined && clockOption !== null && clockOption !== false) {
     const running = runningEntry();
-    if (running) capturing.interrupted = { buffer: running.buffer, marker: gnista.withCurrentBuffer(running.buffer, () => gnista.makeMarker(running.start)) };
+    if (running) capturing.interrupted = { buffer: running.buffer, marker: e8.withCurrentBuffer(running.buffer, () => e8.makeMarker(running.start)) };
     const resume = option(t, ":clock-resume");
     capturing.resume = resume !== undefined && resume !== null && resume !== false;
-    gnista.withCurrentBuffer(buffer, () => {
-      gnista.saveExcursion(() => {
-        gnista.gotoChar(placed.beg);
+    e8.withCurrentBuffer(buffer, () => {
+      e8.saveExcursion(() => {
+        e8.gotoChar(placed.beg);
         clockIn();
       });
     });
     capturing.clocked = true;
   }
   // The capture above, the buffer it came from below, as org-capture's windows are.
-  gnista.call("delete-other-windows");
-  gnista.splitWindow(undefined, "below");
-  gnista.setWindowBuffer(undefined, buffer);
-  gnista.gotoChar(placed.cursor);
+  e8.call("delete-other-windows");
+  e8.splitWindow(undefined, "below");
+  e8.setWindowBuffer(undefined, buffer);
+  e8.gotoChar(placed.cursor);
 }
 
 /** Back to the windows and point from before the capture. */
@@ -284,44 +284,44 @@ function endCapture(): void {
   const state = capturing;
   if (!state) throw new Error("This does not seem to be a capture buffer for Org mode");
   capturing = undefined;
-  gnista.withCurrentBuffer(state.buffer, () => {
-    gnista.widen();
-    gnista.callWithPrefix(-1, "org-capture-mode");
+  e8.withCurrentBuffer(state.buffer, () => {
+    e8.widen();
+    e8.callWithPrefix(-1, "org-capture-mode");
   });
-  gnista.call("delete-other-windows");
-  gnista.setWindowBuffer(undefined, state.from);
-  gnista.gotoChar(gnista.markerPosition(state.point) ?? gnista.point());
-  gnista.deleteMarker(state.point);
+  e8.call("delete-other-windows");
+  e8.setWindowBuffer(undefined, state.from);
+  e8.gotoChar(e8.markerPosition(state.point) ?? e8.point());
+  e8.deleteMarker(state.point);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org--capture-with",
   doc: "Capture with the template of the key given, as org-capture does once it has asked.",
   params: [{ name: "key", kind: "string", prompt: "Template key: " }],
   run: (key) => captureWith(key),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-capture",
   doc:
     "Capture a note, asking for one of org-capture-templates by its key in *Org Select*: its entry goes into its " +
     "target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.",
   run: () => {
     // As org-capture-select-template, Org's one default template when there are none.
-    const chosen = orgMks(captureTemplates() as unknown as gnista.Value[][], "Select a capture template\n=========================", "Template key: ", [
+    const chosen = orgMks(captureTemplates() as unknown as e8.Value[][], "Select a capture template\n=========================", "Template key: ", [
       ["C", "Customize org-capture-templates"],
       ["q", "Abort"],
     ]);
-    if (chosen === "q") gnista.userError("Abort");
+    if (chosen === "q") e8.userError("Abort");
     if (chosen === "C") {
-      gnista.call("describe-variable", "org-capture-templates");
+      e8.call("describe-variable", "org-capture-templates");
       return;
     }
-    captureWith(String((chosen as gnista.Value[])[0]));
+    captureWith(String((chosen as e8.Value[])[0]));
   },
 });
 
-const captureFinalize = gnista.defineCommand({
+const captureFinalize = e8.defineCommand({
   name: "org-capture-finalize",
   doc: "Finish the capture: the entry stays in its file, which is saved, and the windows go back to how they were.",
   run: () => {
@@ -331,62 +331,62 @@ const captureFinalize = gnista.defineCommand({
     if (state?.clocked) {
       clockOut(true);
       const interrupted = state.interrupted;
-      if (interrupted && state.resume && gnista.bufferList().includes(interrupted.buffer)) {
-        gnista.withCurrentBuffer(interrupted.buffer, () => {
-          gnista.saveExcursion(() => {
-            gnista.gotoChar(gnista.markerPosition(interrupted.marker) ?? 0);
+      if (interrupted && state.resume && e8.bufferList().includes(interrupted.buffer)) {
+        e8.withCurrentBuffer(interrupted.buffer, () => {
+          e8.saveExcursion(() => {
+            e8.gotoChar(e8.markerPosition(interrupted.marker) ?? 0);
             clockIn();
           });
         });
-        gnista.message("Interrupted clock resumed");
+        e8.message("Interrupted clock resumed");
       }
-      if (interrupted) gnista.deleteMarker(interrupted.marker);
+      if (interrupted) e8.deleteMarker(interrupted.marker);
     }
     endCapture();
     if (buffer !== undefined) {
-      gnista.withCurrentBuffer(buffer, () => {
-        if (gnista.bufferFileName()) gnista.call("save-buffer");
+      e8.withCurrentBuffer(buffer, () => {
+        if (e8.bufferFileName()) e8.call("save-buffer");
       });
     }
   },
 });
 
-const captureKill = gnista.defineCommand({
+const captureKill = e8.defineCommand({
   name: "org-capture-kill",
   doc: "Abort the capture: the entry goes again, and the windows go back to how they were.",
   run: () => {
     const state = capturing;
     if (!state) throw new Error("This does not seem to be a capture buffer for Org mode");
     // The capture's clock goes with its entry, and the one it stopped starts again.
-    if (state.clocked && runningEntry()?.buffer === state.buffer) gnista.call("org-clock-cancel");
-    if (state.clocked && state.interrupted && state.resume && gnista.bufferList().includes(state.interrupted.buffer)) {
+    if (state.clocked && runningEntry()?.buffer === state.buffer) e8.call("org-clock-cancel");
+    if (state.clocked && state.interrupted && state.resume && e8.bufferList().includes(state.interrupted.buffer)) {
       const interrupted = state.interrupted;
-      gnista.withCurrentBuffer(interrupted.buffer, () => {
-        gnista.saveExcursion(() => {
-          gnista.gotoChar(gnista.markerPosition(interrupted.marker) ?? 0);
+      e8.withCurrentBuffer(interrupted.buffer, () => {
+        e8.saveExcursion(() => {
+          e8.gotoChar(e8.markerPosition(interrupted.marker) ?? 0);
           clockIn();
         });
       });
     }
     // The entry as it is now: what the narrowing shows, and the newline after it.
-    gnista.withCurrentBuffer(state.buffer, () => {
-      const [start, end] = [gnista.pointMin(), gnista.pointMax()];
-      gnista.widen();
+    e8.withCurrentBuffer(state.buffer, () => {
+      const [start, end] = [e8.pointMin(), e8.pointMax()];
+      e8.widen();
       // Killed, as org-capture-kill does, so it can be yanked back. Emacs
       // kills in the capture buffer, whose mark is its own.
-      const mark = gnista.mark();
-      gnista.setMark(start);
-      gnista.gotoChar(end < gnista.bufferSize() ? end + 1 : end);
-      gnista.call("kill-region");
-      gnista.setMark(mark ?? null);
-      if (!state.modified) gnista.setBufferModified(false);
+      const mark = e8.mark();
+      e8.setMark(start);
+      e8.gotoChar(end < e8.bufferSize() ? end + 1 : end);
+      e8.call("kill-region");
+      e8.setMark(mark ?? null);
+      if (!state.modified) e8.setBufferModified(false);
     });
     endCapture();
-    gnista.message("Capture aborted");
+    e8.message("Capture aborted");
   },
 });
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "org-capture-mode",
   lighter: " Cap",
   doc: "On in a buffer while a capture is under way in it: C-c C-c finishes the capture and C-c C-k aborts it.",

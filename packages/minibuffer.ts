@@ -6,7 +6,7 @@
 // them, with what is typed so far as its input.
 
 
-gnista.defineHook(
+e8.defineHook(
   "completion-at-point-functions",
   "Functions that say what completes the text at point: each gives [start, end, completions] or nil, the first that gives one winning.",
 );
@@ -21,9 +21,9 @@ function commonPrefix(strings: string[]): string {
 
 /** Puts a completion in place of the text from `start` to `end`, as completion-in-region does. */
 function replace(start: number, end: number, text: string): void {
-  gnista.deleteRegion(start, end);
-  gnista.gotoChar(start);
-  gnista.insert(text);
+  e8.deleteRegion(start, end);
+  e8.gotoChar(start);
+  e8.insert(text);
 }
 
 /**
@@ -32,16 +32,16 @@ function replace(start: number, end: number, text: string): void {
  * goes in if it is longer; otherwise the minibuffer asks.
  */
 export function completionInRegion(start: number, end: number, collection: string[]): boolean {
-  const typed = gnista.bufferText(start, end);
+  const typed = e8.bufferText(start, end);
   const matches = collection.filter((c) => c.startsWith(typed));
   const candidates = matches.length > 0 ? matches : collection;
   if (candidates.length === 0) {
-    gnista.message("No match");
+    e8.message("No match");
     return false;
   }
   if (candidates.length === 1) {
     replace(start, end, candidates[0]);
-    if (candidates[0] === typed) gnista.message("Sole completion");
+    if (candidates[0] === typed) e8.message("Sole completion");
     return true;
   }
   const prefix = commonPrefix(candidates);
@@ -49,30 +49,30 @@ export function completionInRegion(start: number, end: number, collection: strin
     replace(start, end, prefix);
     return true;
   }
-  const chosen = gnista.completingRead("Complete: ", candidates, { initial: matches.length > 0 ? typed : "" });
+  const chosen = e8.completingRead("Complete: ", candidates, { initial: matches.length > 0 ? typed : "" });
   if (chosen !== "") replace(start, end, chosen);
   return true;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "completion-at-point",
   doc:
     "Complete the text at point, from what completion-at-point-functions give: one completion goes in, or the part they share; " +
     "with several, the minibuffer asks which.",
   run: () => {
-    const found = gnista.runHookWithArgsUntilSuccess("completion-at-point-functions");
+    const found = e8.runHookWithArgsUntilSuccess("completion-at-point-functions");
     if (!Array.isArray(found) || found.length < 3) {
-      gnista.message("No completions at point");
+      e8.message("No completions at point");
       return;
     }
-    const [start, end, collection] = found as [number, number, gnista.Value];
+    const [start, end, collection] = found as [number, number, e8.Value];
     const table = typeof collection === "function" ? (collection as unknown as () => string[])() : collection;
     completionInRegion(start, end, Array.isArray(table) ? table.map(String) : []);
   },
 });
 
-gnista.defalias("complete-symbol", "completion-at-point");
-gnista.bindKey("C-M-i", "completion-at-point");
+e8.defalias("complete-symbol", "completion-at-point");
+e8.bindKey("C-M-i", "completion-at-point");
 
 
 // Completion for scripts that show it their own way, as vertico does: the
@@ -80,9 +80,9 @@ gnista.bindKey("C-M-i", "completion-at-point");
 // orderless does to completion-styles-alist, and the prompt's metadata,
 // as completion-metadata gives it.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "completion-styles-alist",
-  doc: "The completion styles there are, as [name, doc] pairs: those Gnista has built in and those packages add with defineCompletionStyle.",
+  doc: "The completion styles there are, as [name, doc] pairs: those E8 has built in and those packages add with defineCompletionStyle.",
   value: [
     ["basic", "Completion of the prefix before point and the suffix after point."],
     ["partial-completion", "Completion of multiple words, each one taken as a prefix."],
@@ -104,7 +104,7 @@ export interface CompletionField {
 /** What a completion style finds: the matches, and how to highlight one, as completion-lazy-hilit-fn. */
 export interface StyleMatches {
   completions: string[];
-  hilit?: (candidate: string) => string | gnista.PropertizedString;
+  hilit?: (candidate: string) => string | e8.PropertizedString;
 }
 
 /** A completion style a package adds, as an entry of completion-styles-alist. */
@@ -119,18 +119,18 @@ const scriptStyles = new Map<string, CompletionStyle>();
 /** Adds a completion style, for completion-styles to name, as an entry of completion-styles-alist. */
 export function defineCompletionStyle(name: string, style: CompletionStyle): void {
   scriptStyles.set(name, style);
-  const alist = gnista.variable("completion-styles-alist");
-  const entries = Array.isArray(alist) ? (alist as gnista.Value[][]).filter((e) => e[0] !== name) : [];
-  gnista.setDefault("completion-styles-alist", [...entries, [name, style.doc]]);
+  const alist = e8.variable("completion-styles-alist");
+  const entries = Array.isArray(alist) ? (alist as e8.Value[][]).filter((e) => e[0] !== name) : [];
+  e8.setDefault("completion-styles-alist", [...entries, [name, style.doc]]);
 }
 
 /** The metadata of a completion table, as Emacs's completion metadata: what kind of things it completes and how to show them. */
 export interface CompletionMetadata {
   category?: string;
   /** Text to show after a candidate. */
-  annotationFunction?: (candidate: string) => string | gnista.PropertizedString | undefined;
+  annotationFunction?: (candidate: string) => string | e8.PropertizedString | undefined;
   /** Each candidate with text to show before and after it, as [candidate, prefix, suffix]. */
-  affixationFunction?: (candidates: string[]) => [string, string | gnista.PropertizedString, string | gnista.PropertizedString][];
+  affixationFunction?: (candidates: string[]) => [string, string | e8.PropertizedString, string | e8.PropertizedString][];
   /** A candidate's group title, or with `transform` the candidate as shown in its group. */
   groupFunction?: (candidate: string, transform: boolean) => string | undefined;
   /** How to order the candidates for showing them. */
@@ -150,15 +150,15 @@ const metadataByDepth = new Map<number, CompletionMetadata>();
  */
 export function completingReadWithMetadata(
   prompt: string,
-  collection: gnista.CompletionTable,
-  options: gnista.CompletingReadOptions & { metadata?: CompletionMetadata } = {},
+  collection: e8.CompletionTable,
+  options: e8.CompletingReadOptions & { metadata?: CompletionMetadata } = {},
 ): string {
   const { metadata, ...rest } = options;
-  const depth = gnista.minibufferDepth() + 1;
+  const depth = e8.minibufferDepth() + 1;
   const old = metadataByDepth.get(depth);
   if (metadata) metadataByDepth.set(depth, { ...metadata, category: metadata.category ?? rest.category });
   try {
-    return gnista.completingRead(prompt, collection, { ...rest, category: rest.category ?? metadata?.category });
+    return e8.completingRead(prompt, collection, { ...rest, category: rest.category ?? metadata?.category });
   } finally {
     if (old) metadataByDepth.set(depth, old);
     else metadataByDepth.delete(depth);
@@ -167,24 +167,24 @@ export function completingReadWithMetadata(
 
 /** A property of the open prompt's metadata, as completion-metadata-get: marginalia advises it to give annotations by category. */
 export function completionMetadataGet<K extends keyof CompletionMetadata>(prop: K): CompletionMetadata[K] | undefined {
-  return gnista.funcall("completion-metadata-get", prop) as CompletionMetadata[K] | undefined;
+  return e8.funcall("completion-metadata-get", prop) as CompletionMetadata[K] | undefined;
 }
 
-gnista.defun("completion-metadata-get", (prop: string) => {
-  const own = metadataByDepth.get(gnista.minibufferDepth());
-  if (prop === "category") return own?.category ?? gnista.minibufferInfo()?.category ?? undefined;
+e8.defun("completion-metadata-get", (prop: string) => {
+  const own = metadataByDepth.get(e8.minibufferDepth());
+  if (prop === "category") return own?.category ?? e8.minibufferInfo()?.category ?? undefined;
   return own?.[prop as keyof CompletionMetadata];
 });
 
 /** Highlights the part of CANDIDATE a built-in style matched, in completions-common-part, as completion-hilit-commonality does. */
-function builtinHilit(style: string, field: CompletionField, ignoreCase: boolean): ((candidate: string) => string | gnista.PropertizedString) | undefined {
+function builtinHilit(style: string, field: CompletionField, ignoreCase: boolean): ((candidate: string) => string | e8.PropertizedString) | undefined {
   const typed = field.before;
   if (typed === "") return undefined;
   const fold = (s: string) => (ignoreCase ? s.toLowerCase() : s);
   return (candidate) => {
     const at = style === "substring" ? fold(candidate).indexOf(fold(typed)) : fold(candidate).startsWith(fold(typed)) ? 0 : -1;
     if (at < 0) return candidate;
-    return gnista.concat(candidate.slice(0, at), gnista.propertize(candidate.slice(at, at + typed.length), { face: "completions-common-part" }), candidate.slice(at + typed.length));
+    return e8.concat(candidate.slice(0, at), e8.propertize(candidate.slice(at, at + typed.length), { face: "completions-common-part" }), candidate.slice(at + typed.length));
   };
 }
 
@@ -194,7 +194,7 @@ function builtinHilit(style: string, field: CompletionField, ignoreCase: boolean
  * highlight them; undefined with no prompt that completes.
  */
 export function completionAllCompletions(point?: number): (StyleMatches & { base: string; style?: string; field: CompletionField }) | undefined {
-  let field = gnista.minibufferCompletionField(point);
+  let field = e8.minibufferCompletionField(point);
   if (!field) return undefined;
   const boundaries = completionMetadataGet("boundaries");
   if (boundaries) {
@@ -203,13 +203,13 @@ export function completionAllCompletions(point?: number): (StyleMatches & { base
     const cut = Math.min(n, field.before.length);
     field = { ...field, base: field.base + whole.slice(0, n), before: field.before.slice(cut), after: n > field.before.length ? field.after.slice(n - field.before.length) : field.after };
   }
-  const ignoreCase = gnista.minibufferInfo()?.ignoreCase ?? false;
-  for (const style of gnista.completionStyles()) {
+  const ignoreCase = e8.minibufferInfo()?.ignoreCase ?? false;
+  for (const style of e8.completionStyles()) {
     const own = scriptStyles.get(style);
     const found: StyleMatches | undefined = own
       ? own.all(field, ignoreCase)
       : (() => {
-          const completions = gnista.completionAllInStyle(style, field.before, field.after, field.names, ignoreCase);
+          const completions = e8.completionAllInStyle(style, field.before, field.after, field.names, ignoreCase);
           return completions ? { completions, hilit: builtinHilit(style, field, ignoreCase) } : undefined;
         })();
     if (found && found.completions.length > 0) return { ...found, base: field.base, style, field };
@@ -220,5 +220,5 @@ export function completionAllCompletions(point?: number): (StyleMatches & { base
 /** Whether INPUT is an answer the open prompt takes, as test-completion: the part after the table's boundaries one of its names. */
 export function testCompletion(input: string): boolean {
   const boundaries = completionMetadataGet("boundaries");
-  return gnista.testCompletion(boundaries ? input.slice(Math.min(boundaries(input), input.length)) : input);
+  return e8.testCompletion(boundaries ? input.slice(Math.min(boundaries(input), input.length)) : input);
 }

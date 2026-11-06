@@ -5,7 +5,7 @@
 // and settings.
 //
 // Copyright (C) 2024-2025 Charles Y. Choi
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -16,7 +16,7 @@ import { checkboxLabel, customizeVariable, unicodeDbGet } from "casual-lib";
 import { transientArgs, transientDefinePrefix, type Group, type SuffixSpec } from "transient";
 import { truthy } from "subr";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "casual-dired-listing-switches",
   doc: 'The GNU ls arguments the "Sort By" menu starts with; -l is always given.',
   value: ["--all", "--human-readable", "--group-directories-first"],
@@ -37,13 +37,13 @@ const unicodeGet = (key: string): string => unicodeDbGet(key, unicodeDb);
 /** BUF with a space before it when TYPESET, as casual-dired-format-arrow. */
 const formatArrow = (buf: string, typeset: boolean): string => (typeset ? ` ${buf}` : buf);
 
-const useUnicode = (): boolean => truthy(gnista.variable("casual-lib-use-unicode"));
+const useUnicode = (): boolean => truthy(e8.variable("casual-lib-use-unicode"));
 
 /** Whether the buffer is the one find-lisp-find-dired makes, as casual-dired-lisp-dired-buffer-p. */
-const lispDiredBufferP = (): boolean => gnista.derivedModeP("dired-mode") && gnista.bufferName() === "*Find Lisp Dired*";
+const lispDiredBufferP = (): boolean => e8.derivedModeP("dired-mode") && e8.bufferName() === "*Find Lisp Dired*";
 
 /** Whether to show the "Sort By" menu, which needs GNU ls, as casual-dired-show-sort-by-tmenu-p. */
-const showSortByP = (): boolean => gnista.variable("dired-use-ls-dired") === true && !lispDiredBufferP();
+const showSortByP = (): boolean => e8.variable("dired-use-ls-dired") === true && !lispDiredBufferP();
 
 const nav = (key: string, arrow: string, what: string, command: string, more: object = {}): SuffixSpec => [
   key,
@@ -54,11 +54,11 @@ const nav = (key: string, arrow: string, what: string, command: string, more: ob
 
 const quitRow = (...items: SuffixSpec[]): Group => ({ class: "row", items: ["casual-lib-quit-one", ...items] });
 
-const findDiredRegexp = gnista.defineCommand({
+const findDiredRegexp = e8.defineCommand({
   name: "casual-dired-find-dired-regexp",
   doc: "Recursively find file names in the current directory matching a regexp, with find-lisp-find-dired.",
   params: [{ name: "regexp", prompt: "Find filenames with regex: " }],
-  run: (regexp: string) => gnista.call("find-lisp-find-dired" as gnista.CommandName, String(gnista.variable("default-directory")), regexp),
+  run: (regexp: string) => e8.call("find-lisp-find-dired" as e8.CommandName, String(e8.variable("default-directory")), regexp),
 });
 
 export const casualDiredTmenu = transientDefinePrefix("casual-dired-tmenu", {
@@ -80,7 +80,7 @@ export const casualDiredTmenu = transientDefinePrefix("casual-dired-tmenu", {
             ["w", "Copy Name", "dired-copy-filename-as-kill", { transient: false }],
             ["!", "Shell…", "dired-do-shell-command", { transient: false }],
             ["&", "Shell &… ", "dired-do-async-shell-command", { transient: false }],
-            [";", "Thumbnail", "image-dired-dired-toggle-marked-thumbs", { if: () => gnista.displayGraphicP(), transient: true }],
+            [";", "Thumbnail", "image-dired-dired-toggle-marked-thumbs", { if: () => e8.displayGraphicP(), transient: true }],
             ["W", "Browse", "browse-url-of-dired-file", { transient: false }],
           ],
         },
@@ -89,18 +89,18 @@ export const casualDiredTmenu = transientDefinePrefix("casual-dired-tmenu", {
           items: [
             ["s", "Sort By›", "casual-dired-sort-by-tmenu", { if: showSortByP, transient: true }],
             ["h", "Hide Details", "dired-hide-details-mode", {
-              description: () => checkboxLabel(gnista.variable("dired-hide-details-mode"), "Hide Details"),
+              description: () => checkboxLabel(e8.variable("dired-hide-details-mode"), "Hide Details"),
               ifNot: lispDiredBufferP,
               transient: true,
             }],
-            ["O", "Omit Mode", "dired-omit-mode", { description: () => checkboxLabel(gnista.variable("dired-omit-mode"), "Omit Mode"), transient: true }],
+            ["O", "Omit Mode", "dired-omit-mode", { description: () => checkboxLabel(e8.variable("dired-omit-mode"), "Omit Mode"), transient: true }],
             ["i", "Insert Subdir", "dired-maybe-insert-subdir", { ifNot: lispDiredBufferP, transient: true }],
             ["$", "Hide/Unhide Subdir", "dired-hide-subdir", { ifNot: lispDiredBufferP, transient: true }],
             ["k", "Kill (Hide) Line(s)", "dired-do-kill-lines", { transient: true }],
             ["g", "Revert", "revert-buffer", { transient: true }],
             ["f", "Filter by name…", findDiredRegexp],
             ["E", "Edit (wdired)", "wdired-change-to-wdired-mode"],
-            ["T", "Thumbnails…", "image-dired", { if: () => gnista.displayGraphicP() }],
+            ["T", "Thumbnails…", "image-dired", { if: () => e8.displayGraphicP() }],
             ["d", "Dired…", "dired"],
           ],
         },
@@ -342,8 +342,8 @@ function modeNameFromSort(criteria: string, reverse: boolean): string {
 
 /** Sorts the Dired buffer by CRITERIA with GNU ls's ARGS, as casual-dired--sort-by. */
 export function sortBy(criteria: string, args?: string[]): void {
-  if (truthy(gnista.variable("dired-sort-inhibit"))) gnista.signal("error", "Cannot sort this Dired buffer");
-  const listing = gnista.variable("casual-dired-listing-switches");
+  if (truthy(e8.variable("dired-sort-inhibit"))) e8.signal("error", "Cannot sort this Dired buffer");
+  const listing = e8.variable("casual-dired-listing-switches");
   let list = ["-l", ...(args && args.length > 0 ? args : Array.isArray(listing) ? listing.map(String) : [])];
   const sorts: { [c: string]: [string, string[]] } = {
     name: ["Sorted by name", []],
@@ -356,15 +356,15 @@ export function sortBy(criteria: string, args?: string[]): void {
     size: ["Sorted by size", ["-S"]],
   };
   const [message, extra] = sorts[criteria] ?? ["Default sorted by name", []];
-  gnista.message(message);
+  e8.message(message);
   list = [...extra, ...list];
-  gnista.call("dired-sort-other" as gnista.CommandName, list.join(" "));
-  gnista.makeLocalVariable("mode-name");
-  gnista.setVariable("mode-name", modeNameFromSort(criteria, list.includes("--reverse")));
+  e8.call("dired-sort-other" as e8.CommandName, list.join(" "));
+  e8.makeLocalVariable("mode-name");
+  e8.setVariable("mode-name", modeNameFromSort(criteria, list.includes("--reverse")));
 }
 
 const sortCommand = (criteria: string, label: string) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name: `casual-dired--sort-by-${criteria}`,
     doc: `Sort directory by ${label}, passing GNU ls the arguments of the Sort By menu.`,
     run: () => sortBy(criteria, transientArgs("casual-dired-sort-by-tmenu")),
@@ -412,17 +412,17 @@ transientDefinePrefix("casual-dired-sort-by-tmenu", {
 // Settings, after casual-dired-settings.el.
 
 const customize = (variable: string) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name: `casual-dired--customize-${variable}`,
     doc: `Customize ${variable}.`,
     run: () => customizeVariable(variable),
   });
 
-const about = gnista.defineCommand({
+const about = e8.defineCommand({
   name: "casual-dired-about",
   doc: "About Casual Dired.",
   run: () =>
-    gnista.message("Casual Dired: a Transient user interface for Dired, by Charles Choi (https://github.com/kickingvegas/casual), ported to Gnista."),
+    e8.message("Casual Dired: a Transient user interface for Dired, by Charles Choi (https://github.com/kickingvegas/casual), ported to E8."),
 });
 
 transientDefinePrefix("casual-dired-settings-tmenu", {
@@ -436,17 +436,17 @@ transientDefinePrefix("casual-dired-settings-tmenu", {
             ["r", "Revert Policy", customize("dired-auto-revert-buffer"), { transient: false }],
             ["t", "Target Directory", customize("dired-dwim-target"), { transient: false }],
             ["T", "Use System Trash Can", customize("delete-by-moving-to-trash"), {
-              description: () => checkboxLabel(gnista.variable("delete-by-moving-to-trash"), "Use System Trash Can"),
+              description: () => checkboxLabel(e8.variable("delete-by-moving-to-trash"), "Use System Trash Can"),
               transient: false,
             }],
             "casual-lib-customize-unicode",
             "casual-lib-customize-hide-navigation",
             ["R", "Rename via VC", customize("dired-vc-rename-file"), {
-              description: () => checkboxLabel(gnista.variable("dired-vc-rename-file"), "Rename via VC"),
+              description: () => checkboxLabel(e8.variable("dired-vc-rename-file"), "Rename via VC"),
               transient: false,
             }],
             ["v", "Visit Truename", customize("find-file-visit-truename"), {
-              description: () => checkboxLabel(gnista.variable("find-file-visit-truename"), "Visit Truename"),
+              description: () => checkboxLabel(e8.variable("find-file-visit-truename"), "Visit Truename"),
             }],
           ],
         },
@@ -466,11 +466,11 @@ transientDefinePrefix("casual-dired-settings-tmenu", {
           description: "wdired",
           items: [
             ["p", "Allow Changing Permissions", customize("wdired-allow-to-change-permissions"), {
-              description: () => checkboxLabel(gnista.variable("wdired-allow-to-change-permissions"), "Allow Changing Permissions"),
+              description: () => checkboxLabel(e8.variable("wdired-allow-to-change-permissions"), "Allow Changing Permissions"),
               transient: false,
             }],
             ["L", "Allow Redirecting Links", customize("wdired-allow-to-redirect-links"), {
-              description: () => checkboxLabel(gnista.variable("wdired-allow-to-redirect-links"), "Allow Redirecting Links"),
+              description: () => checkboxLabel(e8.variable("wdired-allow-to-redirect-links"), "Allow Redirecting Links"),
               transient: false,
             }],
           ],

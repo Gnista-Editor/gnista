@@ -4,7 +4,7 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-The kill ring kept to itself. Text killed or copied in Gnista never reached other programs, and `C-y` never saw what they copied; on the Mac, ⌘V inserted the clipboard's text but ⌘C and ⌘X did nothing. Emacs links the two with `select-enable-clipboard`, on by default: `kill-new` hands the text to `interprogram-cut-function`, and `current-kill` first takes in, through `interprogram-paste-function`, text another program put on the clipboard since Emacs last put text there. On the Mac, Emacs binds ⌘C, ⌘X and ⌘V (`s-c`, `s-x`, `s-v`) to `kill-ring-save`, `kill-region` and `yank`.
+The kill ring kept to itself. Text killed or copied in E8 never reached other programs, and `C-y` never saw what they copied; on the Mac, ⌘V inserted the clipboard's text but ⌘C and ⌘X did nothing. Emacs links the two with `select-enable-clipboard`, on by default: `kill-new` hands the text to `interprogram-cut-function`, and `current-kill` first takes in, through `interprogram-paste-function`, text another program put on the clipboard since Emacs last put text there. On the Mac, Emacs binds ⌘C, ⌘X and ⌘V (`s-c`, `s-x`, `s-v`) to `kill-ring-save`, `kill-region` and `yank`.
 
 ## Options considered
 
@@ -17,8 +17,8 @@ Option 2. `select.rs` holds a `Clipboard` trait that a front end implements; `ki
 
 ## Consequences
 
-Copying and pasting between Gnista and other programs work as in Emacs, by Emacs's keys and the Mac's. Not yet: the primary selection on X11 (`select-enable-primary`), `save-interprogram-paste-before-kill`, and the terminal writing the clipboard.
+Copying and pasting between E8 and other programs work as in Emacs, by Emacs's keys and the Mac's. Not yet: the primary selection on X11 (`select-enable-primary`), `save-interprogram-paste-before-kill`, and the terminal writing the clipboard.
 
 ## Dependencies introduced
 
-`arboard` in gnista-gui, for reading and writing the system clipboard. egui already depends on it for its own copy and paste; gnista-gui names it to reach the clipboard outside egui's frame.
+`arboard` in e8-gui, for reading and writing the system clipboard. egui already depends on it for its own copy and paste; e8-gui names it to reach the clipboard outside egui's frame.

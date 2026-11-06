@@ -132,7 +132,7 @@
     "text": "one",
     "call": [
       "find-file-other-window",
-      "gnista-oracle-new.txt"
+      "e8-oracle-new.txt"
     ],
     "keys": "",
     "windows": true
@@ -158,7 +158,7 @@
     "text": "one",
     "call": [
       "display-buffer",
-      "*gnista-oracle*"
+      "*e8-oracle*"
     ],
     "keys": "",
     "windows": true

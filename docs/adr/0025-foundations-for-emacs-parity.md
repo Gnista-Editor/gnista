@@ -4,19 +4,19 @@ Status: accepted · 2026-10-29
 
 ## Context
 
-Gnista is meant to grow into a mostly complete Emacs: Rust doing what Emacs does in C, TypeScript packages doing what its Lisp does, file by file. After twenty-four ADRs of features, two independent architecture reviews asked whether the base is shaped for that road. They agreed: the features are sound and well tested, but the runtime model under the packages differs from Emacs's in ways that every port has to work around, and each package written in today's patterns adds to a later migration. Cheap now, expensive later.
+E8 is meant to grow into a mostly complete Emacs: Rust doing what Emacs does in C, TypeScript packages doing what its Lisp does, file by file. After twenty-four ADRs of features, two independent architecture reviews asked whether the base is shaped for that road. They agreed: the features are sound and well tested, but the runtime model under the packages differs from Emacs's in ways that every port has to work around, and each package written in today's patterns adds to a later migration. Cheap now, expensive later.
 
-What Emacs's Lisp takes for granted and Gnista lacked:
+What Emacs's Lisp takes for granted and E8 lacked:
 
-- **Reading input mid-function.** `read-string`, `y-or-n-p`, `read-key` return values; Gnista's prompts take callbacks, so every port that asks a question is rewritten in continuation-passing style, and loses the command's context (current buffer, prefix argument, `this-command`, undo group) across it.
-- **A module system.** `require`, `provide`, autoloads, shared helpers. Packages here are isolated scripts that share only through the `gnista` API, so helpers get copied and big packages (org.ts, 7,800 lines) cannot be split.
-- **Errors with conditions.** `condition-case` on `search-failed`, `file-error`, `user-error`, `quit`, `scan-error` with its data. Gnista's errors are strings, and packages parse them.
+- **Reading input mid-function.** `read-string`, `y-or-n-p`, `read-key` return values; E8's prompts take callbacks, so every port that asks a question is rewritten in continuation-passing style, and loses the command's context (current buffer, prefix argument, `this-command`, undo group) across it.
+- **A module system.** `require`, `provide`, autoloads, shared helpers. Packages here are isolated scripts that share only through the `e8` API, so helpers get copied and big packages (org.ts, 7,800 lines) cannot be split.
+- **Errors with conditions.** `condition-case` on `search-failed`, `file-error`, `user-error`, `quit`, `scan-error` with its data. E8's errors are strings, and packages parse them.
 - **Dynamic binding.** `(let ((inhibit-read-only t) (case-fold-search nil)) ...)`, buffer-local bindings unwound in the right buffer.
-- **Values.** Functions, buffer and marker objects, propertized strings, symbols. Gnista's values are null, booleans, numbers, strings and lists; buffers are named by string, markers are integer handles freed by hand.
+- **Values.** Functions, buffer and marker objects, propertized strings, symbols. E8's values are null, booleans, numbers, strings and lists; buffers are named by string, markers are integer handles freed by hand.
 - **Commands as functions.** Called with numbers, positions and optional arguments, returning values; here commands take strings and return nothing.
 - **One edit path.** Every change through insdel.c's sequence: read-only checks (`inhibit-read-only`, `read-only` text properties), `before-change-functions`, the change, undo, markers, `after-change-functions`.
-- **One regexp dialect.** Variables users copy from Emacs (`auto-mode-alist`, `outline-regexp`, `compilation-error-regexp-alist-alist`) hold Emacs regexps; some of Gnista's hold JavaScript ones.
-- **A general display.** Overlay strings, `display` properties, `line-prefix`, margins and `mode-line-format`; Gnista's rows are buffer text, with line numbers, the mode line and the completion list each a special case.
+- **One regexp dialect.** Variables users copy from Emacs (`auto-mode-alist`, `outline-regexp`, `compilation-error-regexp-alist-alist`) hold Emacs regexps; some of E8's hold JavaScript ones.
+- **A general display.** Overlay strings, `display` properties, `line-prefix`, margins and `mode-line-format`; E8's rows are buffer text, with line numbers, the mode line and the completion list each a special case.
 
 The current buffer being tied to the selected window was a further mismatch, fixed in this round.
 
@@ -24,12 +24,12 @@ The current buffer being tied to the selected window was a further mismatch, fix
 
 These become the foundations, in this order, each landing whole with its tests before ports build on it:
 
-1. **Errors carry a condition and data**, as Emacs's signals: an error symbol in a hierarchy (`error`, `user-error`, `quit`, `scan-error`, `search-failed`, `file-error` and its family, `buffer-read-only`, `args-out-of-range`), its data, and its message. Scripts get `gnista.signal`, errors with `.symbol` and `.data`, and `gnista.conditionCase`.
-2. **Dynamic binding**: `gnista.letBind({ var: value }, fn)`, unwinding each binding in the buffer it was made in, as `let` of a buffer-local variable does.
+1. **Errors carry a condition and data**, as Emacs's signals: an error symbol in a hierarchy (`error`, `user-error`, `quit`, `scan-error`, `search-failed`, `file-error` and its family, `buffer-read-only`, `args-out-of-range`), its data, and its message. Scripts get `e8.signal`, errors with `.symbol` and `.data`, and `e8.conditionCase`.
+2. **Dynamic binding**: `e8.letBind({ var: value }, fn)`, unwinding each binding in the buffer it was made in, as `let` of a buffer-local variable does.
 3. **Packages load independently**: one package failing to load leaves the others working, as an error in one Lisp file does.
 4. **Emacs regexps wherever a regexp is data**: in variables, options and anything a user or Lisp code supplies, with Emacs's match data API (`lookingAt`, `reSearchForward`, `matchString`). JavaScript regexps stay fine inside a package's own code.
 5. **Packages are ES modules named after Emacs features**, importing each other as Lisp files `require` each other, with a `subr` module for what subr.el and subr-x.el hold. QuickJS runs modules natively; this changes neither the language nor the runtime ([ADR 0003](0003-typescript-on-quickjs.md)). Big packages split as Emacs splits them (org-element, org-list, org-agenda, org-capture).
-6. **Prompts are awaitable**: a command's `run` may be async, `await gnista.readString(...)` returns the answer, and the core keeps the command's context across the wait, with prompts nesting as recursive minibuffers. Tests, the oracle and the MCP server keep a synchronous "run until idle". New ports use it once it exists; old ones move over as they are touched.
+6. **Prompts are awaitable**: a command's `run` may be async, `await e8.readString(...)` returns the answer, and the core keeps the command's context across the wait, with prompts nesting as recursive minibuffers. Tests, the oracle and the MCP server keep a synchronous "run until idle". New ports use it once it exists; old ones move over as they are touched.
 7. **Values grow handles and functions**: buffers, markers, overlays, windows and processes as objects with stable ids, markers freed when nothing refers to them, functions as values in variables and hooks, and propertized strings for the kill ring and `buffer-substring`.
 8. **Commands are functions with an interactive spec**: typed parameters (number, position, region, optional), the prefix argument a declared parameter, values passed natively inside scripts and turned into strings only at the MCP and agent edge.
 9. **Edits go through the editor**: Editor-level insert and delete run the full insdel.c sequence, with `inhibit-read-only`, `read-only` and `modification-hooks` text properties; `Buffer`'s raw edits become internal.
@@ -39,12 +39,12 @@ Alongside: an API naming rule (kebab-case to camelCase, `-p` to `P`; `undefined`
 
 Items 1 to 5 landed in this round, with packages loaded as ES modules through a resolver that finds a package by its feature name, a shared `subr` module, and Org's marker layer moved into `org-macs`; the oracle now runs its cases in parallel, 264 s to 34 s. Items 7 to 10 follow, each in its own ADR when it starts.
 
-The naming rule is in CLAUDE.md, with a test that the functions the prelude defines are the ones `types.rs` declares. The declarative table came with step 0b of [the threading plan](../multithreading.md): `natives!` tables in `crates/gnista-script/src/natives/` write each native's binding, and a public native is `gnista`'s function and its declaration too.
+The naming rule is in CLAUDE.md, with a test that the functions the prelude defines are the ones `types.rs` declares. The declarative table came with step 0b of [the threading plan](../multithreading.md): `natives!` tables in `crates/e8-script/src/natives/` write each native's binding, and a public native is `e8`'s function and its declaration too.
 
 Org's agenda and capture then moved out of org.ts into `org-agenda.ts` and `org-capture.ts`, importing what they share from `org`, as org-agenda.el and org-capture.el require org; org.ts is 7,100 lines, and its lists and links are next to split, as org-list.el and ol.el.
 
 Item 6 landed next:
-- Every prompt and question returns a promise when given no `then`: `await gnista.readString(...)`, `yOrNP`, `completingRead`, `readFileName` and the rest. The callback form stays for code not yet moved.
+- Every prompt and question returns a promise when given no `then`: `await e8.readString(...)`, `yOrNP`, `completingRead`, `readFileName` and the rest. The callback form stays for code not yet moved.
 - QuickJS's job queue runs as each call from the editor into scripts finishes, so an awaiting command carries on inside the key that answered its prompt. That keeps the editor single-threaded and gives tests, the oracle and the MCP server the synchronous "run until idle" they need without an API of their own.
 - Each prompt keeps the asking command's current buffer, prefix argument and name, and gives them back when the answer comes, as an Emacs command's `current-prefix-arg` and `this-command` stay bound through `read-from-minibuffer`; the command, not `exit-minibuffer`, becomes the last command.
 - `C-g` rejects the promise with `quit`, so `try`/`finally`, `conditionCase` and `unwindProtect` run, as quitting unwinds a Lisp command.
@@ -64,19 +64,19 @@ Item 9 came next, as every new command added to the raw edits it would replace:
 - Still to come: before-change-functions for reverting and process output, which still go straight to the buffer; and the modification hooks that changing text properties runs in Emacs.
 
 Item 7 began with functions:
-- `Value::Function` is a function as a value, as a lambda is in Lisp: variables, text properties and overlays hold them, and two are equal only if they are one function. A script's function keeps its identity across the boundary, so `gnista.variable(name) === fn`.
-- The editor keeps named functions, as symbols' function cells: `Editor::defun`, `fboundp`, `symbol_function` and `funcall`, which calls a function, a named one or a command. Scripts' `gnista.defun` lands there, so Rust code calls script functions by name; a script still calls its own directly, so they can take objects.
+- `Value::Function` is a function as a value, as a lambda is in Lisp: variables, text properties and overlays hold them, and two are equal only if they are one function. A script's function keeps its identity across the boundary, so `e8.variable(name) === fn`.
+- The editor keeps named functions, as symbols' function cells: `Editor::defun`, `fboundp`, `symbol_function` and `funcall`, which calls a function, a named one or a command. Scripts' `e8.defun` lands there, so Rust code calls script functions by name; a script still calls its own directly, so they can take objects.
 - With them, changes call the `modification-hooks`, `insert-in-front-hooks` and `insert-behind-hooks` of text and overlays, in Emacs's order and with its arguments.
 - Processes write their output and errors to one pipe, as Emacs's do, so they arrive in order; two pipes interleaved them by chance.
-- Buffers are objects too: `Value::Buffer` holds a buffer by the id it keeps when renamed, and scripts get one object per buffer (`gnista.currentBuffer()`, `getBuffer`), whose `name` follows renames and which every function taking a buffer accepts as its current name. Functions still return names, so code moves over as it is touched; compile.ts keeps `next-error-last-buffer` and its parse state by buffer, so renaming `*compilation*` keeps `M-g n` working. `rename-buffer` (`C-x x r`) came with it.
-- Strings can carry text properties: `Value::Text`, as Emacs's propertized strings. `gnista.propertize` makes one and `gnista.bufferSubstring` gives one, `insert` puts its properties in with it, and overlay and display strings show in its faces. Kills keep their properties, and yanking leaves out those `yank-excluded-properties` names, as insert-for-yank does.
-- Markers are objects (`gnista.makeMarker` gives a `Marker`), freed once nothing refers to them through a `FinalizationRegistry`, as Emacs's collector unchains unreferenced markers; they act as their positions in arithmetic, as Emacs's do. Functions taking a marker also take a number, as a process mark still is. A marker cannot be held in a variable or property yet.
+- Buffers are objects too: `Value::Buffer` holds a buffer by the id it keeps when renamed, and scripts get one object per buffer (`e8.currentBuffer()`, `getBuffer`), whose `name` follows renames and which every function taking a buffer accepts as its current name. Functions still return names, so code moves over as it is touched; compile.ts keeps `next-error-last-buffer` and its parse state by buffer, so renaming `*compilation*` keeps `M-g n` working. `rename-buffer` (`C-x x r`) came with it.
+- Strings can carry text properties: `Value::Text`, as Emacs's propertized strings. `e8.propertize` makes one and `e8.bufferSubstring` gives one, `insert` puts its properties in with it, and overlay and display strings show in its faces. Kills keep their properties, and yanking leaves out those `yank-excluded-properties` names, as insert-for-yank does.
+- Markers are objects (`e8.makeMarker` gives a `Marker`), freed once nothing refers to them through a `FinalizationRegistry`, as Emacs's collector unchains unreferenced markers; they act as their positions in arithmetic, as Emacs's do. Functions taking a marker also take a number, as a process mark still is. A marker cannot be held in a variable or property yet.
 - Windows and processes as objects, and markers as values in variables, are the rest of item 7.
 
 Item 8 then gave commands Emacs's interactive codes:
 - Parameter kinds the editor fills without asking: `count` ("p", the prefix argument as a number), `prefix` ("P", as it is), `point` ("d"), `mark` ("m"), and `region-beginning` and `region-end` ("r"); and `number` ("n"), read until it is one.
 - Arguments are typed: `Arg::Int` and `Arg::Prefix` beside text and keys, and a script's command gets numbers and Emacs's prefix forms (null, 3, "-", [4]).
-- Code passes values, `gnista.call("forward-paragraph", 2)`, and may leave a count or prefix out, which the call's prefix argument fills, as an `&optional` argument is nil. Text becomes an argument of any kind in one place, `Arg::from_text`, which the MCP server and the agent share: values turn into text only at that edge.
+- Code passes values, `e8.call("forward-paragraph", 2)`, and may leave a count or prefix out, which the call's prefix argument fills, as an `&optional` argument is nil. Text becomes an argument of any kind in one place, `Arg::from_text`, which the MCP server and the agent share: values turn into text only at that edge.
 - The generated declarations type each command's arguments: numbers for counts and positions, optional counts.
 - Commands still return nothing: functions (`defun`) are the way to return values, as most Emacs commands are called for their effect. Moving packages that read `prefixNumericValue()` themselves to `count` parameters happens as they are touched; paragraphs.ts and Org's heading motions moved.
 

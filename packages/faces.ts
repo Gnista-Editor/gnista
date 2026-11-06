@@ -4,54 +4,54 @@
 // list-colors-display. The primitives (faceAttribute, setFaceAttribute,
 // colorValues and the rest) are the core's, as xfaces.c's are.
 
-const unspecified = (v: gnista.Value): gnista.Value | undefined => (v === "unspecified" || v === undefined || v === null ? undefined : v);
+const unspecified = (v: e8.Value): e8.Value | undefined => (v === "unspecified" || v === undefined || v === null ? undefined : v);
 
 /** A face's foreground colour, as face-foreground: its own, or with `inherit` what it inherits too. */
 export function faceForeground(face: string, inherit = false): string | undefined {
-  return unspecified(gnista.faceAttribute(face, ":foreground", inherit)) as string | undefined;
+  return unspecified(e8.faceAttribute(face, ":foreground", inherit)) as string | undefined;
 }
 
 /** A face's background colour, as face-background. */
 export function faceBackground(face: string, inherit = false): string | undefined {
-  return unspecified(gnista.faceAttribute(face, ":background", inherit)) as string | undefined;
+  return unspecified(e8.faceAttribute(face, ":background", inherit)) as string | undefined;
 }
 
 /** Whether a face is bold, as face-bold-p: its weight is semi-bold or heavier. */
 export function faceBoldP(face: string, inherit = false): boolean {
-  const weight = unspecified(gnista.faceAttribute(face, ":weight", inherit));
+  const weight = unspecified(e8.faceAttribute(face, ":weight", inherit));
   return typeof weight === "string" && ["semi-bold", "demibold", "bold", "extra-bold", "ultra-bold", "heavy", "ultra-heavy", "black"].includes(weight);
 }
 
 /** Whether a face is italic, as face-italic-p. */
 export function faceItalicP(face: string, inherit = false): boolean {
-  const slant = unspecified(gnista.faceAttribute(face, ":slant", inherit));
+  const slant = unspecified(e8.faceAttribute(face, ":slant", inherit));
   return typeof slant === "string" && ["italic", "oblique", "reverse-italic", "reverse-oblique"].includes(slant);
 }
 
 /** A face's underline, as face-underline-p: true, its colour, or its colour and style; undefined if none. */
-export function faceUnderlineP(face: string, inherit = false): gnista.Value | undefined {
-  const v = unspecified(gnista.faceAttribute(face, ":underline", inherit));
+export function faceUnderlineP(face: string, inherit = false): e8.Value | undefined {
+  const v = unspecified(e8.faceAttribute(face, ":underline", inherit));
   return v === false ? undefined : v;
 }
 
 /** Whether a face swaps its colours, as face-inverse-video-p. */
 export function faceInverseVideoP(face: string, inherit = false): boolean {
-  return gnista.faceAttribute(face, ":inverse-video", inherit) === true;
+  return e8.faceAttribute(face, ":inverse-video", inherit) === true;
 }
 
 /** Whether a face's background reaches the window's edge, as face-extend-p. */
 export function faceExtendP(face: string, inherit = false): boolean {
-  return gnista.faceAttribute(face, ":extend", inherit) === true;
+  return e8.faceAttribute(face, ":extend", inherit) === true;
 }
 
 /** Whether an attribute's value is relative, to be merged with the face below, as face-attribute-relative-p: unspecified, or a height that is a factor. */
-export function faceAttributeRelativeP(attribute: string, value: gnista.Value): boolean {
+export function faceAttributeRelativeP(attribute: string, value: e8.Value): boolean {
   if (value === "unspecified" || value === undefined || value === null) return true;
   return attribute === ":height" && typeof value === "number" && !Number.isInteger(value);
 }
 
 /** One attribute's value laid over another's, as merge-face-attribute: a factor multiplies the height below. */
-export function mergeFaceAttribute(attribute: string, value1: gnista.Value, value2: gnista.Value): gnista.Value {
+export function mergeFaceAttribute(attribute: string, value1: e8.Value, value2: e8.Value): e8.Value {
   if (value1 === "unspecified" || value1 === undefined || value1 === null) return value2;
   if (attribute === ":height" && typeof value1 === "number" && !Number.isInteger(value1) && typeof value2 === "number") {
     return Number.isInteger(value2) ? Math.round(value1 * value2) : value1 * value2;
@@ -80,18 +80,18 @@ export function internalLispFaceAttributeValues(attribute: string): string[] {
   }
 }
 
-/** Whether the frame can show these attributes, as display-supports-face-attributes-p: all but stipples, which Gnista does not draw. */
-export function displaySupportsFaceAttributesP(attributes: gnista.Value[]): boolean {
+/** Whether the frame can show these attributes, as display-supports-face-attributes-p: all but stipples, which E8 does not draw. */
+export function displaySupportsFaceAttributesP(attributes: e8.Value[]): boolean {
   for (let i = 0; i < attributes.length; i += 2) if (attributes[i] === ":stipple") return false;
   return true;
 }
 
 /** The attributes of a face that are set, as an Emacs plist, as face-attr-construct. */
-function attributes(face: string): gnista.Value[] {
-  const info = gnista.faceInfo(face);
+function attributes(face: string): e8.Value[] {
+  const info = e8.faceInfo(face);
   if (info === undefined) return [];
   return Object.keys(info.attributes).flatMap((key) =>
-    key === "bold" || key === "italic" ? [] : [`:${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`, gnista.faceAttribute(face, key)],
+    key === "bold" || key === "italic" ? [] : [`:${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`, e8.faceAttribute(face, key)],
   );
 }
 
@@ -106,41 +106,41 @@ export function faceDiffersFromDefaultP(face: string): boolean {
   for (let i = 0; i < own.length; i += 2) {
     const key = String(own[i]);
     if (key === ":inherit") continue;
-    if (JSON.stringify(own[i + 1]) !== JSON.stringify(gnista.faceAttribute("default", key))) return true;
+    if (JSON.stringify(own[i + 1]) !== JSON.stringify(e8.faceAttribute("default", key))) return true;
   }
   return false;
 }
 
 /** Reads a colour name, completing on those Emacs knows, as read-color. */
 export async function readColor(prompt = "Color (name or #RGB triplet): "): Promise<string> {
-  const color = await gnista.completingRead(prompt, gnista.definedColors());
-  if (!gnista.colorDefinedP(color)) gnista.userError(`Invalid color: ${color}`);
+  const color = await e8.completingRead(prompt, e8.definedColors());
+  if (!e8.colorDefinedP(color)) e8.userError(`Invalid color: ${color}`);
   return color;
 }
 
-const colorParam = (what: string): gnista.Param => ({
+const colorParam = (what: string): e8.Param => ({
   name: "color",
   prompt: (face: string) => `Set ${what} of face ${face} to color: `,
-  collection: () => gnista.definedColors(),
+  collection: () => e8.definedColors(),
 });
 
 for (const [name, attribute, what] of [
   ["set-face-foreground", "foreground", "foreground"],
   ["set-face-background", "background", "background"],
 ] as const) {
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc: `Set the ${what} colour of a face, for this session.`,
     params: [{ name: "face", kind: "face", prompt: `Set ${what} of face: ` }, colorParam(what)],
-    run: (face: string, color: string) => gnista.setFaceAttribute(face, { [attribute]: color === "" ? "unspecified" : color }),
+    run: (face: string, color: string) => e8.setFaceAttribute(face, { [attribute]: color === "" ? "unspecified" : color }),
   });
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "set-face-underline",
   doc: "Underline a face's text, or with an empty answer stop underlining it.",
   params: [{ name: "face", kind: "face", prompt: "Set underline of face: " }, { name: "underline", prompt: "Underline color (empty for the text's): " }],
-  run: (face: string, color: string) => gnista.setFaceAttribute(face, { underline: color === "" ? true : color }),
+  run: (face: string, color: string) => e8.setFaceAttribute(face, { underline: color === "" ? true : color }),
 });
 
 for (const [name, attributes, doc] of [
@@ -150,11 +150,11 @@ for (const [name, attributes, doc] of [
   ["make-face-unitalic", { slant: "normal" }, "Make a face not italic."],
   ["make-face-bold-italic", { weight: "bold", slant: "italic" }, "Make a face bold and italic."],
 ] as const) {
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     params: [{ name: "face", kind: "face", prompt: `${doc.replace(/^Make a face/, "Make face").replace(/\.$/, "")}: ` }],
-    run: (face: string) => gnista.setFaceAttribute(face, attributes),
+    run: (face: string) => e8.setFaceAttribute(face, attributes),
   });
 }
 
@@ -162,70 +162,70 @@ for (const [name, attribute, doc] of [
   ["set-face-inverse-video", "inverseVideo", "Make a face's colours swap, or with a negative prefix argument not."],
   ["set-face-extend", "extend", "Make a face's background reach the window's edge after a line's end, or with a negative prefix argument not."],
 ] as const) {
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     params: [{ name: "face", kind: "face", prompt: `${name.replace(/-/g, " ").replace(/^set face /, "Set ")} of face: ` }, { name: "arg", kind: "prefix" }],
-    run: (face: string, arg: gnista.PrefixArg) => gnista.setFaceAttribute(face, { [attribute]: arg === null || gnista.prefixNumericValue(arg) > 0 }),
+    run: (face: string, arg: e8.PrefixArg) => e8.setFaceAttribute(face, { [attribute]: arg === null || e8.prefixNumericValue(arg) > 0 }),
   });
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "invert-face",
   doc: "Swap a face's foreground and background, or if it sets neither, make it swap them.",
   params: [{ name: "face", kind: "face", prompt: "Invert face: " }],
   run: (face: string) => {
     const fg = faceForeground(face);
     const bg = faceBackground(face);
-    if (fg !== undefined || bg !== undefined) gnista.setFaceAttribute(face, { foreground: bg ?? "unspecified", background: fg ?? "unspecified" });
-    else gnista.setFaceAttribute(face, { inverseVideo: !faceInverseVideoP(face) });
+    if (fg !== undefined || bg !== undefined) e8.setFaceAttribute(face, { foreground: bg ?? "unspecified", background: fg ?? "unspecified" });
+    else e8.setFaceAttribute(face, { inverseVideo: !faceInverseVideoP(face) });
   },
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "list-faces-sample-text",
   doc: "The text list-faces-display shows in each face.",
   value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "list-faces-display",
   doc: "List the faces, each with the same sample text in it; with a prefix argument, only those whose names match a regexp.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: async (arg: gnista.PrefixArg) => {
-    const regexp = arg === null ? "" : await gnista.readString("List faces matching regexp: ", { history: "regexp-history" });
-    const faces = gnista.faceList().filter((f) => regexp === "" || gnista.stringMatch(regexp, f) !== undefined);
-    if (faces.length === 0) gnista.signal("error", `No faces matching "${regexp}"`);
+  run: async (arg: e8.PrefixArg) => {
+    const regexp = arg === null ? "" : await e8.readString("List faces matching regexp: ", { history: "regexp-history" });
+    const faces = e8.faceList().filter((f) => regexp === "" || e8.stringMatch(regexp, f) !== undefined);
+    if (faces.length === 0) e8.signal("error", `No faces matching "${regexp}"`);
     const width = Math.max(...faces.map((f) => f.length)) + 1;
-    const sample = String(gnista.variable("list-faces-sample-text") ?? "");
-    const buffer = gnista.getBufferCreate("*Faces*");
-    gnista.withCurrentBuffer(buffer, () => {
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-        const key = gnista.whereIs("help-follow") ?? "RET";
-        gnista.insert(`Use ${key} on a face name to customize it\nor on its sample text for a description of the face.\n\n`);
+    const sample = String(e8.variable("list-faces-sample-text") ?? "");
+    const buffer = e8.getBufferCreate("*Faces*");
+    e8.withCurrentBuffer(buffer, () => {
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        e8.deleteRegion(e8.pointMin(), e8.pointMax());
+        const key = e8.whereIs("help-follow") ?? "RET";
+        e8.insert(`Use ${key} on a face name to customize it\nor on its sample text for a description of the face.\n\n`);
         for (const face of faces) {
-          const lineStart = gnista.point();
-          gnista.insert(face.padEnd(width));
-          gnista.insert(gnista.propertize(sample, { face }));
-          gnista.putTextProperty(lineStart, gnista.point(), "read-face-name", face);
-          gnista.insert("\n");
+          const lineStart = e8.point();
+          e8.insert(face.padEnd(width));
+          e8.insert(e8.propertize(sample, { face }));
+          e8.putTextProperty(lineStart, e8.point(), "read-face-name", face);
+          e8.insert("\n");
         }
       });
-      if (gnista.variable("major-mode") !== "help-mode") gnista.call("help-mode");
-      gnista.setVariable("truncate-lines", true);
-      gnista.setBufferModified(false);
-      gnista.gotoChar(gnista.pointMin());
+      if (e8.variable("major-mode") !== "help-mode") e8.call("help-mode");
+      e8.setVariable("truncate-lines", true);
+      e8.setBufferModified(false);
+      e8.gotoChar(e8.pointMin());
     });
-    gnista.call("display-buffer", "*Faces*");
+    e8.call("display-buffer", "*Faces*");
   },
 });
 
 /** The colour names, those with the same values together, as list-colors-duplicates groups them. */
 function colorsWithDuplicates(): string[][] {
   const groups = new Map<string, string[]>();
-  for (const name of gnista.definedColors()) {
-    const key = String(gnista.colorValues(name));
+  for (const name of e8.definedColors()) {
+    const key = String(e8.colorValues(name));
     groups.set(key, [...(groups.get(key) ?? []), name]);
   }
   return [...groups.values()];
@@ -233,7 +233,7 @@ function colorsWithDuplicates(): string[][] {
 
 /** A foreground that reads well on a background, as readable-foreground-color: black or white. */
 function readableForeground(color: string): string {
-  const [r, g, b] = gnista.colorValues(color) ?? [0, 0, 0];
+  const [r, g, b] = e8.colorValues(color) ?? [0, 0, 0];
   // As color-dark-p: luminance below 0.325, with Emacs's weights.
   const lum = (c: number) => {
     const x = c / 65535;
@@ -243,38 +243,38 @@ function readableForeground(color: string): string {
   return dark ? "white" : "black";
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "list-colors-display",
   doc: "Show the colours Emacs knows by name, each in its colour, with the names that look the same and its #RRGGBB.",
   run: () => {
-    const buffer = gnista.getBufferCreate("*Colors*");
-    const window = gnista.windowSize()?.width ?? 80;
-    gnista.withCurrentBuffer(buffer, () => {
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+    const buffer = e8.getBufferCreate("*Colors*");
+    const window = e8.windowSize()?.width ?? 80;
+    e8.withCurrentBuffer(buffer, () => {
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        e8.deleteRegion(e8.pointMin(), e8.pointMax());
         for (const names of colorsWithDuplicates()) {
           const color = names[0];
-          const start = gnista.point();
-          gnista.insert(color);
-          gnista.indentTo(22);
-          gnista.putTextProperty(start, gnista.point(), "face", [":background", color, ":foreground", readableForeground(color)] as gnista.Value);
-          const at = gnista.point();
-          gnista.insert(` ${names.join(",")}`);
-          gnista.putTextProperty(at, gnista.point(), "face", [":foreground", color] as gnista.Value);
+          const start = e8.point();
+          e8.insert(color);
+          e8.indentTo(22);
+          e8.putTextProperty(start, e8.point(), "face", [":background", color, ":foreground", readableForeground(color)] as e8.Value);
+          const at = e8.point();
+          e8.insert(` ${names.join(",")}`);
+          e8.putTextProperty(at, e8.point(), "face", [":foreground", color] as e8.Value);
           // The hex values at the right, as Emacs's (space :align-to (- right 9)).
-          const column = Math.max(gnista.currentColumn() + 1, window - 9);
-          gnista.insert(gnista.propertize(" ", { display: [Symbol.for("space"), Symbol.for(":align-to"), column] as gnista.Value }));
-          const hex = (gnista.colorValues(color) ?? [0, 0, 0]).map((c) => (c >> 8).toString(16).padStart(2, "0")).join("");
-          gnista.insert(" ");
-          gnista.insert(gnista.propertize(`#${hex}`, { "mouse-face": "highlight" }));
-          gnista.insert("\n");
+          const column = Math.max(e8.currentColumn() + 1, window - 9);
+          e8.insert(e8.propertize(" ", { display: [Symbol.for("space"), Symbol.for(":align-to"), column] as e8.Value }));
+          const hex = (e8.colorValues(color) ?? [0, 0, 0]).map((c) => (c >> 8).toString(16).padStart(2, "0")).join("");
+          e8.insert(" ");
+          e8.insert(e8.propertize(`#${hex}`, { "mouse-face": "highlight" }));
+          e8.insert("\n");
         }
       });
-      if (gnista.variable("major-mode") !== "help-mode") gnista.call("help-mode");
-      gnista.setVariable("truncate-lines", true);
-      gnista.setBufferModified(false);
-      gnista.gotoChar(gnista.pointMin());
+      if (e8.variable("major-mode") !== "help-mode") e8.call("help-mode");
+      e8.setVariable("truncate-lines", true);
+      e8.setBufferModified(false);
+      e8.gotoChar(e8.pointMin());
     });
-    gnista.call("display-buffer", "*Colors*");
+    e8.call("display-buffer", "*Colors*");
   },
 });

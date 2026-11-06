@@ -27,7 +27,7 @@ for (const [name, doc, value, local] of [
   ["comint-move-point-for-matching-input", "Where C-c M-r and C-c M-s leave point: after-input where it was, end-of-line at the end.", "after-input", false],
   ["comint-terminfo-terminal", "The terminal comint programs are told they run on, as TERM.", "dumb", false],
 ] as const) {
-  gnista.defineVariable({ name, doc, value: value as gnista.Value, local });
+  e8.defineVariable({ name, doc, value: value as e8.Value, local });
 }
 
 /** What each comint buffer keeps: its input history and where it stands in it, and its markers. */
@@ -39,14 +39,14 @@ interface State {
   stored: string | undefined;
   /** The input C-c M-r and C-c M-s search the history for. */
   matching: string;
-  lastInputStart: gnista.Marker;
-  lastInputEnd: gnista.Marker;
-  lastOutputStart: gnista.Marker;
+  lastInputStart: e8.Marker;
+  lastInputEnd: e8.Marker;
+  lastOutputStart: e8.Marker;
 }
 
 const states = new PerBuffer<State>();
 
-function state(buffer = gnista.bufferName()): State {
+function state(buffer = e8.bufferName()): State {
   let s = states.get(buffer);
   if (s === undefined) {
     s = {
@@ -54,9 +54,9 @@ function state(buffer = gnista.bufferName()): State {
       index: undefined,
       stored: undefined,
       matching: "",
-      lastInputStart: gnista.makeMarker(gnista.pointMax()),
-      lastInputEnd: gnista.makeMarker(gnista.pointMax()),
-      lastOutputStart: gnista.makeMarker(gnista.pointMax()),
+      lastInputStart: e8.makeMarker(e8.pointMax()),
+      lastInputEnd: e8.makeMarker(e8.pointMax()),
+      lastOutputStart: e8.makeMarker(e8.pointMax()),
     };
     states.set(buffer, s);
   }
@@ -67,26 +67,26 @@ const nil = (v: unknown) => v === null || v === undefined || v === false;
 
 /** The current buffer's process, or the error comint gives without one. */
 function bufferProcess(): string {
-  const p = gnista.getBufferProcess(gnista.bufferName());
+  const p = e8.getBufferProcess(e8.bufferName());
   if (p === undefined) throw new Error("Current buffer has no process");
   return p;
 }
 
-const processMark = (p: string): number => gnista.markerPosition(gnista.processMark(p)!)!;
+const processMark = (p: string): number => e8.markerPosition(e8.processMark(p)!)!;
 
 const PROMPT_REAR_NONSTICKY = ["field", "inhibit-line-move-field-capture", "read-only", "font-lock-face", "insert-in-front-hooks"];
 
 /** Marks text as the program's output, the `output` field, as comint--mark-as-output. */
 function markAsOutput(beg: number, end: number): void {
   if (beg >= end) return;
-  gnista.withSilentModifications(() => {
+  e8.withSilentModifications(() => {
     for (const [name, value] of [
       ["field", Symbol.for("output")],
       ["inhibit-line-move-field-capture", true],
       ["rear-nonsticky", PROMPT_REAR_NONSTICKY],
       ["front-sticky", ["field", "inhibit-line-move-field-capture"]],
     ] as const) {
-      gnista.putTextProperty(beg, end, name, value as gnista.Value);
+      e8.putTextProperty(beg, end, name, value as e8.Value);
     }
   });
 }
@@ -97,42 +97,42 @@ function markAsOutput(beg: number, end: number): void {
  * output from start to end, as comint-carriage-motion.
  */
 function carriageMotion(start: number, end: number): void {
-  const text = gnista.bufferText(start, end);
+  const text = e8.bufferText(start, end);
   if (!/[\r\b]/.test(text)) return;
-  gnista.letBind({ "inhibit-read-only": true, "inhibit-field-text-motion": true }, () => {
-    const endMarker = gnista.makeMarker(end);
-    let lbeg = gnista.lineBeginningPosition(start);
+  e8.letBind({ "inhibit-read-only": true, "inhibit-field-text-motion": true }, () => {
+    const endMarker = e8.makeMarker(end);
+    let lbeg = e8.lineBeginningPosition(start);
     let p = start;
-    while (p < gnista.markerPosition(endMarker)!) {
-      const c = gnista.bufferText(p, p + 1);
+    while (p < e8.markerPosition(endMarker)!) {
+      const c = e8.bufferText(p, p + 1);
       if (c === "\b") {
-        gnista.deleteRegion(p, p + 1);
+        e8.deleteRegion(p, p + 1);
         if (p > lbeg) {
-          gnista.deleteRegion(p - 1, p);
+          e8.deleteRegion(p - 1, p);
           p--;
         }
       } else if (c === "\n") {
         p++;
         lbeg = p;
       } else if (c === "\r") {
-        gnista.deleteRegion(p, p + 1);
+        e8.deleteRegion(p, p + 1);
         // CR LF is a line's end; a CR alone goes back to the line's start.
-        if (gnista.bufferText(p, p + 1) !== "\n") {
-          gnista.deleteRegion(lbeg, p);
+        if (e8.bufferText(p, p + 1) !== "\n") {
+          e8.deleteRegion(lbeg, p);
           p = lbeg;
         }
       } else {
         p++;
       }
     }
-    gnista.deleteMarker(endMarker);
+    e8.deleteMarker(endMarker);
   });
 }
 
 /** Moves the windows showing a buffer whose point is at `at` to `to`, as window-point-insertion-type t does. */
 function advanceWindowPoints(buffer: string, at: number, to: number): void {
-  for (const w of gnista.windowList()) {
-    if (gnista.windowBuffer(w) === buffer && gnista.windowPoint(w) === at && w !== gnista.selectedWindow()) gnista.setWindowPoint(w, to);
+  for (const w of e8.windowList()) {
+    if (e8.windowBuffer(w) === buffer && e8.windowPoint(w) === at && w !== e8.selectedWindow()) e8.setWindowPoint(w, to);
   }
 }
 
@@ -143,50 +143,50 @@ function advanceWindowPoints(buffer: string, at: number, to: number): void {
  * left as the prompt.
  */
 export function outputFilter(process: string, text: string): void {
-  const buffer = gnista.processBuffer(process);
-  if (buffer === undefined || !gnista.bufferLiveP(gnista.getBuffer(buffer))) return;
-  gnista.withCurrentBuffer(buffer, () => {
+  const buffer = e8.processBuffer(process);
+  if (buffer === undefined || !e8.bufferLiveP(e8.getBuffer(buffer))) return;
+  e8.withCurrentBuffer(buffer, () => {
     let string: string | undefined = text;
-    for (const f of (gnista.variable("comint-preoutput-filter-functions") ?? []) as gnista.Value[]) {
+    for (const f of (e8.variable("comint-preoutput-filter-functions") ?? []) as e8.Value[]) {
       if (string === undefined) break;
-      const result = gnista.funcall(f as string, string);
+      const result = e8.funcall(f as string, string);
       string = typeof result === "string" ? result : undefined;
     }
     if (string === undefined || string === "") return;
     const s = state();
-    gnista.letBind({ "inhibit-read-only": true }, () =>
-      gnista.saveRestriction(() => {
-        gnista.widen();
+    e8.letBind({ "inhibit-read-only": true }, () =>
+      e8.saveRestriction(() => {
+        e8.widen();
         const mark = processMark(process);
-        const pointAtMark = gnista.point() === mark;
-        const saved = gnista.makeMarker(gnista.point(), { advances: true });
-        gnista.setMarker(s.lastOutputStart, mark);
-        gnista.gotoChar(mark);
-        gnista.insert(string!);
-        gnista.setMarker(gnista.processMark(process)!, gnista.point());
-        carriageMotion(gnista.markerPosition(s.lastOutputStart)!, gnista.point());
-        gnista.setMarker(gnista.processMark(process)!, gnista.point());
+        const pointAtMark = e8.point() === mark;
+        const saved = e8.makeMarker(e8.point(), { advances: true });
+        e8.setMarker(s.lastOutputStart, mark);
+        e8.gotoChar(mark);
+        e8.insert(string!);
+        e8.setMarker(e8.processMark(process)!, e8.point());
+        carriageMotion(e8.markerPosition(s.lastOutputStart)!, e8.point());
+        e8.setMarker(e8.processMark(process)!, e8.point());
         // ANSI colours, as ansi-color-process-output does first among comint-output-filter-functions.
-        const ansi = gnista.variable("ansi-color-for-comint-mode");
+        const ansi = e8.variable("ansi-color-for-comint-mode");
         if (ansi === true || ansi === "filter") {
-          applyOnRegion(gnista.markerPosition(s.lastOutputStart)!, processMark(process), ansi === "filter");
-          gnista.gotoChar(processMark(process));
+          applyOnRegion(e8.markerPosition(s.lastOutputStart)!, processMark(process), ansi === "filter");
+          e8.gotoChar(processMark(process));
         }
-        const end = gnista.point();
-        gnista.gotoChar(pointAtMark ? end : gnista.markerPosition(saved)!);
-        gnista.runHooks("comint-output-filter-functions", string!);
-        markAsOutput(gnista.markerPosition(s.lastOutputStart)!, processMark(process));
+        const end = e8.point();
+        e8.gotoChar(pointAtMark ? end : e8.markerPosition(saved)!);
+        e8.runHooks("comint-output-filter-functions", string!);
+        markAsOutput(e8.markerPosition(s.lastOutputStart)!, processMark(process));
         // The prompt: the output on the last line, with no newline after it.
-        const promptStart = gnista.lineBeginningPosition(processMark(process));
-        gnista.withSilentModifications(() => {
-          if (!nil(gnista.variable("comint-prompt-read-only")) && promptStart < processMark(process)) {
-            gnista.putTextProperty(promptStart, processMark(process), "read-only", true);
-            gnista.putTextProperty(promptStart, processMark(process), "front-sticky", ["read-only"]);
+        const promptStart = e8.lineBeginningPosition(processMark(process));
+        e8.withSilentModifications(() => {
+          if (!nil(e8.variable("comint-prompt-read-only")) && promptStart < processMark(process)) {
+            e8.putTextProperty(promptStart, processMark(process), "read-only", true);
+            e8.putTextProperty(promptStart, processMark(process), "front-sticky", ["read-only"]);
           }
-          if (promptStart < processMark(process)) gnista.addFaceTextProperty(promptStart, processMark(process), "comint-highlight-prompt");
+          if (promptStart < processMark(process)) e8.addFaceTextProperty(promptStart, processMark(process), "comint-highlight-prompt");
         });
         advanceWindowPoints(buffer, mark, processMark(process));
-        gnista.deleteMarker(saved);
+        e8.deleteMarker(saved);
       }),
     );
   });
@@ -196,97 +196,97 @@ export function outputFilter(process: string, text: string): void {
 function addToHistory(input: string): void {
   if (/^\s*$/.test(input)) return;
   const s = state();
-  if (!nil(gnista.variable("comint-input-ignoredups")) && s.ring[0] === input) return;
+  if (!nil(e8.variable("comint-input-ignoredups")) && s.ring[0] === input) return;
   s.ring.unshift(input);
-  const size = Number(gnista.variable("comint-input-ring-size") ?? 500);
+  const size = Number(e8.variable("comint-input-ring-size") ?? 500);
   if (s.ring.length > size) s.ring.length = size;
 }
 
 /** The input at point when it is before the process mark, as comint-get-old-input-default. */
 function oldInput(): string {
-  const bof = gnista.fieldBeginning();
-  if (nil(gnista.charProperty(bof, "field"))) return gnista.fieldStringNoProperties(bof);
-  const field = gnista.charProperty(bof, "field");
-  gnista.call("comint-bol");
-  return gnista.bufferSubstringNoProperties(gnista.point(), field === Symbol.for("output") ? gnista.lineEndPosition() : gnista.fieldEnd());
+  const bof = e8.fieldBeginning();
+  if (nil(e8.charProperty(bof, "field"))) return e8.fieldStringNoProperties(bof);
+  const field = e8.charProperty(bof, "field");
+  e8.call("comint-bol");
+  return e8.bufferSubstringNoProperties(e8.point(), field === Symbol.for("output") ? e8.lineEndPosition() : e8.fieldEnd());
 }
 
 /** Sends the input after the process mark, or the old input at point, to the process, as comint-send-input. */
 export function sendInput(noNewline = false, artificial = false): void {
   const proc = bufferProcess();
-  gnista.widen();
+  e8.widen();
   const pmark = processMark(proc);
   let input: string;
-  if (gnista.point() >= pmark) {
-    if (!nil(gnista.variable("comint-eol-on-send"))) gnista.gotoChar(gnista.fieldEnd());
-    input = gnista.bufferSubstringNoProperties(pmark, gnista.point());
+  if (e8.point() >= pmark) {
+    if (!nil(e8.variable("comint-eol-on-send"))) e8.gotoChar(e8.fieldEnd());
+    input = e8.bufferSubstringNoProperties(pmark, e8.point());
   } else {
     input = oldInput();
-    gnista.gotoChar(pmark);
-    gnista.insert(input);
+    e8.gotoChar(pmark);
+    e8.insert(input);
   }
-  gnista.letBind({ "inhibit-read-only": true }, () => {
-    gnista.deleteRegion(pmark, gnista.point());
-    gnista.insert(input);
+  e8.letBind({ "inhibit-read-only": true }, () => {
+    e8.deleteRegion(pmark, e8.point());
+    e8.insert(input);
   });
-  if (!noNewline) gnista.insert("\n");
+  if (!noNewline) e8.insert("\n");
   addToHistory(input);
   const s = state();
   s.index = undefined;
   s.stored = undefined;
   const text = noNewline ? input : `${input}\n`;
-  gnista.runHooks("comint-input-filter-functions", text);
-  const end = noNewline ? gnista.point() : gnista.point() - 1;
-  gnista.withSilentModifications(() => {
-    if (end > pmark) gnista.addFaceTextProperty(pmark, end, "comint-highlight-input");
+  e8.runHooks("comint-input-filter-functions", text);
+  const end = noNewline ? e8.point() : e8.point() - 1;
+  e8.withSilentModifications(() => {
+    if (end > pmark) e8.addFaceTextProperty(pmark, end, "comint-highlight-input");
     if (!noNewline) {
       // The newline separates the input from the output after it.
-      gnista.putTextProperty(end, end + 1, "rear-nonsticky", PROMPT_REAR_NONSTICKY);
-      gnista.putTextProperty(end, end + 1, "field", Symbol.for("boundary"));
+      e8.putTextProperty(end, end + 1, "rear-nonsticky", PROMPT_REAR_NONSTICKY);
+      e8.putTextProperty(end, end + 1, "field", Symbol.for("boundary"));
     }
   });
-  gnista.setMarker(s.lastInputStart, pmark);
-  gnista.setMarker(s.lastInputEnd, gnista.point());
-  gnista.setMarker(gnista.processMark(proc)!, gnista.point());
-  gnista.processSendString(proc, text);
-  if (!artificial && !nil(gnista.variable("comint-process-echoes"))) gnista.setVariable("comint--echo-pending", text);
+  e8.setMarker(s.lastInputStart, pmark);
+  e8.setMarker(s.lastInputEnd, e8.point());
+  e8.setMarker(e8.processMark(proc)!, e8.point());
+  e8.processSendString(proc, text);
+  if (!artificial && !nil(e8.variable("comint-process-echoes"))) e8.setVariable("comint--echo-pending", text);
 }
 
-gnista.defineVariable({ name: "comint--echo-pending", doc: "Input the program will echo, to take out of its output.", value: null, local: true });
+e8.defineVariable({ name: "comint--echo-pending", doc: "Input the program will echo, to take out of its output.", value: null, local: true });
 
 /** Takes the echo of the input sent out of the output, as comint-process-echoes asks. */
-const dropEcho = gnista.defun("comint--drop-echo", (text: string) => {
-  const pending = gnista.variable("comint--echo-pending");
+const dropEcho = e8.defun("comint--drop-echo", (text: string) => {
+  const pending = e8.variable("comint--echo-pending");
   if (typeof pending !== "string") return text;
-  gnista.setVariable("comint--echo-pending", null);
+  e8.setVariable("comint--echo-pending", null);
   return text.startsWith(pending) ? text.slice(pending.length) : text.replace(pending.replace(/\n$/, "\r\n"), "");
 });
 
 /** Starts a program in a buffer, on a terminal, with its output going through comint, as comint-exec. */
 export function comintExec(buffer: string, name: string, command: string[], startfile?: string): string {
-  const old = gnista.getBufferProcess(buffer);
-  if (old !== undefined) gnista.deleteProcess(old);
-  const directory = gnista.withCurrentBuffer(buffer, () => gnista.expandFileName("."));
-  const width = gnista.windowList().find((w) => gnista.windowBuffer(w) === buffer);
-  const size = width === undefined ? undefined : gnista.windowSize(width);
-  const proc = gnista.makeProcess({
+  const old = e8.getBufferProcess(buffer);
+  if (old !== undefined) e8.deleteProcess(old);
+  const directory = e8.withCurrentBuffer(buffer, () => e8.expandFileName("."));
+  const width = e8.windowList().find((w) => e8.windowBuffer(w) === buffer);
+  const size = width === undefined ? undefined : e8.windowSize(width);
+  const proc = e8.makeProcess({
     name,
     buffer,
     command,
     directory,
     connectionType: "pty",
     env: {
-      TERM: String(gnista.variable("comint-terminfo-terminal") ?? "dumb"),
-      INSIDE_EMACS: "gnista,comint",
+      TERM: String(e8.variable("comint-terminfo-terminal") ?? "dumb"),
+      INSIDE_EMACS: "e8,comint",
       ...(size ? { COLUMNS: String(size.width) } : {}),
     },
     filter: (p, text) => outputFilter(p, text),
   });
-  if (size) gnista.setProcessWindowSize(proc, size.height, size.width);
-  gnista.withCurrentBuffer(buffer, () => {
-    gnista.gotoChar(gnista.pointMax());
-    gnista.setMarker(gnista.processMark(proc)!, gnista.pointMax());
-    if (startfile !== undefined) gnista.processSendString(proc, gnista.readTextFile(startfile) ?? "");
+  if (size) e8.setProcessWindowSize(proc, size.height, size.width);
+  e8.withCurrentBuffer(buffer, () => {
+    e8.gotoChar(e8.pointMax());
+    e8.setMarker(e8.processMark(proc)!, e8.pointMax());
+    if (startfile !== undefined) e8.processSendString(proc, e8.readTextFile(startfile) ?? "");
   });
   return proc;
 }
@@ -297,11 +297,11 @@ export function comintExec(buffer: string, name: string, command: string[], star
  */
 export function makeComintInBuffer(name: string, buffer: string | undefined, program: string, startfile?: string, ...args: string[]): string {
   const b = buffer ?? `*${name}*`;
-  gnista.getBufferCreate(b);
-  const running = gnista.getBufferProcess(b);
-  if (running === undefined || !gnista.processLiveP(running)) {
-    gnista.withCurrentBuffer(b, () => {
-      if (gnista.variable("major-mode") !== "comint-mode" && !derivedFromComint()) gnista.call("comint-mode");
+  e8.getBufferCreate(b);
+  const running = e8.getBufferProcess(b);
+  if (running === undefined || !e8.processLiveP(running)) {
+    e8.withCurrentBuffer(b, () => {
+      if (e8.variable("major-mode") !== "comint-mode" && !derivedFromComint()) e8.call("comint-mode");
     });
     comintExec(b, name, [program, ...args], startfile);
   }
@@ -310,10 +310,10 @@ export function makeComintInBuffer(name: string, buffer: string | undefined, pro
 
 /** Whether the current buffer's mode derives from comint-mode. */
 function derivedFromComint(): boolean {
-  return gnista.derivedModeP("comint-mode");
+  return e8.derivedModeP("comint-mode");
 }
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "comint-mode",
   modeName: "Comint",
   doc:
@@ -344,62 +344,62 @@ gnista.defineMajorMode({
     "C-c C-n": "comint-next-prompt",
     "C-c C-p": "comint-previous-prompt",
     "C-c C-d": "comint-send-eof",
-  } as Record<string, gnista.CommandName>,
+  } as Record<string, e8.CommandName>,
   setup: () => {
     state();
-    gnista.addHook("isearch-mode-hook", historyIsearchSetup, { local: true });
-    gnista.setVariable("comint-preoutput-filter-functions", [dropEcho]);
-    gnista.setVariable("scroll-conservatively", 101);
+    e8.addHook("isearch-mode-hook", historyIsearchSetup, { local: true });
+    e8.setVariable("comint-preoutput-filter-functions", [dropEcho]);
+    e8.setVariable("scroll-conservatively", 101);
   },
 });
 
-gnista.defineFace({ name: "comint-highlight-prompt", doc: "The prompt in a comint buffer.", attributes: { inherit: "minibuffer-prompt" } });
-gnista.defineFace({ name: "comint-highlight-input", doc: "Input sent in a comint buffer.", attributes: { bold: true } });
+e8.defineFace({ name: "comint-highlight-prompt", doc: "The prompt in a comint buffer.", attributes: { inherit: "minibuffer-prompt" } });
+e8.defineFace({ name: "comint-highlight-input", doc: "Input sent in a comint buffer.", attributes: { bold: true } });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-send-input",
   doc: "Send the input after the prompt to the program, with a newline; before the prompt, send the old input at point again.",
   run: () => sendInput(),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-send-eof",
   doc: "Send what is typed, without a newline, then end of file, as C-d does at a terminal.",
   run: () => {
     sendInput(true, true);
-    gnista.processSendEof(bufferProcess());
+    e8.processSendEof(bufferProcess());
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-delchar-or-maybe-eof",
   doc: "Delete the next character, or send end of file at the end of the buffer with nothing typed.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
-    const proc = gnista.getBufferProcess(gnista.bufferName());
-    if (gnista.point() === gnista.pointMax() && proc !== undefined && gnista.point() === processMark(proc)) gnista.call("comint-send-eof");
-    else gnista.call("delete-char", arg);
+    const proc = e8.getBufferProcess(e8.bufferName());
+    if (e8.point() === e8.pointMax() && proc !== undefined && e8.point() === processMark(proc)) e8.call("comint-send-eof");
+    else e8.call("delete-char", arg);
   },
 });
 
 /** Replaces what is typed after the process mark with `text`. */
 function replaceInput(text: string): void {
   const pmark = processMark(bufferProcess());
-  gnista.letBind({ "inhibit-read-only": true }, () => {
-    gnista.deleteRegion(pmark, gnista.pointMax());
-    gnista.gotoChar(pmark);
-    gnista.insert(text);
+  e8.letBind({ "inhibit-read-only": true }, () => {
+    e8.deleteRegion(pmark, e8.pointMax());
+    e8.gotoChar(pmark);
+    e8.insert(text);
   });
 }
 
 /** Whether point is at the command line, after the process mark. */
-const afterPmark = (): boolean => processMark(bufferProcess()) <= gnista.point();
+const afterPmark = (): boolean => processMark(bufferProcess()) <= e8.point();
 
 /** The count to search with, as comint-search-arg: 0 starts again from the newest. */
 function searchArg(arg: number): number {
   const s = state();
-  if (!afterPmark()) gnista.userError("Not at command line");
-  if (s.ring.length === 0) gnista.userError("Empty input ring");
+  if (!afterPmark()) e8.userError("Not at command line");
+  if (s.ring.length === 0) e8.userError("Empty input ring");
   if (arg === 0) {
     s.index = undefined;
     return 1;
@@ -417,14 +417,14 @@ const mod = (a: number, n: number): number => ((a % n) + n) % n;
 function matchingPosition(regexp: string, argIn: number): number | undefined {
   const s = state();
   const ring = s.ring;
-  if (ring.length === 0) gnista.userError("No history");
+  if (ring.length === 0) e8.userError("No history");
   const len = ring.length;
   let arg = argIn;
   const motion = arg > 0 ? 1 : -1;
   const start = s.index !== undefined ? mod(s.index + motion, len) : arg >= 0 ? 0 : len - 1;
   let n = mod(start - motion, len);
   let tried = false;
-  const matches = (i: number) => gnista.stringMatch(regexp, ring[i]!) !== undefined;
+  const matches = (i: number) => e8.stringMatch(regexp, ring[i]!) !== undefined;
   while (arg !== 0 && !tried) {
     const prev = n;
     n = mod(n + motion, len);
@@ -444,7 +444,7 @@ function restoreInput(): void {
   replaceInput("");
   if ((s.stored ?? "") !== "") {
     replaceInput(s.stored!);
-    gnista.message("Input restored");
+    e8.message("Input restored");
   }
   s.index = undefined;
 }
@@ -458,14 +458,14 @@ function previousMatchingInput(regexp: string, nIn: number, restore = false): vo
   const n = searchArg(nIn);
   const s = state();
   const pos = matchingPosition(regexp, n);
-  if (pos === undefined) gnista.userError("Not found");
+  if (pos === undefined) e8.userError("Not found");
   if (s.index !== undefined && restore && ((n < 0 && s.index < pos) || (n > 0 && s.index > pos))) {
     restoreInput();
     return;
   }
-  if (s.index === undefined) s.stored = gnista.bufferSubstringNoProperties(processMark(bufferProcess()), gnista.pointMax());
+  if (s.index === undefined) s.stored = e8.bufferSubstringNoProperties(processMark(bufferProcess()), e8.pointMax());
   s.index = pos;
-  gnista.message(`History item: ${pos + 1}`);
+  e8.message(`History item: ${pos + 1}`);
   replaceInput(s.ring[pos]!);
 }
 
@@ -485,20 +485,20 @@ function previousInput(arg: number): void {
 
 /** Reads a regexp to search the history for, as comint-regexp-arg: empty means the last one. */
 async function regexpArg(prompt: string): Promise<string> {
-  const regexp = await gnista.readString(prompt, { history: "minibuffer-history-search-history" });
+  const regexp = await e8.readString(prompt, { history: "minibuffer-history-search-history" });
   if (regexp !== "") return regexp;
-  const history = gnista.variable("minibuffer-history-search-history");
+  const history = e8.variable("minibuffer-history-search-history");
   return Array.isArray(history) && typeof history[0] === "string" ? history[0] : regexp;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-previous-matching-input",
   doc: "Put the last input matching a regexp after the prompt; with a prefix argument, the Nth last, or the Nth next if negative.",
   params: [{ name: "n", kind: "count" }],
   run: async (n: number) => previousMatchingInput(await regexpArg("Previous input matching (regexp): "), n),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-next-matching-input",
   doc: "Put the next input matching a regexp after the prompt; with a prefix argument, the Nth next, or the Nth last if negative.",
   params: [{ name: "n", kind: "count" }],
@@ -508,24 +508,24 @@ gnista.defineCommand({
 /** Goes `n` inputs back through those starting with what is typed before point, as comint-previous-matching-input-from-input. */
 function matchingInputFromInput(n: number): void {
   const s = state();
-  const opoint = gnista.point();
-  const last = gnista.lastCommand();
+  const opoint = e8.point();
+  const last = e8.lastCommand();
   if (last !== "comint-previous-matching-input-from-input" && last !== "comint-next-matching-input-from-input") {
-    s.matching = gnista.bufferSubstringNoProperties(processMark(bufferProcess()), gnista.point());
+    s.matching = e8.bufferSubstringNoProperties(processMark(bufferProcess()), e8.point());
     s.index = undefined;
   }
   previousMatchingInput(`^${regexpQuote(s.matching)}`, n, true);
-  if (gnista.variable("comint-move-point-for-matching-input") === "after-input") gnista.gotoChar(opoint);
+  if (e8.variable("comint-move-point-for-matching-input") === "after-input") e8.gotoChar(opoint);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-previous-matching-input-from-input",
   doc: "Put the last input that starts with what is typed before point after the prompt; again, the one before.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => matchingInputFromInput(n),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-next-matching-input-from-input",
   doc: "Put the next input that starts with what is typed before point after the prompt; again, the one after.",
   params: [{ name: "n", kind: "count" }],
@@ -534,12 +534,12 @@ gnista.defineCommand({
 
 /** Runs `f` in a buffer of its own, killed afterwards, as with-temp-buffer. */
 function withTempBuffer<T>(f: () => T): T {
-  const name = gnista.generateNewBufferName(" *temp*");
-  gnista.getBufferCreate(name);
+  const name = e8.generateNewBufferName(" *temp*");
+  e8.getBufferCreate(name);
   try {
-    return gnista.withCurrentBuffer(name, f);
+    return e8.withCurrentBuffer(name, f);
   } finally {
-    gnista.call("kill-buffer", name);
+    e8.call("kill-buffer", name);
   }
 }
 
@@ -550,65 +550,65 @@ function withTempBuffer<T>(f: () => T): T {
  * are left out. With `silent`, says nothing if the file cannot be read.
  */
 export function readInputRing(silent = false): void {
-  const file = gnista.variable("comint-input-ring-file-name");
+  const file = e8.variable("comint-input-ring-file-name");
   if (typeof file !== "string" || file === "") return;
-  if (!gnista.fileReadableP(gnista.expandFileName(file))) {
-    if (!silent) gnista.message(`Cannot read history file ${file}`);
+  if (!e8.fileReadableP(e8.expandFileName(file))) {
+    if (!silent) e8.message(`Cannot read history file ${file}`);
     return;
   }
-  const size = Number(gnista.variable("comint-input-ring-size") ?? 500);
-  const separator = String(gnista.variable("comint-input-ring-separator") ?? "\n");
-  const prefix = gnista.variable("comint-input-ring-file-prefix");
-  const ignore = String(gnista.variable("comint-input-history-ignore") ?? "^#");
-  const ignoredups = !nil(gnista.variable("comint-input-ignoredups"));
+  const size = Number(e8.variable("comint-input-ring-size") ?? 500);
+  const separator = String(e8.variable("comint-input-ring-separator") ?? "\n");
+  const prefix = e8.variable("comint-input-ring-file-prefix");
+  const ignore = String(e8.variable("comint-input-history-ignore") ?? "^#");
+  const ignoredups = !nil(e8.variable("comint-input-ignoredups"));
   const ring: string[] = [];
   withTempBuffer(() => {
-    gnista.insertFileContents(gnista.expandFileName(file));
-    gnista.gotoChar(gnista.pointMax());
-    while (ring.length < size && gnista.reSearchBackward(separator, { noerror: true }) !== undefined) {
-      const end = gnista.matchBeginning(0)!;
-      gnista.gotoChar(gnista.reSearchBackward(separator, { noerror: true }) !== undefined ? gnista.matchEnd(0)! : gnista.pointMin());
-      if (typeof prefix === "string" && prefix !== "" && gnista.lookingAt(prefix)) gnista.gotoChar(gnista.matchEnd(0)!);
-      const history = gnista.bufferSubstringNoProperties(gnista.point(), end);
-      if (gnista.stringMatch(ignore, history) === undefined && (!ignoredups || ring.length === 0 || ring[0] !== history)) ring.push(history);
+    e8.insertFileContents(e8.expandFileName(file));
+    e8.gotoChar(e8.pointMax());
+    while (ring.length < size && e8.reSearchBackward(separator, { noerror: true }) !== undefined) {
+      const end = e8.matchBeginning(0)!;
+      e8.gotoChar(e8.reSearchBackward(separator, { noerror: true }) !== undefined ? e8.matchEnd(0)! : e8.pointMin());
+      if (typeof prefix === "string" && prefix !== "" && e8.lookingAt(prefix)) e8.gotoChar(e8.matchEnd(0)!);
+      const history = e8.bufferSubstringNoProperties(e8.point(), end);
+      if (e8.stringMatch(ignore, history) === undefined && (!ignoredups || ring.length === 0 || ring[0] !== history)) ring.push(history);
     }
   });
   const s = state();
   s.ring = ring;
   s.index = undefined;
 }
-gnista.defun("comint-read-input-ring", (silent?: boolean) => readInputRing(Boolean(silent)));
+e8.defun("comint-read-input-ring", (silent?: boolean) => readInputRing(Boolean(silent)));
 
 /** Writes the buffer's history to comint-input-ring-file-name, oldest first, as comint-write-input-ring. */
 export function writeInputRing(): void {
-  const file = gnista.variable("comint-input-ring-file-name");
+  const file = e8.variable("comint-input-ring-file-name");
   const s = state();
   if (typeof file !== "string" || file === "" || s.ring.length === 0) return;
-  const path = gnista.expandFileName(file);
-  if (!gnista.fileWritableP(path)) {
-    gnista.message(`Cannot write history file ${file}`);
+  const path = e8.expandFileName(file);
+  if (!e8.fileWritableP(path)) {
+    e8.message(`Cannot write history file ${file}`);
     return;
   }
-  const separator = String(gnista.variable("comint-input-ring-separator") ?? "\n");
-  gnista.writeTextFile(path, [...s.ring].reverse().map((input) => input + separator).join(""));
+  const separator = String(e8.variable("comint-input-ring-separator") ?? "\n");
+  e8.writeTextFile(path, [...s.ring].reverse().map((input) => input + separator).join(""));
 }
-gnista.defun("comint-write-input-ring", () => writeInputRing());
+e8.defun("comint-write-input-ring", () => writeInputRing());
 
 // Isearch in the input history, as comint.el's: M-r searches back through
 // the inputs sent before for a regexp, each match put after the prompt in
 // turn, the prompt showing the search's own.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "comint-history-isearch",
   doc: "Whether C-r and C-M-r search the input history rather than the buffer: t always, dwim when the search starts at the command line, nil never. M-r searches the history whatever it says.",
   value: false,
 });
 
 /** Where the input on point's line starts, after the prompt, as comint-line-beginning-position. */
-const lineBeginningPosition = (): number => gnista.constrainToField(gnista.lineBeginningPosition(), gnista.lineEndPosition());
+const lineBeginningPosition = (): number => e8.constrainToField(e8.lineBeginningPosition(), e8.lineEndPosition());
 
 /** The start of the line the prompt is on. */
-const promptLineStart = (): number => gnista.lineBeginningPosition(lineBeginningPosition());
+const promptLineStart = (): number => e8.lineBeginningPosition(lineBeginningPosition());
 
 /** The overlay that shows the search's prompt over the program's, as comint-history-isearch-message-overlay. */
 const messageOverlays = new Map<string, number>();
@@ -623,33 +623,33 @@ function gotoInput(pos: number | undefined): void {
 }
 
 /** The function isearch searches the history with, as comint-history-isearch-search gives. */
-function historyIsearchSearch(): (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined {
+function historyIsearchSearch(): (string: string, bound?: e8.Value, noerror?: e8.Value) => number | undefined {
   return (string, bound, noerror) => {
     const searchFun = isearchSearchFunDefault();
-    const forward = gnista.variable("isearch-forward") === true;
+    const forward = e8.variable("isearch-forward") === true;
     const s = state();
     // Lazy highlighting searches with a bound: not in the prompt or the output.
-    if (typeof bound === "number" && forward && !afterPmark()) gnista.gotoChar(processMark(bufferProcess()));
+    if (typeof bound === "number" && forward && !afterPmark()) e8.gotoChar(processMark(bufferProcess()));
     const here = searchFun(string, forward ? bound : lineBeginningPosition(), noerror);
     if (here !== undefined) return here;
     if (typeof bound === "number") return undefined;
     // Then put the inputs before or after this one in, one by one, and search each.
-    return gnista.conditionCase(
+    return e8.conditionCase(
       () => {
         for (;;) {
           if (forward) {
-            if (s.index === undefined) gnista.signal("error", "End of history; no next item");
+            if (s.index === undefined) e8.signal("error", "End of history; no next item");
             previousInput(-1);
-            gnista.gotoChar(lineBeginningPosition());
+            e8.gotoChar(lineBeginningPosition());
           } else {
-            if (s.index === s.ring.length - 1) gnista.signal("error", "Beginning of history; no preceding item");
+            if (s.index === s.ring.length - 1) e8.signal("error", "Beginning of history; no preceding item");
             previousInput(1);
-            gnista.gotoChar(gnista.pointMax());
+            e8.gotoChar(e8.pointMax());
           }
-          gnista.setVariable("isearch-barrier", gnista.point());
-          gnista.setVariable("isearch-opoint", gnista.point());
+          e8.setVariable("isearch-barrier", e8.point());
+          e8.setVariable("isearch-opoint", e8.point());
           const found = searchFun(string, forward ? undefined : lineBeginningPosition(), noerror);
-          if (found !== undefined) return gnista.point();
+          if (found !== undefined) return e8.point();
         }
       },
       { error: () => undefined },
@@ -658,156 +658,156 @@ function historyIsearchSearch(): (string: string, bound?: gnista.Value, noerror?
 }
 
 /** Shows the search's prompt over the program's while the search succeeds, as comint-history-isearch-message. */
-function historyIsearchMessage(cqHack?: gnista.Value, ellipsis?: gnista.Value): void {
-  if (gnista.variable("isearch-success") !== true || truthyValue(gnista.variable("isearch-error"))) {
+function historyIsearchMessage(cqHack?: e8.Value, ellipsis?: e8.Value): void {
+  if (e8.variable("isearch-success") !== true || truthyValue(e8.variable("isearch-error"))) {
     isearchMessage(truthyValue(cqHack), truthyValue(ellipsis));
     return;
   }
-  const buffer = gnista.bufferName();
+  const buffer = e8.bufferName();
   const start = promptLineStart();
   const end = lineBeginningPosition();
   let o = messageOverlays.get(buffer);
-  if (o !== undefined && gnista.overlayStart(o) !== undefined) gnista.moveOverlay(o, start, end);
+  if (o !== undefined && e8.overlayStart(o) !== undefined) e8.moveOverlay(o, start, end);
   else {
-    o = gnista.makeOverlay(start, end);
-    gnista.overlayPut(o, "evaporate", true);
+    o = e8.makeOverlay(start, end);
+    e8.overlayPut(o, "evaporate", true);
     messageOverlays.set(buffer, o);
   }
-  gnista.overlayPut(o, "display", isearchMessagePrefix(truthyValue(ellipsis)));
+  e8.overlayPut(o, "display", isearchMessagePrefix(truthyValue(ellipsis)));
   const index = state().index;
-  if (index !== undefined && !truthyValue(ellipsis)) gnista.message(`History item: ${index + 1}`);
-  else gnista.message("");
+  if (index !== undefined && !truthyValue(ellipsis)) e8.message(`History item: ${index + 1}`);
+  else e8.message("");
 }
 
 /** Wraps a failing search round to the newest input or the oldest, as comint-history-isearch-wrap. */
 function historyIsearchWrap(): void {
-  const forward = gnista.variable("isearch-forward") === true;
+  const forward = e8.variable("isearch-forward") === true;
   if (forward) gotoInput(state().ring.length - 1);
   else gotoInput(undefined);
-  gnista.gotoChar(forward ? lineBeginningPosition() : gnista.pointMax());
+  e8.gotoChar(forward ? lineBeginningPosition() : e8.pointMax());
 }
 
 /** Keeps where the search is in the history with each of its states, as comint-history-isearch-push-state. */
-function historyIsearchPushState(): (cmd: gnista.Value) => void {
+function historyIsearchPushState(): (cmd: e8.Value) => void {
   const index = state().index;
   return () => gotoInput(index);
 }
 
-const truthyValue = (v: gnista.Value | undefined) => v !== undefined && v !== null && v !== false;
+const truthyValue = (v: e8.Value | undefined) => v !== undefined && v !== null && v !== false;
 
-const searchVariables: [string, gnista.Value][] = [
-  ["isearch-search-fun-function", historyIsearchSearch as unknown as gnista.Value],
-  ["isearch-message-function", historyIsearchMessage as unknown as gnista.Value],
-  ["isearch-wrap-function", historyIsearchWrap as unknown as gnista.Value],
-  ["isearch-push-state-function", historyIsearchPushState as unknown as gnista.Value],
+const searchVariables: [string, e8.Value][] = [
+  ["isearch-search-fun-function", historyIsearchSearch as unknown as e8.Value],
+  ["isearch-message-function", historyIsearchMessage as unknown as e8.Value],
+  ["isearch-wrap-function", historyIsearchWrap as unknown as e8.Value],
+  ["isearch-push-state-function", historyIsearchPushState as unknown as e8.Value],
 ];
 
 /** Makes a search that starts here search the history, as comint-history-isearch-setup on isearch-mode-hook. */
 function historyIsearchSetup(): void {
-  const how = gnista.variable("comint-history-isearch");
-  const proc = gnista.getBufferProcess(gnista.bufferName());
+  const how = e8.variable("comint-history-isearch");
+  const proc = e8.getBufferProcess(e8.bufferName());
   if (proc === undefined) return;
   // Not where the prompt is empty, as in a finished shell's buffer.
   if (promptLineStart() === lineBeginningPosition()) return;
   if (!(how === true || (how === "dwim" && afterPmark()))) return;
-  gnista.setVariable("isearch-message-prefix-add", "history ");
+  e8.setVariable("isearch-message-prefix-add", "history ");
   for (const [name, value] of searchVariables) {
-    gnista.makeLocalVariable(name);
-    gnista.setVariable(name, value);
+    e8.makeLocalVariable(name);
+    e8.setVariable(name, value);
   }
-  gnista.makeLocalVariable("isearch-lazy-count");
-  gnista.setVariable("isearch-lazy-count", false);
-  gnista.addHook("isearch-mode-end-hook", historyIsearchEnd, { local: true });
+  e8.makeLocalVariable("isearch-lazy-count");
+  e8.setVariable("isearch-lazy-count", false);
+  e8.addHook("isearch-mode-end-hook", historyIsearchEnd, { local: true });
 }
 
 /** What comint-history-isearch was before M-r set it, put back as the search ends, as custom-reevaluate-setting does. */
-let savedHowToSearch: gnista.Value | undefined;
+let savedHowToSearch: e8.Value | undefined;
 
 /** Puts the search back as it was, as comint-history-isearch-end on isearch-mode-end-hook. */
 function historyIsearchEnd(): void {
-  const o = messageOverlays.get(gnista.bufferName());
-  if (o !== undefined) gnista.deleteOverlay(o);
-  messageOverlays.delete(gnista.bufferName());
-  gnista.setVariable("isearch-message-prefix-add", null);
-  for (const [name] of searchVariables) gnista.killLocalVariable(name);
-  gnista.killLocalVariable("isearch-lazy-count");
+  const o = messageOverlays.get(e8.bufferName());
+  if (o !== undefined) e8.deleteOverlay(o);
+  messageOverlays.delete(e8.bufferName());
+  e8.setVariable("isearch-message-prefix-add", null);
+  for (const [name] of searchVariables) e8.killLocalVariable(name);
+  e8.killLocalVariable("isearch-lazy-count");
   // So the search leaves no mark behind.
-  gnista.setVariable("isearch-opoint", gnista.point());
-  gnista.removeHook("isearch-mode-end-hook", historyIsearchEnd, { local: true });
-  if (gnista.variable("isearch-suspended") !== true && savedHowToSearch !== undefined) {
-    gnista.setVariable("comint-history-isearch", savedHowToSearch);
+  e8.setVariable("isearch-opoint", e8.point());
+  e8.removeHook("isearch-mode-end-hook", historyIsearchEnd, { local: true });
+  if (e8.variable("isearch-suspended") !== true && savedHowToSearch !== undefined) {
+    e8.setVariable("comint-history-isearch", savedHowToSearch);
     savedHowToSearch = undefined;
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-history-isearch-backward",
   doc: "Search back through the input history for a string, incrementally: each match is put after the prompt.",
   run: () => {
-    savedHowToSearch ??= gnista.variable("comint-history-isearch") ?? false;
-    gnista.setVariable("comint-history-isearch", true);
-    gnista.call("isearch-backward");
+    savedHowToSearch ??= e8.variable("comint-history-isearch") ?? false;
+    e8.setVariable("comint-history-isearch", true);
+    e8.call("isearch-backward");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-history-isearch-backward-regexp",
   doc: "Search back through the input history for a regular expression, incrementally: each match is put after the prompt.",
   run: () => {
-    savedHowToSearch ??= gnista.variable("comint-history-isearch") ?? false;
-    gnista.setVariable("comint-history-isearch", true);
-    gnista.call("isearch-backward-regexp");
+    savedHowToSearch ??= e8.variable("comint-history-isearch") ?? false;
+    e8.setVariable("comint-history-isearch", true);
+    e8.call("isearch-backward-regexp");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-previous-input",
   doc: "Put the input sent before this one after the prompt, or as many back as the prefix argument says.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => previousInput(arg),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-next-input",
   doc: "Put the input sent after this one after the prompt, or as many on as the prefix argument says.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => previousInput(-arg),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-bol",
   doc: "Go to the start of the line, after the prompt if there is one.",
   run: () => {
-    gnista.gotoChar(gnista.lineBeginningPosition());
-    gnista.gotoChar(gnista.constrainToField(gnista.point(), gnista.lineEndPosition()));
+    e8.gotoChar(e8.lineBeginningPosition());
+    e8.gotoChar(e8.constrainToField(e8.point(), e8.lineEndPosition()));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-bol-or-process-mark",
   doc: "Go to the start of the input on this line; again, to the process mark.",
   run: () => {
-    if (gnista.lastCommand() === "comint-bol-or-process-mark") gnista.gotoChar(processMark(bufferProcess()));
-    else gnista.call("comint-bol");
+    if (e8.lastCommand() === "comint-bol-or-process-mark") e8.gotoChar(processMark(bufferProcess()));
+    else e8.call("comint-bol");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-kill-input",
   doc: "Kill what is typed after the prompt, up to point.",
   run: () => {
     const pmark = processMark(bufferProcess());
-    if (gnista.point() > pmark) gnista.killRegion(pmark, gnista.point());
+    if (e8.point() > pmark) e8.killRegion(pmark, e8.point());
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-copy-old-input",
   doc: "Copy the input at point to after the prompt, to send again.",
   run: () => {
     const input = oldInput();
-    gnista.gotoChar(processMark(bufferProcess()));
-    gnista.insert(input);
+    e8.gotoChar(processMark(bufferProcess()));
+    e8.insert(input);
   },
 });
 
@@ -815,10 +815,10 @@ gnista.defineCommand({
 function skipInput(): void {
   const proc = bufferProcess();
   const pmark = processMark(proc);
-  gnista.gotoChar(gnista.pointMax());
-  if (gnista.point() > pmark) {
-    gnista.insert("  ");
-    gnista.setMarker(gnista.processMark(proc)!, gnista.point());
+  e8.gotoChar(e8.pointMax());
+  if (e8.point() > pmark) {
+    e8.insert("  ");
+    e8.setMarker(e8.processMark(proc)!, e8.point());
   }
 }
 
@@ -827,92 +827,92 @@ for (const [name, doc, signal] of [
   ["comint-stop-subjob", "Stop the job running in the program, as C-z does at a terminal.", "TSTP"],
   ["comint-quit-subjob", "Send a quit signal to the job running in the program, as C-\\ does at a terminal.", "QUIT"],
 ] as const) {
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     run: () => {
       if (signal === "INT") skipInput();
       const proc = bufferProcess();
-      const fn = { INT: gnista.interruptProcess, TSTP: gnista.stopProcess, QUIT: gnista.quitProcess }[signal];
-      fn(proc, gnista.processTtyName(proc) !== undefined);
+      const fn = { INT: e8.interruptProcess, TSTP: e8.stopProcess, QUIT: e8.quitProcess }[signal];
+      fn(proc, e8.processTtyName(proc) !== undefined);
     },
   });
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-delete-output",
   doc: "Delete the output of the last input, leaving the prompt; with a prefix argument, kill it.",
   params: [{ name: "kill", kind: "prefix" }],
-  run: (kill: gnista.PrefixArg) => {
+  run: (kill: e8.PrefixArg) => {
     const proc = bufferProcess();
     const s = state();
-    gnista.letBind({ "inhibit-read-only": true }, () =>
-      gnista.saveExcursion(() => {
-        const pmark = gnista.lineBeginningPosition(processMark(proc));
-        const from = gnista.markerPosition(s.lastInputEnd)!;
-        if (kill !== null) gnista.killNew(gnista.bufferSubstringNoProperties(from, pmark));
-        const prompt = gnista.bufferSubstringNoProperties(pmark, processMark(proc));
-        gnista.deleteRegion(from, processMark(proc));
-        gnista.gotoChar(from);
-        gnista.setMarker(gnista.processMark(proc)!, from);
+    e8.letBind({ "inhibit-read-only": true }, () =>
+      e8.saveExcursion(() => {
+        const pmark = e8.lineBeginningPosition(processMark(proc));
+        const from = e8.markerPosition(s.lastInputEnd)!;
+        if (kill !== null) e8.killNew(e8.bufferSubstringNoProperties(from, pmark));
+        const prompt = e8.bufferSubstringNoProperties(pmark, processMark(proc));
+        e8.deleteRegion(from, processMark(proc));
+        e8.gotoChar(from);
+        e8.setMarker(e8.processMark(proc)!, from);
         outputFilter(proc, `*** output flushed ***\n${prompt}`);
       }),
     );
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-clear-buffer",
   doc: "Delete everything before the last prompt.",
   run: () => {
     const proc = bufferProcess();
-    gnista.letBind({ "inhibit-read-only": true }, () => {
-      const start = gnista.lineBeginningPosition(processMark(proc));
-      gnista.deleteRegion(gnista.pointMin(), start);
+    e8.letBind({ "inhibit-read-only": true }, () => {
+      const start = e8.lineBeginningPosition(processMark(proc));
+      e8.deleteRegion(e8.pointMin(), start);
     });
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-show-output",
   doc: "Put the start of the last output at the top of the window, with point at the input before it.",
   run: () => {
     const s = state();
-    gnista.gotoChar(gnista.markerPosition(s.lastInputStart)!);
-    gnista.callWithPrefix(0, "recenter");
-    gnista.gotoChar(gnista.lineBeginningPosition(gnista.markerPosition(s.lastInputStart)!));
+    e8.gotoChar(e8.markerPosition(s.lastInputStart)!);
+    e8.callWithPrefix(0, "recenter");
+    e8.gotoChar(e8.lineBeginningPosition(e8.markerPosition(s.lastInputStart)!));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-show-maximum-output",
   doc: "Go to the end of the buffer, showing as much output as fits.",
   run: () => {
-    gnista.gotoChar(gnista.pointMax());
-    gnista.callWithPrefix(-1, "recenter");
+    e8.gotoChar(e8.pointMax());
+    e8.callWithPrefix(-1, "recenter");
   },
 });
 
 /** Goes to the start of the nth next input field, back if negative, as comint-next-prompt. */
 function nextPrompt(nIn: number): void {
   let n = nIn;
-  let pos = gnista.point();
+  let pos = e8.point();
   let inputPos: number | undefined;
   while (n !== 0) {
     const prev = pos;
-    pos = n > 0 ? gnista.nextSingleCharPropertyChange(pos, "field") : gnista.previousSingleCharPropertyChange(pos, "field");
+    pos = n > 0 ? e8.nextSingleCharPropertyChange(pos, "field") : e8.previousSingleCharPropertyChange(pos, "field");
     if (pos === prev) {
-      if (n > 0) inputPos = gnista.pointMax();
+      if (n > 0) inputPos = e8.pointMax();
       n = 0;
-    } else if (nil(gnista.charProperty(pos, "field"))) {
+    } else if (nil(e8.charProperty(pos, "field"))) {
       n += n < 0 ? 1 : -1;
       inputPos = pos;
     }
   }
-  if (inputPos !== undefined) gnista.gotoChar(inputPos);
+  if (inputPos !== undefined) e8.gotoChar(inputPos);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-next-prompt",
   doc: "Go to the input after the next prompt, or as many on as the prefix argument says.",
   params: [{ name: "n", kind: "count" }],
@@ -920,7 +920,7 @@ gnista.defineCommand({
   run: (n: number) => nextPrompt(n),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-previous-prompt",
   doc: "Go to the input after the previous prompt, or as many back as the prefix argument says.",
   params: [{ name: "n", kind: "count" }],
@@ -929,8 +929,8 @@ gnista.defineCommand({
 });
 
 // Keep the history-forgetting hook from treating killed buffers' state as live.
-gnista.addHook("kill-buffer-hook", () => {
-  states.delete(gnista.bufferName());
+e8.addHook("kill-buffer-hook", () => {
+  states.delete(e8.bufferName());
 });
 
 /**
@@ -938,15 +938,15 @@ gnista.addHook("kill-buffer-hook", () => {
  * comint-send-invisible: for passwords, which then go in no history.
  */
 export async function sendInvisible(prompt = "Non-echoed text: "): Promise<void> {
-  const buffer = gnista.bufferName();
-  const proc = gnista.getBufferProcess(buffer);
+  const buffer = e8.bufferName();
+  const proc = e8.getBufferProcess(buffer);
   if (proc === undefined) throw new Error(`Buffer ${buffer} has no process`);
-  const prefix = gnista.windowBuffer() === buffer ? "" : `(In buffer ${buffer}) `;
+  const prefix = e8.windowBuffer() === buffer ? "" : `(In buffer ${buffer}) `;
   const str = await readPasswd(prefix + prompt);
-  if (gnista.processLiveP(proc)) gnista.processSendString(proc, `${str}\n`);
+  if (e8.processLiveP(proc)) e8.processSendString(proc, `${str}\n`);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comint-send-invisible",
   doc: "Read a line without showing it, as a password, and send it to the buffer's process.",
   run: () => sendInvisible(),
@@ -960,15 +960,15 @@ let promptDepth = 0;
  * comint-watch-for-password-prompt, the last of comint-output-filter-functions.
  */
 export const watchForPasswordPrompt = (string: string): void => {
-  const regexp = gnista.variable("comint-password-prompt-regexp");
-  if (typeof regexp !== "string" || gnista.stringMatch(regexp, string.replaceAll("\r", ""), { caseFold: true }) === undefined) return;
+  const regexp = e8.variable("comint-password-prompt-regexp");
+  if (typeof regexp !== "string" || e8.stringMatch(regexp, string.replaceAll("\r", ""), { caseFold: true }) === undefined) return;
   if (promptDepth >= 10) {
-    gnista.message("Password prompt recursion too deep");
+    e8.message("Password prompt recursion too deep");
     return;
   }
-  if (gnista.getBufferProcess(gnista.bufferName()) === undefined) return;
+  if (e8.getBufferProcess(e8.bufferName()) === undefined) return;
   const prompt = string.replace(/^[ \n\r\t\v\f\b\x07]+/, "").replace(/\n+$/, "");
   promptDepth++;
   sendInvisible(prompt).finally(() => promptDepth--);
 };
-gnista.addHook("comint-output-filter-functions", watchForPasswordPrompt);
+e8.addHook("comint-output-filter-functions", watchForPasswordPrompt);

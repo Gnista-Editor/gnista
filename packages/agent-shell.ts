@@ -2,21 +2,21 @@
 // (https://github.com/xenodium/agent-shell): M-x agent-shell starts an agent
 // that speaks the Agent Client Protocol, such as Claude Code through
 // claude-agent-acp, Gemini CLI or Codex, in the current project, and talks
-// to it in an Org buffer, as Gnista's own agent buffer does (ADR 0019):
+// to it in an Org buffer, as E8's own agent buffer does (ADR 0019):
 //
 //   * You       what you ask, sent with C-c RET
 //   * Agent     its reply as it streams in; each tool call a line, its
 //               output or diff in a block below, folded once the turn ends,
 //               and its plan as a checklist
 //
-// The agent asks before its tools act, and Gnista asks you, when nothing
+// The agent asks before its tools act, and E8 asks you, when nothing
 // else is asking. It reads files through the buffers visiting them, so it
 // sees what is not saved yet, and writes them through those buffers, an
 // edit that undoes, then saves. C-c C-k stops the turn. Logging in is the
-// agent's: log in with it in a terminal once, and Gnista never sees a key
+// agent's: log in with it in a terminal once, and E8 never sees a key
 // (ADR 0061). The protocol is acp.ts's.
 //
-// This follows agent-shell's design, not its code: the buffer is Gnista's
+// This follows agent-shell's design, not its code: the buffer is E8's
 // Org agent buffer, not shell-maker's.
 
 import * as acp from "acp";
@@ -24,7 +24,7 @@ import { findBufferVisiting } from "files";
 import { current as projectRoot } from "project";
 import { executableFind, truthy } from "subr";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "agent-shell-agents",
   value: [
     ["claude", ["claude-agent-acp"]],
@@ -37,16 +37,16 @@ gnista.defineVariable({
     'program and its arguments that speak the Agent Client Protocol, and the environment "VAR=value" strings. ' +
     "Claude Code's is claude-agent-acp: npm install -g @agentclientprotocol/claude-agent-acp.",
 });
-gnista.defineVariable({
-  name: "agent-shell-gnista-tools",
+e8.defineVariable({
+  name: "agent-shell-e8-tools",
   value: true,
   doc:
-    "Whether agents also get Gnista's own tools, its commands, keys and buffers, through gnista-mcp connected to this " +
+    "Whether agents also get E8's own tools, its commands, keys and buffers, through e8-mcp connected to this " +
     "editor, as an MCP server of their session. Writing files, discarding unsaved work, quitting and running code " +
-    "through them ask you first. Needs this Gnista to answer on a socket (gnista-mcp-socket) and gnista-mcp beside " +
+    "through them ask you first. Needs this E8 to answer on a socket (e8-mcp-socket) and e8-mcp beside " +
     "it or on PATH.",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "agent-shell-default-agent",
   value: null,
   doc: "The agent M-x agent-shell starts without asking, by its name in agent-shell-agents; null to ask.",
@@ -69,8 +69,8 @@ interface ToolCall {
   /** Its text, rendered: the line and its block. */
   content: string;
   /** Where its line starts, and where its block ends. */
-  start: gnista.Marker;
-  end: gnista.Marker;
+  start: e8.Marker;
+  end: e8.Marker;
 }
 
 /** A question the agent asked, waiting for the user. */
@@ -95,9 +95,9 @@ interface Shell {
   /** What is open at the buffer's end: the agent's text, its thinking in a block, or nothing. */
   open: "text" | "thought" | undefined;
   toolCalls: Map<string, ToolCall>;
-  plan?: { start: gnista.Marker; end: gnista.Marker };
+  plan?: { start: e8.Marker; end: e8.Marker };
   /** Where this turn's blocks start, to fold them once it ends. */
-  blocks: gnista.Marker[];
+  blocks: e8.Marker[];
   permissions: Permission[];
   asking: boolean;
   askTimer?: number;
@@ -109,7 +109,7 @@ interface Shell {
 
 const shells = new Map<string, Shell>();
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "agent-shell-mode",
   modeName: "Agent Shell",
   parent: "org-mode",
@@ -120,9 +120,9 @@ gnista.defineMajorMode({
     "(TAB shows it). The agent asks before its tools act. C-c C-k stops the turn.",
   bindings: { "C-c RET": "agent-shell-send", "C-c C-k": "agent-shell-interrupt" },
   setup: () => {
-    gnista.call("visual-line-mode");
-    // Agents' tools, gnista-mcp's included, act in other windows than this one.
-    gnista.setVariable("agent-buffer", true);
+    e8.call("visual-line-mode");
+    // Agents' tools, e8-mcp's included, act in other windows than this one.
+    e8.setVariable("agent-buffer", true);
   },
 });
 
@@ -130,8 +130,8 @@ gnista.defineMajorMode({
 
 /** Runs `fn` in the shell's buffer, if it is still there. */
 function inBuffer<T>(shell: Shell, fn: () => T): T | undefined {
-  if (gnista.getBuffer(shell.buffer) === undefined) return undefined;
-  return gnista.withCurrentBuffer(shell.buffer, fn);
+  if (e8.getBuffer(shell.buffer) === undefined) return undefined;
+  return e8.withCurrentBuffer(shell.buffer, fn);
 }
 
 /**
@@ -142,16 +142,16 @@ function inBuffer<T>(shell: Shell, fn: () => T): T | undefined {
 function put(shell: Shell, text: string, at?: number): number {
   return (
     inBuffer(shell, () => {
-      const end = gnista.bufferSize();
+      const end = e8.bufferSize();
       const where = at ?? end;
-      const point = gnista.point();
-      const following = gnista.windowList().filter((w) => gnista.windowBuffer(w) === shell.buffer && gnista.windowPoint(w) === end);
-      gnista.gotoChar(where);
-      gnista.insert(text);
+      const point = e8.point();
+      const following = e8.windowList().filter((w) => e8.windowBuffer(w) === shell.buffer && e8.windowPoint(w) === end);
+      e8.gotoChar(where);
+      e8.insert(text);
       const after = point === end || point > where ? point + text.length : point;
-      gnista.gotoChar(point === end ? gnista.bufferSize() : after);
+      e8.gotoChar(point === end ? e8.bufferSize() : after);
       for (const w of following) {
-        if (w !== gnista.selectedWindow()) gnista.setWindowPoint(w, gnista.bufferSize());
+        if (w !== e8.selectedWindow()) e8.setWindowPoint(w, e8.bufferSize());
       }
       return where;
     }) ?? 0
@@ -161,17 +161,17 @@ function put(shell: Shell, text: string, at?: number): number {
 /** Replaces the text from `start` to `end` in the shell's buffer, keeping point after it where it was. */
 function replace(shell: Shell, start: number, end: number, text: string): void {
   inBuffer(shell, () => {
-    const point = gnista.point();
-    gnista.deleteRegion(start, end);
-    gnista.gotoChar(start);
-    gnista.insert(text);
+    const point = e8.point();
+    e8.deleteRegion(start, end);
+    e8.gotoChar(start);
+    e8.insert(text);
     const moved = point >= end ? point - (end - start) + text.length : Math.min(point, start + text.length);
-    gnista.gotoChar(moved);
+    e8.gotoChar(moved);
   });
 }
 
 function atLineStart(shell: Shell): boolean {
-  return inBuffer(shell, () => gnista.bufferSize() === 0 || gnista.bufferText(gnista.bufferSize() - 1, gnista.bufferSize()) === "\n") ?? true;
+  return inBuffer(shell, () => e8.bufferSize() === 0 || e8.bufferText(e8.bufferSize() - 1, e8.bufferSize()) === "\n") ?? true;
 }
 
 /** Ends the buffer's last line, if it is not ended. */
@@ -264,14 +264,14 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
   if (call === undefined) {
     closeOpen(shell);
     startLine(shell);
-    const at = inBuffer(shell, () => gnista.bufferSize()) ?? 0;
+    const at = inBuffer(shell, () => e8.bufferSize()) ?? 0;
     call = {
       title: String(update.title ?? update.kind ?? "tool"),
       status: String(update.status ?? "pending"),
       content: "",
       paths: new Set(),
-      start: gnista.makeMarker(at, { buffer: shell.buffer, advances: true }),
-      end: gnista.makeMarker(at, { buffer: shell.buffer }),
+      start: e8.makeMarker(at, { buffer: shell.buffer, advances: true }),
+      end: e8.makeMarker(at, { buffer: shell.buffer }),
     };
     shell.toolCalls.set(id, call);
   } else if (first) {
@@ -286,12 +286,12 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
   else if (update.rawOutput !== undefined && call.content === "" && (call.status === "completed" || call.status === "failed")) {
     call.content = typeof update.rawOutput === "string" ? update.rawOutput : JSON.stringify(update.rawOutput, null, 2);
   }
-  const start = gnista.markerPosition(call.start) ?? 0;
-  const end = gnista.markerPosition(call.end) ?? start;
+  const start = e8.markerPosition(call.start) ?? 0;
+  const end = e8.markerPosition(call.end) ?? start;
   const text = renderToolCall(call);
   replace(shell, start, end, text);
-  gnista.setMarker(call.start, start, shell.buffer);
-  gnista.setMarker(call.end, start + text.length, shell.buffer);
+  e8.setMarker(call.start, start, shell.buffer);
+  e8.setMarker(call.end, start + text.length, shell.buffer);
   if (finished) revertTouched(call.paths);
 }
 
@@ -306,8 +306,8 @@ function revertTouched(paths: Set<string>): void {
   for (const path of paths) {
     const buffer = findBufferVisiting(path);
     if (buffer === undefined) continue;
-    gnista.withCurrentBuffer(buffer, () => {
-      if (!gnista.bufferModified() && gnista.visitedFileChanged() && gnista.fileExists(path)) gnista.call("revert-buffer-quick");
+    e8.withCurrentBuffer(buffer, () => {
+      if (!e8.bufferModified() && e8.visitedFileChanged() && e8.fileExists(path)) e8.call("revert-buffer-quick");
     });
   }
 }
@@ -322,13 +322,13 @@ function showPlan(shell: Shell, entries: unknown): void {
     closeOpen(shell);
     startLine(shell);
     const at = put(shell, text);
-    shell.plan = { start: gnista.makeMarker(at, { buffer: shell.buffer, advances: true }), end: gnista.makeMarker(at + text.length, { buffer: shell.buffer }) };
+    shell.plan = { start: e8.makeMarker(at, { buffer: shell.buffer, advances: true }), end: e8.makeMarker(at + text.length, { buffer: shell.buffer }) };
     return;
   }
-  const start = gnista.markerPosition(shell.plan.start) ?? 0;
-  const end = gnista.markerPosition(shell.plan.end) ?? start;
+  const start = e8.markerPosition(shell.plan.start) ?? 0;
+  const end = e8.markerPosition(shell.plan.end) ?? start;
   replace(shell, start, end, text);
-  gnista.setMarker(shell.plan.end, start + text.length, shell.buffer);
+  e8.setMarker(shell.plan.end, start + text.length, shell.buffer);
 }
 
 /** Takes in what the agent reports of its session. */
@@ -353,7 +353,7 @@ function onUpdate(shell: Shell, notification: acp.Json): void {
           startLine(shell);
           put(shell, "Thinking:\n");
           const at = put(shell, "#+begin_example\n");
-          shell.blocks.push(gnista.makeMarker(at, { buffer: shell.buffer, advances: true }));
+          shell.blocks.push(e8.makeMarker(at, { buffer: shell.buffer, advances: true }));
           shell.open = "thought";
         }
         // Indented, as in every example block, so a line of it cannot end the block.
@@ -413,8 +413,8 @@ function choices(options: Permission["options"]): Map<string, string> {
 function askPermissions(shell: Shell): void {
   shell.askTimer = undefined;
   if (shell.asking || shell.permissions.length === 0) return;
-  if (gnista.waitingForInput() !== undefined) {
-    shell.askTimer = gnista.runWithTimer(0.1, null, () => askPermissions(shell));
+  if (e8.waitingForInput() !== undefined) {
+    shell.askTimer = e8.runWithTimer(0.1, null, () => askPermissions(shell));
     return;
   }
   const permission = shell.permissions[0];
@@ -423,7 +423,7 @@ function askPermissions(shell: Shell): void {
   shell.asking = true;
   let answer: string | undefined;
   try {
-    answer = gnista.readCharChoice(`Let ${shell.agent} ${lowerFirst(permission.title)}? (${listed}) `, [...keys.keys()].join(""));
+    answer = e8.readCharChoice(`Let ${shell.agent} ${lowerFirst(permission.title)}? (${listed}) `, [...keys.keys()].join(""));
   } catch {
     answer = undefined;
   } finally {
@@ -439,7 +439,7 @@ function askPermissions(shell: Shell): void {
     client: shell.client,
     response: acp.makeSessionRequestPermissionResponse({ requestId: permission.id, ...(optionId ? { optionId } : { cancelled: true }) }),
   });
-  if (shell.permissions.length > 0) shell.askTimer = gnista.runWithTimer(0, null, () => askPermissions(shell));
+  if (shell.permissions.length > 0) shell.askTimer = e8.runWithTimer(0, null, () => askPermissions(shell));
 }
 
 /** Answers every question still waiting as cancelled, as the turn stopped. */
@@ -447,7 +447,7 @@ function cancelPermissions(shell: Shell): void {
   for (const p of shell.permissions.splice(0)) {
     acp.sendResponse({ client: shell.client, response: acp.makeSessionRequestPermissionResponse({ requestId: p.id, cancelled: true }) });
   }
-  if (shell.askTimer !== undefined) gnista.cancelTimer(shell.askTimer);
+  if (shell.askTimer !== undefined) e8.cancelTimer(shell.askTimer);
   shell.askTimer = undefined;
 }
 
@@ -462,17 +462,17 @@ function someLines(text: string, line?: number, limit?: number): string {
 /** What a file holds: the text of the buffer visiting it, saved or not, or the file's. */
 function readText(path: string): string {
   const visiting = findBufferVisiting(path);
-  if (visiting !== undefined) return gnista.withCurrentBuffer(visiting, () => gnista.bufferText(0, gnista.bufferSize()));
-  if (!gnista.fileReadableP(path)) gnista.signal("file-missing", `Opening input file: No such file or directory, ${path}`);
-  const temp = gnista.getBufferCreate(" *agent-shell-read*");
+  if (visiting !== undefined) return e8.withCurrentBuffer(visiting, () => e8.bufferText(0, e8.bufferSize()));
+  if (!e8.fileReadableP(path)) e8.signal("file-missing", `Opening input file: No such file or directory, ${path}`);
+  const temp = e8.getBufferCreate(" *agent-shell-read*");
   try {
-    return gnista.withCurrentBuffer(temp, () => {
-      gnista.deleteRegion(0, gnista.bufferSize());
-      gnista.insertFileContents(path);
-      return gnista.bufferText(0, gnista.bufferSize());
+    return e8.withCurrentBuffer(temp, () => {
+      e8.deleteRegion(0, e8.bufferSize());
+      e8.insertFileContents(path);
+      return e8.bufferText(0, e8.bufferSize());
     });
   } finally {
-    gnista.call("kill-buffer", temp.name!);
+    e8.call("kill-buffer", temp.name!);
   }
 }
 
@@ -482,24 +482,24 @@ function readText(path: string): string {
  * column, then saved.
  */
 function writeText(path: string, content: string): void {
-  const dir = gnista.fileNameDirectory(path);
-  if (dir && !gnista.fileExistsP(dir)) gnista.makeDirectory(dir, { parents: true });
-  const buffer = findBufferVisiting(path) ?? gnista.findFileNoselect(path);
-  gnista.withCurrentBuffer(buffer, () => {
-    if (gnista.bufferText(0, gnista.bufferSize()) !== content) {
-      const point = gnista.point();
-      const before = gnista.bufferText(0, point);
+  const dir = e8.fileNameDirectory(path);
+  if (dir && !e8.fileExistsP(dir)) e8.makeDirectory(dir, { parents: true });
+  const buffer = findBufferVisiting(path) ?? e8.findFileNoselect(path);
+  e8.withCurrentBuffer(buffer, () => {
+    if (e8.bufferText(0, e8.bufferSize()) !== content) {
+      const point = e8.point();
+      const before = e8.bufferText(0, point);
       const line = before.split("\n").length - 1;
       const column = point - (before.lastIndexOf("\n") + 1);
-      gnista.deleteRegion(0, gnista.bufferSize());
-      gnista.insert(content);
+      e8.deleteRegion(0, e8.bufferSize());
+      e8.insert(content);
       const lines = content.split("\n");
       const row = Math.min(line, lines.length - 1);
       let at = 0;
       for (let i = 0; i < row; i++) at += lines[i].length + 1;
-      gnista.gotoChar(at + Math.min(column, lines[row].length));
+      e8.gotoChar(at + Math.min(column, lines[row].length));
     }
-    gnista.call("save-buffer");
+    e8.call("save-buffer");
   });
 }
 
@@ -516,7 +516,7 @@ function onRequest(shell: Shell, request: acp.Json): void {
       });
       if (params.toolCall?.toolCallId) showToolCall(shell, params.toolCall, !shell.toolCalls.has(String(params.toolCall.toolCallId)));
       // Asked from a timer of its own, so the agent's updates go on coming in meanwhile.
-      if (shell.askTimer === undefined && !shell.asking) shell.askTimer = gnista.runWithTimer(0, null, () => askPermissions(shell));
+      if (shell.askTimer === undefined && !shell.asking) shell.askTimer = e8.runWithTimer(0, null, () => askPermissions(shell));
       break;
     case "fs/read_text_file": {
       let response: acp.Response;
@@ -596,58 +596,58 @@ function finish(shell: Shell, text?: string): void {
   startLine(shell);
   put(shell, "* You\n");
   inBuffer(shell, () => {
-    gnista.saveExcursion(() => {
+    e8.saveExcursion(() => {
       for (const call of shell.toolCalls.values()) {
-        const start = gnista.markerPosition(call.start);
+        const start = e8.markerPosition(call.start);
         if (start !== undefined && call.content !== "") {
           // The block starts on the line after the call's.
-          gnista.gotoChar(start + renderToolCall({ ...call, content: "" }).length);
-          gnista.call("org-cycle");
+          e8.gotoChar(start + renderToolCall({ ...call, content: "" }).length);
+          e8.call("org-cycle");
         }
       }
       for (const block of shell.blocks) {
-        const at = gnista.markerPosition(block);
+        const at = e8.markerPosition(block);
         if (at !== undefined) {
-          gnista.gotoChar(at);
-          gnista.call("org-cycle");
+          e8.gotoChar(at);
+          e8.call("org-cycle");
         }
       }
     });
   });
   for (const call of shell.toolCalls.values()) {
-    gnista.deleteMarker(call.start);
-    gnista.deleteMarker(call.end);
+    e8.deleteMarker(call.start);
+    e8.deleteMarker(call.end);
   }
   shell.toolCalls.clear();
-  for (const m of shell.blocks.splice(0)) gnista.deleteMarker(m);
+  for (const m of shell.blocks.splice(0)) e8.deleteMarker(m);
   if (shell.plan) {
-    gnista.deleteMarker(shell.plan.start);
-    gnista.deleteMarker(shell.plan.end);
+    e8.deleteMarker(shell.plan.start);
+    e8.deleteMarker(shell.plan.end);
     shell.plan = undefined;
   }
 }
 
 /**
- * Gnista's own MCP server for a session: gnista-mcp, beside this program
+ * E8's own MCP server for a session: e8-mcp, beside this program
  * or on PATH, connected to this editor's socket, so the agent's calls act in
  * the editor the user sees and ask before what they cannot undo. Undefined
- * when agent-shell-gnista-tools is off or either is missing.
+ * when agent-shell-e8-tools is off or either is missing.
  */
-export function gnistaMcpServer(): acp.Json | undefined {
-  if (!truthy(gnista.variable("agent-shell-gnista-tools"))) return undefined;
-  const socket = gnista.variable("gnista-mcp-socket");
+export function e8McpServer(): acp.Json | undefined {
+  if (!truthy(e8.variable("agent-shell-e8-tools"))) return undefined;
+  const socket = e8.variable("e8-mcp-socket");
   if (typeof socket !== "string" || socket === "") return undefined;
-  const dir = gnista.variable("invocation-directory");
-  const beside = typeof dir === "string" ? `${dir}gnista-mcp` : undefined;
-  const program = beside !== undefined && gnista.fileExecutableP(beside) ? beside : executableFind("gnista-mcp");
+  const dir = e8.variable("invocation-directory");
+  const beside = typeof dir === "string" ? `${dir}e8-mcp` : undefined;
+  const program = beside !== undefined && e8.fileExecutableP(beside) ? beside : executableFind("e8-mcp");
   if (program === undefined) return undefined;
-  return { name: "gnista", command: program, args: ["--socket", socket], env: [] };
+  return { name: "e8", command: program, args: ["--socket", socket], env: [] };
 }
 
-/** What the agent is told of Gnista's tools, after its own system prompt. */
-const GNISTA_TOOLS_PROMPT =
-  "You are running inside Gnista, a text editor that works the way Emacs works, and the user is talking to you " +
-  "from it. The gnista MCP server's tools act in that editor, in the window the user works in: its commands by " +
+/** What the agent is told of E8's tools, after its own system prompt. */
+const E8_TOOLS_PROMPT =
+  "You are running inside E8, a text editor that works the way Emacs works, and the user is talking to you " +
+  "from it. The e8 MCP server's tools act in that editor, in the window the user works in: its commands by " +
   "name (find-file, save-buffer, org-agenda and the rest), keys, and the text of its buffers, unsaved changes " +
   "included. Use them to show the user what you are working on, or when they ask for something in the editor. " +
   "Writing files, discarding unsaved changes, quitting and running code through them wait for the user's approval; " +
@@ -688,7 +688,7 @@ function prompt(shell: Shell, text: string): void {
       client: shell.client,
       request: acp.makeInitializeRequest({
         protocolVersion: 1,
-        clientInfo: { name: "gnista", title: "Gnista", version: String(gnista.variable("gnista-version") ?? "") },
+        clientInfo: { name: "e8", title: "E8", version: String(e8.variable("e8-version") ?? "") },
         readTextFileCapability: true,
         writeTextFileCapability: true,
       }),
@@ -697,9 +697,9 @@ function prompt(shell: Shell, text: string): void {
         acp.sendRequest({
           client: shell.client,
           request: (() => {
-            const server = gnistaMcpServer();
+            const server = e8McpServer();
             return server
-              ? acp.makeSessionNewRequest({ cwd: shell.directory, mcpServers: [server], meta: { systemPrompt: { append: GNISTA_TOOLS_PROMPT } } })
+              ? acp.makeSessionNewRequest({ cwd: shell.directory, mcpServers: [server], meta: { systemPrompt: { append: E8_TOOLS_PROMPT } } })
               : acp.makeSessionNewRequest({ cwd: shell.directory });
           })(),
           onSuccess: (result: any) => {
@@ -721,28 +721,28 @@ function prompt(shell: Shell, text: string): void {
 
 /** The agents agent-shell-agents names, as [name, command, environment]. */
 function agents(): [string, string[], string[]][] {
-  const list = gnista.variable("agent-shell-agents");
+  const list = e8.variable("agent-shell-agents");
   if (!Array.isArray(list)) return [];
   return list
-    .filter((a): a is gnista.Value[] => Array.isArray(a) && typeof a[0] === "string" && Array.isArray(a[1]))
-    .map((a) => [String(a[0]), (a[1] as gnista.Value[]).map(String), Array.isArray(a[2]) ? (a[2] as gnista.Value[]).map(String) : []]);
+    .filter((a): a is e8.Value[] => Array.isArray(a) && typeof a[0] === "string" && Array.isArray(a[1]))
+    .map((a) => [String(a[0]), (a[1] as e8.Value[]).map(String), Array.isArray(a[2]) ? (a[2] as e8.Value[]).map(String) : []]);
 }
 
 /** Opens a conversation with an agent, by its name in agent-shell-agents, in another window. */
 export function start(name: string): string {
   const agent = agents().find((a) => a[0] === name);
-  if (agent === undefined) gnista.userError(`No agent named ${name} in agent-shell-agents`);
+  if (agent === undefined) e8.userError(`No agent named ${name} in agent-shell-agents`);
   // The project's root, or the directory of the buffer it was started from.
-  const directory = gnista.expandFileName(projectRoot() ?? ".");
+  const directory = e8.expandFileName(projectRoot() ?? ".");
   const buffer = `*agent-shell: ${name}*`;
-  const exists = gnista.getBuffer(buffer) !== undefined && shells.has(buffer);
-  gnista.call("pop-to-buffer", buffer);
+  const exists = e8.getBuffer(buffer) !== undefined && shells.has(buffer);
+  e8.call("pop-to-buffer", buffer);
   if (!exists) {
-    gnista.call("agent-shell-mode");
-    gnista.makeLocalVariable("default-directory");
-    gnista.setVariable("default-directory", gnista.fileNameAsDirectory(directory));
-    gnista.insert("* You\n");
-    gnista.setBufferModified(false);
+    e8.call("agent-shell-mode");
+    e8.makeLocalVariable("default-directory");
+    e8.setVariable("default-directory", e8.fileNameAsDirectory(directory));
+    e8.insert("* You\n");
+    e8.setBufferModified(false);
     const shell: Shell = {
       agent: name,
       command: agent![1],
@@ -765,23 +765,23 @@ export function start(name: string): string {
   return buffer;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "agent-shell",
   doc:
     "Talk to a coding agent in a buffer of its own, in another window: one of agent-shell-agents, asked for unless " +
     "agent-shell-default-agent names one. Type a request under * You and send it with C-c RET. The agent works in " +
     "the current project, and asks before its tools act.",
   run: async () => {
-    const preset = gnista.variable("agent-shell-default-agent");
+    const preset = e8.variable("agent-shell-default-agent");
     const name =
       typeof preset === "string" && preset !== ""
         ? preset
-        : await gnista.completingRead("Agent: ", agents().map((a) => a[0]), { requireMatch: true });
+        : await e8.completingRead("Agent: ", agents().map((a) => a[0]), { requireMatch: true });
     start(name);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "agent-shell-anthropic-start-claude-code",
   doc: "Talk to Claude Code, through claude-agent-acp, in a buffer of its own: M-x agent-shell with the claude agent.",
   run: () => {
@@ -791,37 +791,37 @@ gnista.defineCommand({
 
 /** The shell of the current buffer, or an error saying it is not one. */
 function currentShell(): Shell {
-  const shell = shells.get(gnista.bufferName() ?? "");
-  if (shell === undefined) gnista.userError("Not an agent shell; use M-x agent-shell");
+  const shell = shells.get(e8.bufferName() ?? "");
+  if (shell === undefined) e8.userError("Not an agent shell; use M-x agent-shell");
   return shell!;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "agent-shell-send",
   doc: "Send the request under the last * You heading to the agent.",
   run: () => {
     const shell = currentShell();
-    const text = gnista.bufferText(0, gnista.bufferSize());
+    const text = e8.bufferText(0, e8.bufferSize());
     const at = text.lastIndexOf("* You\n");
-    if (at < 0) gnista.userError("Type a request under a * You heading");
+    if (at < 0) e8.userError("Type a request under a * You heading");
     const request = text.slice(at + "* You\n".length).trim();
-    if (request === "") gnista.userError("Type a request under the last * You heading first");
-    if (shell.busy) gnista.userError("The agent is still working; C-c C-k stops it");
+    if (request === "") e8.userError("Type a request under the last * You heading first");
+    if (shell.busy) e8.userError("The agent is still working; C-c C-k stops it");
     shell.busy = true;
     shell.cancelled = false;
     startLine(shell);
     put(shell, "\n* Agent\n");
-    gnista.gotoChar(gnista.bufferSize());
+    e8.gotoChar(e8.bufferSize());
     prompt(shell, request);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "agent-shell-interrupt",
   doc: "Stop the agent's turn in this buffer: it is told to cancel, and its questions are answered as cancelled.",
   run: () => {
     const shell = currentShell();
-    if (!shell.busy) gnista.userError("The agent is not working on anything");
+    if (!shell.busy) e8.userError("The agent is not working on anything");
     cancelPermissions(shell);
     if (shell.sessionId !== undefined && acp.clientStartedP(shell.client)) {
       acp.sendNotification({ client: shell.client, notification: acp.makeSessionCancelNotification({ sessionId: shell.sessionId }) });
@@ -832,8 +832,8 @@ gnista.defineCommand({
 });
 
 // Killing a shell's buffer stops its agent.
-gnista.addHook("kill-buffer-hook", () => {
-  const name = gnista.bufferName() ?? "";
+e8.addHook("kill-buffer-hook", () => {
+  const name = e8.bufferName() ?? "";
   const shell = shells.get(name);
   if (shell === undefined) return;
   shells.delete(name);

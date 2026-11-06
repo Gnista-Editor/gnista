@@ -1,11 +1,11 @@
-;;; record.el --- Record GNU Emacs's behaviour for Gnista's oracle tests  -*- lexical-binding: t -*-
+;;; record.el --- Record GNU Emacs's behaviour for E8's oracle tests  -*- lexical-binding: t -*-
 
 ;; Usage, from the repository root:
 ;;
 ;;   emacs -Q --batch -l tests/emacs/record.el
 ;;
 ;; Reads every tests/emacs/cases/*.json and writes the matching
-;; tests/emacs/golden/*.json, or those under $GNISTA_ORACLE_DIR if it is set,
+;; tests/emacs/golden/*.json, or those under $E8_ORACLE_DIR if it is set,
 ;; as the fuzzer sets it.  Each case is an object with `name', `text',
 ;; `keys' (space separated, in `kbd' notation), and optionally `point'
 ;; (0-based, default 0), `modes' (minor or major modes to turn on before
@@ -39,24 +39,24 @@
 ;; Batch mode starts with these off; interactive Emacs has them on.
 (transient-mark-mode 1)
 (setq shift-select-mode t)
-;; Emacs asks before narrowing to a region the first time; Gnista does not.
+;; Emacs asks before narrowing to a region the first time; E8 does not.
 (put 'narrow-to-region 'disabled nil)
 ;; A case's buffer may visit a file it never writes; leave no lock files.
 (setq create-lockfiles nil)
 
-(defconst gnista-oracle--files
-  (let ((dir (getenv "GNISTA_ORACLE_FILES")))
+(defconst e8-oracle--files
+  (let ((dir (getenv "E8_ORACLE_FILES")))
     (if (and dir (not (string-empty-p dir)))
         (file-name-as-directory (expand-file-name dir))
       (expand-file-name "../../target/oracle-files/" (file-name-directory load-file-name))))
   "Where cases with `files' or `find' keep their files: outside the
 temporary directory, which Emacs makes no backups in.  The fuzzers
-give each its own in GNISTA_ORACLE_FILES, as they can run at once.")
+give each its own in E8_ORACLE_FILES, as they can run at once.")
 
-;; Batch Emacs does not auto-save; interactive Emacs does, and Gnista does.
+;; Batch Emacs does not auto-save; interactive Emacs does, and E8 does.
 (setq auto-save-default t)
 
-(defun gnista-oracle--write-file (name text)
+(defun e8-oracle--write-file (name text)
   "Write TEXT to NAME in the case's directory, as UTF-8 bytes, or as
 Latin-1 for text starting \"latin-1:\"."
   (let ((coding-system-for-write 'no-conversion)
@@ -64,27 +64,27 @@ Latin-1 for text starting \"latin-1:\"."
                    (encode-coding-string (substring text 8) 'latin-1)
                  (encode-coding-string text 'utf-8-unix))))
     (if (string-suffix-p "/" name)
-        (make-directory (expand-file-name name gnista-oracle--files) t)
-      (make-directory (file-name-directory (expand-file-name name gnista-oracle--files)) t)
+        (make-directory (expand-file-name name e8-oracle--files) t)
+      (make-directory (file-name-directory (expand-file-name name e8-oracle--files)) t)
       (with-temp-buffer
         (set-buffer-multibyte nil)
         (insert bytes)
-        (write-region nil nil (expand-file-name name gnista-oracle--files) nil 'quiet)))))
+        (write-region nil nil (expand-file-name name e8-oracle--files) nil 'quiet)))))
 
-(defun gnista-oracle--listing (&optional dir)
+(defun e8-oracle--listing (&optional dir)
   "The case's directory: each file's name and text, as UTF-8 or else
 as Latin-1 marked \"latin-1:\", and each directory as its name with a
 slash, then what it holds."
-  (let ((dir (or dir gnista-oracle--files)))
+  (let ((dir (or dir e8-oracle--files)))
     (mapcan (lambda (name)
               (let* ((path (expand-file-name name dir))
-                     (relative (file-relative-name path gnista-oracle--files)))
+                     (relative (file-relative-name path e8-oracle--files)))
                 (cond
                  ;; A lock file names the process that made it, so only that it is there compares.
                  ((string-prefix-p ".#" name) (list (cons relative "lock")))
                  ((file-directory-p path)
                     (cons (cons (concat relative "/") "")
-                          (gnista-oracle--listing (file-name-as-directory path))))
+                          (e8-oracle--listing (file-name-as-directory path))))
                  (t
                   (let* ((raw (with-temp-buffer
                                 (set-buffer-multibyte nil)
@@ -98,39 +98,39 @@ slash, then what it holds."
                                   text))))))))
             (directory-files dir nil "\\`\\(?:[^.]\\|\\.#\\)"))))
 
-(defvar gnista-oracle--disk nil
+(defvar e8-oracle--disk nil
   "The text <f33> gives the visited file.")
 
-(defun gnista-oracle--change-disk ()
+(defun e8-oracle--change-disk ()
   "Change the visited file on disk, as another program would, a little later."
   (interactive)
   (let ((file buffer-file-name))
-    (gnista-oracle--write-file (file-name-nondirectory file) gnista-oracle--disk)
+    (e8-oracle--write-file (file-name-nondirectory file) e8-oracle--disk)
     (set-file-times file (time-add nil 5))))
 
-(global-set-key (kbd "<f33>") #'gnista-oracle--change-disk)
+(global-set-key (kbd "<f33>") #'e8-oracle--change-disk)
 
-(defvar gnista-oracle--messages-start nil
+(defvar e8-oracle--messages-start nil
   "Where *Messages* ended when the keys began.")
 
-(defun gnista-oracle--without-dir (text)
+(defun e8-oracle--without-dir (text)
   "TEXT with the case's directory written as DIR."
   (and text
-       (let ((dir (directory-file-name gnista-oracle--files)))
+       (let ((dir (directory-file-name e8-oracle--files)))
          (dolist (form (list (file-truename dir) dir (abbreviate-file-name dir)) text)
            (setq text (string-replace form "DIR" text))))))
 
-(defun gnista-oracle--last-message ()
+(defun e8-oracle--last-message ()
   "The last message logged since the keys began, with the case's
 directory written as DIR."
   (with-current-buffer (messages-buffer)
-    (let ((lines (split-string (buffer-substring gnista-oracle--messages-start (point-max)) "\n" t)))
-      (gnista-oracle--without-dir (car (last lines))))))
+    (let ((lines (split-string (buffer-substring e8-oracle--messages-start (point-max)) "\n" t)))
+      (e8-oracle--without-dir (car (last lines))))))
 
-(defvar gnista-oracle--error nil
+(defvar e8-oracle--error nil
   "The first error a case signalled.")
 
-(defun gnista-oracle--set-aside-typed-keys (run &rest args)
+(defun e8-oracle--set-aside-typed-keys (run &rest args)
   "Call RUN with ARGS while the keys still waiting to be typed are set aside.
 Emacs reads waiting keys before a keyboard macro's own keys, so a macro run
 while the case's keys are queued would read those instead."
@@ -140,67 +140,67 @@ while the case's keys are queued would read those instead."
         (apply run args)
       (setq unread-command-events (append unread-command-events queued)))))
 
-(advice-add 'call-last-kbd-macro :around #'gnista-oracle--set-aside-typed-keys)
-(advice-add 'execute-kbd-macro :around #'gnista-oracle--set-aside-typed-keys)
+(advice-add 'call-last-kbd-macro :around #'e8-oracle--set-aside-typed-keys)
+(advice-add 'execute-kbd-macro :around #'e8-oracle--set-aside-typed-keys)
 
-(defvar gnista-oracle--today nil
+(defvar e8-oracle--today nil
   "The day a case fixes, as calendar-absolute-from-gregorian counts it.")
 
-(defun gnista-oracle--today ()
+(defun e8-oracle--today ()
   "The case's fixed day, for org-today."
-  gnista-oracle--today)
+  e8-oracle--today)
 
 (require 'calendar)
 (defvar org-agenda-files)
 (defvar org-capture-templates)
 
-(defun gnista-oracle--done ()
+(defun e8-oracle--done ()
   "End the case: leave the command loop."
   (interactive)
   (exit-recursive-edit))
 
-(global-set-key (kbd "<f35>") #'gnista-oracle--done)
+(global-set-key (kbd "<f35>") #'e8-oracle--done)
 
 ;; Batch Emacs reads the minibuffer from standard input, so a command that
 ;; prompts would wait forever.  A case's `answers' answer its prompts in
 ;; order, as if typed and confirmed with RET; with none left, prompting is
 ;; an error instead, and the fuzzer leaves out cases that hit it.
-(defvar gnista-oracle--answers nil
+(defvar e8-oracle--answers nil
   "The answers left for the case's prompts.")
 
-(defun gnista-oracle--answer (default)
+(defun e8-oracle--answer (default)
   "The next answer, or DEFAULT for an empty one, as RET on empty input gives."
-  (unless gnista-oracle--answers
+  (unless e8-oracle--answers
     (error "Minibuffer read in batch"))
-  (let ((answer (pop gnista-oracle--answers)))
+  (let ((answer (pop e8-oracle--answers)))
     (if (and (equal answer "") default)
         (if (consp default) (car default) default)
       answer)))
 
-(defun gnista-oracle--read-from-minibuffer (_prompt &optional _initial _keymap _read _hist default &rest _)
-  (gnista-oracle--answer default))
-(defun gnista-oracle--read-string (_prompt &optional _initial _hist default &rest _)
-  (gnista-oracle--answer default))
-(defun gnista-oracle--completing-read (_prompt _collection &optional _pred _match _initial _hist default &rest _)
-  (gnista-oracle--answer default))
-(defun gnista-oracle--yes-or-no (&rest _)
+(defun e8-oracle--read-from-minibuffer (_prompt &optional _initial _keymap _read _hist default &rest _)
+  (e8-oracle--answer default))
+(defun e8-oracle--read-string (_prompt &optional _initial _hist default &rest _)
+  (e8-oracle--answer default))
+(defun e8-oracle--completing-read (_prompt _collection &optional _pred _match _initial _hist default &rest _)
+  (e8-oracle--answer default))
+(defun e8-oracle--yes-or-no (&rest _)
   "Answer yes-or-no-p from the case, asking again for anything but yes
 or no, as Emacs does."
-  (let ((answer (gnista-oracle--answer nil)))
+  (let ((answer (e8-oracle--answer nil)))
     (while (not (member answer '("yes" "no")))
       (message "Please answer yes or no.")
-      (setq answer (gnista-oracle--answer nil)))
+      (setq answer (e8-oracle--answer nil)))
     (equal answer "yes")))
-(defun gnista-oracle--y-or-n (&rest _)
+(defun e8-oracle--y-or-n (&rest _)
   "Answer y-or-n-p from the case, taking an answer's first character as
 the key, and asking again for anything but y or n, as Emacs does."
-  (let ((answer (gnista-oracle--answer nil)))
+  (let ((answer (e8-oracle--answer nil)))
     (while (not (member (substring answer 0 (min 1 (length answer))) '("y" "n")))
-      (setq answer (gnista-oracle--answer nil)))
+      (setq answer (e8-oracle--answer nil)))
     (string-prefix-p "y" answer)))
-(defun gnista-oracle--no-minibuffer (&rest _)
+(defun e8-oracle--no-minibuffer (&rest _)
   (error "Minibuffer read in batch"))
-;; Dired lists directories as Gnista does, with Emacs's own ls, sorting
+;; Dired lists directories as E8 does, with Emacs's own ls, sorting
 ;; names by their characters.
 ;; *Messages* keeps everything, or the place a case's messages start
 ;; would move as old ones are dropped.
@@ -211,58 +211,58 @@ the key, and asking again for anything but y or n, as Emacs does."
       ls-lisp-use-string-collate nil
       delete-by-moving-to-trash nil)
 
-(advice-add 'read-from-minibuffer :override #'gnista-oracle--read-from-minibuffer)
-(advice-add 'read-string :override #'gnista-oracle--read-string)
-(advice-add 'completing-read :override #'gnista-oracle--completing-read)
-(advice-add 'y-or-n-p :override #'gnista-oracle--y-or-n)
-(advice-add 'yes-or-no-p :override #'gnista-oracle--yes-or-no)
-(defun gnista-oracle--read-char (&rest _)
+(advice-add 'read-from-minibuffer :override #'e8-oracle--read-from-minibuffer)
+(advice-add 'read-string :override #'e8-oracle--read-string)
+(advice-add 'completing-read :override #'e8-oracle--completing-read)
+(advice-add 'y-or-n-p :override #'e8-oracle--y-or-n)
+(advice-add 'yes-or-no-p :override #'e8-oracle--yes-or-no)
+(defun e8-oracle--read-char (&rest _)
   "The next answer's first character, as reading a key gives it."
-  (string-to-char (gnista-oracle--answer nil)))
+  (string-to-char (e8-oracle--answer nil)))
 (dolist (fn '(read-char read-char-exclusive read-key))
-  (advice-add fn :override #'gnista-oracle--read-char))
-(defun gnista-oracle--read-event (read &rest args)
+  (advice-add fn :override #'e8-oracle--read-char))
+(defun e8-oracle--read-event (read &rest args)
   "Read an event from the case's keys while they last, as query-replace's
 answers come, and then from its answers, as save-some-buffers' do."
   (if (or unread-command-events
           (and executing-kbd-macro
                (< executing-kbd-macro-index (length executing-kbd-macro))))
       (apply read args)
-    (gnista-oracle--read-char)))
-(advice-add 'read-event :around #'gnista-oracle--read-event)
+    (e8-oracle--read-char)))
+(advice-add 'read-event :around #'e8-oracle--read-event)
 
 ;; Batch Emacs gives up on a file changed on disk; ask as interactive Emacs
 ;; does, taking the answer from the case.
-(defun gnista-oracle--supersession (filename)
+(defun e8-oracle--supersession (filename)
   "Answer `ask-user-about-supersession-threat' for FILENAME from the case."
-  (pcase (gnista-oracle--read-char)
+  (pcase (e8-oracle--read-char)
     (?r (revert-buffer nil (not (buffer-modified-p)))
         (signal 'file-supersession (list "File reverted" filename)))
     (?y (message "File on disk now will become a backup file if you save these changes.")
         (setq buffer-backed-up nil))
     (_ (signal 'file-supersession (list "File changed on disk" filename)))))
-(advice-add 'ask-user-about-supersession-threat :override #'gnista-oracle--supersession)
+(advice-add 'ask-user-about-supersession-threat :override #'e8-oracle--supersession)
 
 ;; Cases must not reach outside Emacs: opening a link would start the
 ;; system's browser, or another program, for every case that does it.
-(defun gnista-oracle--no-external (&rest _)
+(defun e8-oracle--no-external (&rest _)
   (error "Opening outside Emacs in batch"))
 (dolist (fn '(browse-url browse-url-default-browser browse-url-default-macosx-browser
               browse-url-xdg-open org-open-file org-link-open-as-file))
-  (advice-add fn :override #'gnista-oracle--no-external))
+  (advice-add fn :override #'e8-oracle--no-external))
 
-;; Gnista does not disable commands yet, as novice.el does for new users,
+;; E8 does not disable commands yet, as novice.el does for new users,
 ;; so cases compare what the commands do rather than the question first.
 (dolist (command '(upcase-region downcase-region))
   (put command 'disabled nil))
 
 (setq command-error-function
       (lambda (data _context _caller)
-        (unless gnista-oracle--error
-          (setq gnista-oracle--error
+        (unless e8-oracle--error
+          (setq e8-oracle--error
                 (if (eq (car data) 'quit) "Quit" (error-message-string data))))))
 
-(defun gnista-oracle--run (case)
+(defun e8-oracle--run (case)
   "Type CASE's keys and return the buffer's state afterwards, as an alist."
   (let ((text (alist-get 'text case))
         (keys (alist-get 'keys case))
@@ -275,20 +275,20 @@ answers come, and then from its answers, as save-some-buffers' do."
     ;; grow the echo area and leave the windows a line short after it.
     (set-frame-size (selected-frame) 80 24)
     (set-frame-size (selected-frame) 80 25)
-    ;; A fresh set of buffers, as Gnista starts each case with: only the
+    ;; A fresh set of buffers, as E8 starts each case with: only the
     ;; ones Emacs needs, whose names start with a space, and its own.
     (dolist (b (buffer-list))
       (unless (or (string-prefix-p " " (buffer-name b))
                   (member (buffer-name b) '("*scratch*" "*Messages*")))
         (kill-buffer b)))
-    ;; In the same order whatever earlier cases did, as Gnista lists them:
+    ;; In the same order whatever earlier cases did, as E8 lists them:
     ;; the case's buffer, then *Messages*, then *scratch*.
     (bury-buffer "*Messages*")
     (bury-buffer "*scratch*")
     ;; Lock files only where a case asks for them.
     (setq create-lockfiles (eq (alist-get 'lockfiles case) t))
-    (with-current-buffer (gnista-oracle--case-buffer case text)
-      ;; The window as new, as Gnista's is, with no buffers shown before.
+    (with-current-buffer (e8-oracle--case-buffer case text)
+      ;; The window as new, as E8's is, with no buffers shown before.
       (set-window-prev-buffers nil nil)
       (set-window-next-buffers nil nil)
       ;; As if visiting a file, for commands such as org-refile that need
@@ -311,13 +311,13 @@ answers come, and then from its answers, as save-some-buffers' do."
                             (nth 4 tpl)))
                     (alist-get 'capture_templates case)))
       ;; A fixed day for the agenda, as YYYY-MM-DD.
-      (advice-remove 'org-today #'gnista-oracle--today)
+      (advice-remove 'org-today #'e8-oracle--today)
       (when-let* ((day (alist-get 'today case)))
-        (setq gnista-oracle--today
+        (setq e8-oracle--today
               (calendar-absolute-from-gregorian
                (let ((d (mapcar #'string-to-number (split-string day "-"))))
                  (list (nth 1 d) (nth 2 d) (nth 0 d)))))
-        (advice-add 'org-today :override #'gnista-oracle--today))
+        (advice-add 'org-today :override #'e8-oracle--today))
       (unless (alist-get 'find case)
         (buffer-enable-undo)
         (set-buffer-modified-p nil))
@@ -330,7 +330,7 @@ answers come, and then from its answers, as save-some-buffers' do."
       (dolist (var (alist-get 'vars case))
         (set (make-local-variable (car var))
              (pcase (cdr var) (:json-false nil) ('t t) (v v))))
-      (gnista-oracle--fontify)
+      (e8-oracle--fontify)
       (setq mark-active nil
             mark-ring nil
             kill-ring nil
@@ -344,12 +344,12 @@ answers come, and then from its answers, as save-some-buffers' do."
             org-table-clip nil
             org-subtree-clip nil
             org-subtree-clip-folded nil
-            gnista-oracle--error nil
-            gnista-oracle--answers (alist-get 'answers case)
-            gnista-oracle--disk (alist-get 'disk case)
+            e8-oracle--error nil
+            e8-oracle--answers (alist-get 'answers case)
+            e8-oracle--disk (alist-get 'disk case)
             ;; A line of its own first, so a message repeated from the case
             ;; before is not folded into that case's as "[2 times]".
-            gnista-oracle--messages-start (with-current-buffer (messages-buffer)
+            e8-oracle--messages-start (with-current-buffer (messages-buffer)
                                            (let ((inhibit-read-only t))
                                              (goto-char (point-max))
                                              (insert (format "-- %s\n" (alist-get 'name case)))
@@ -360,20 +360,20 @@ answers come, and then from its answers, as save-some-buffers' do."
       (global-set-key (kbd "<f34>")
                       (lambda () (interactive) (apply (intern (car call)) (cdr call))))
       (recursive-edit)
-      (prog1 (gnista-oracle--state case text start keys)
+      (prog1 (e8-oracle--state case text start keys)
         ;; Some modes are global; turn them off again for the next case.
         (dolist (mode modes) (ignore-errors (funcall mode -1)))))))
 
-(defun gnista-oracle--case-buffer (case text)
+(defun e8-oracle--case-buffer (case text)
   "Make the buffer CASE runs in current and shown, and return it.
 That is a file visited for real if CASE has `find', in a fresh directory
-holding its `files', and otherwise a fresh *gnista-oracle* buffer holding TEXT."
+holding its `files', and otherwise a fresh *e8-oracle* buffer holding TEXT."
   (let ((files (alist-get 'files case))
         (find (alist-get 'find case)))
     (when (or files find)
-      (when (file-directory-p gnista-oracle--files)
-        (delete-directory gnista-oracle--files t))
-      (make-directory gnista-oracle--files t)
+      (when (file-directory-p e8-oracle--files)
+        (delete-directory e8-oracle--files t))
+      (make-directory e8-oracle--files t)
       ;; Auto-save files last, so they are newer than what they save.
       (dolist (file (sort (copy-sequence files)
                           (lambda (a b)
@@ -381,23 +381,23 @@ holding its `files', and otherwise a fresh *gnista-oracle* buffer holding TEXT."
                               (if (eq (string-prefix-p "#" a) (string-prefix-p "#" b))
                                   (string< a b)
                                 (string-prefix-p "#" b))))))
-        (gnista-oracle--write-file (symbol-name (car file)) (cdr file)))
+        (e8-oracle--write-file (symbol-name (car file)) (cdr file)))
       (when (and find (not (assq (intern find) files)))
-        (gnista-oracle--write-file find text)))
+        (e8-oracle--write-file find text)))
     (if find
         (let ((inhibit-message t))
-          (find-file (expand-file-name find gnista-oracle--files))
+          (find-file (expand-file-name find e8-oracle--files))
           ;; after-find-file leaves auto-saving off in batch Emacs.
           (auto-save-mode 1)
           (current-buffer))
-      (with-current-buffer (get-buffer-create "*gnista-oracle*")
+      (with-current-buffer (get-buffer-create "*e8-oracle*")
         (fundamental-mode)
         (switch-to-buffer (current-buffer))
         (buffer-disable-undo)
         (insert text)
         (current-buffer)))))
 
-(defun gnista-oracle--fontify ()
+(defun e8-oracle--fontify ()
   "Fontify the whole buffer, as redisplay would fontify what it shows.
 Redisplay carries on when fontifying fails, so this does too: Org's
 done-headline keyword can fail to match its second group."
@@ -405,7 +405,7 @@ done-headline keyword can fail to match its second group."
         (inhibit-message t))
     (ignore-errors (font-lock-ensure))))
 
-(defun gnista-oracle--visible ()
+(defun e8-oracle--visible ()
   "The buffer's text without the characters that are invisible."
   (let ((out nil))
     (dotimes (i (buffer-size))
@@ -413,7 +413,7 @@ done-headline keyword can fail to match its second group."
         (push (char-after (1+ i)) out)))
     (concat (nreverse out))))
 
-(defun gnista-oracle--dired-normalize ()
+(defun e8-oracle--dired-normalize ()
   "The Dired buffer as each line's mark and file name, leaving out the
 sizes and dates that differ between runs: the text, and a function from
 buffer positions to positions in it."
@@ -427,10 +427,10 @@ buffer positions to positions in it."
                (start (length out))
                (line (if name
                          ;; A link's target, absolute, is in the case's directory too.
-                         (gnista-oracle--without-dir
+                         (e8-oracle--without-dir
                           (concat (buffer-substring-no-properties bol (min (+ bol 2) eol))
                                   (buffer-substring-no-properties name eol)))
-                       (gnista-oracle--without-dir (buffer-substring-no-properties bol eol)))))
+                       (e8-oracle--without-dir (buffer-substring-no-properties bol eol)))))
           (setq out (concat out line "\n"))
           (push (list bol eol name start (length line)) lines))
         (forward-line 1)))
@@ -445,14 +445,14 @@ buffer positions to positions in it."
                  lines)
                 (length out))))))
 
-(defun gnista-oracle--state (case text start keys)
+(defun e8-oracle--state (case text start keys)
   "The current buffer's state after CASE, as an alist.
 The whole buffer, even if the case left it narrowed."
   (save-restriction
     (widen)
-    (gnista-oracle--whole-state case text start keys)))
+    (e8-oracle--whole-state case text start keys)))
 
-(defun gnista-oracle--whole-state (case text start keys)
+(defun e8-oracle--whole-state (case text start keys)
   "The current buffer's state after CASE, widened, as an alist."
       `((name . ,(alist-get 'name case))
         (input . ((text . ,text) (point . ,start) (keys . ,keys)
@@ -475,27 +475,27 @@ The whole buffer, even if the case left it narrowed."
                   ,@(and (alist-get 'lockfiles case) '((lockfiles . t)))))
         ,@(if (derived-mode-p 'dired-mode)
               ;; Sizes and dates differ between runs: compare marks and names.
-              (let ((dired (gnista-oracle--dired-normalize)))
+              (let ((dired (e8-oracle--dired-normalize)))
                 `((text . ,(car dired))
                   (visible . ,(car dired))
                   (point . ,(funcall (cdr dired) (point)))
                   (mark . ,(and (mark t) (funcall (cdr dired) (mark t))))))
             `((text . ,(buffer-substring-no-properties (point-min) (point-max)))
-              (visible . ,(progn (gnista-oracle--fontify) (gnista-oracle--visible)))
+              (visible . ,(progn (e8-oracle--fontify) (e8-oracle--visible)))
               (point . ,(1- (point)))
               (mark . ,(and (mark t) (1- (mark t))))))
         (mark_active . ,(if (and mark-active (mark t)) t :json-false))
-        (kill_ring . ,(vconcat (mapcar (lambda (k) (gnista-oracle--without-dir (substring-no-properties k))) kill-ring)))
+        (kill_ring . ,(vconcat (mapcar (lambda (k) (e8-oracle--without-dir (substring-no-properties k))) kill-ring)))
         (modified . ,(if (buffer-modified-p) t :json-false))
-        (error . ,(gnista-oracle--without-dir gnista-oracle--error))
+        (error . ,(e8-oracle--without-dir e8-oracle--error))
         ,@(and (alist-get 'windows case)
-               `((windows . ,(gnista-oracle--windows))))
+               `((windows . ,(e8-oracle--windows))))
         ,@(and (or (alist-get 'files case) (alist-get 'find case))
-               `((files . ,(gnista-oracle--listing))))
+               `((files . ,(e8-oracle--listing))))
         ,@(and (alist-get 'message case)
-               `((message . ,(gnista-oracle--last-message))))))
+               `((message . ,(e8-oracle--last-message))))))
 
-(defun gnista-oracle--windows ()
+(defun e8-oracle--windows ()
   "The frame's windows in cyclic order: buffer, point and total size."
   (vconcat
    (mapcar (lambda (w)
@@ -506,12 +506,12 @@ The whole buffer, even if the case left it narrowed."
                (selected . ,(if (eq w (selected-window)) t :json-false))))
            (window-list nil 'nomini (frame-first-window)))))
 
-(defun gnista-oracle--record-file (file golden-dir)
+(defun e8-oracle--record-file (file golden-dir)
   "Run the cases in FILE and write their results into GOLDEN-DIR."
   (let* ((cases (let ((json-object-type 'alist)
                       (json-array-type 'list))
                   (json-read-file file)))
-         (results (mapcar #'gnista-oracle--run cases))
+         (results (mapcar #'e8-oracle--run cases))
          (out (expand-file-name (file-name-nondirectory file) golden-dir))
          (json-encoding-pretty-print t)
          (coding-system-for-write 'utf-8-unix))
@@ -522,15 +522,15 @@ The whole buffer, even if the case left it narrowed."
       (insert "\n"))
     (message "%s: %d cases" (file-name-nondirectory file) (length results))))
 
-(let* ((dir (or (getenv "GNISTA_ORACLE_DIR") (file-name-directory load-file-name)))
+(let* ((dir (or (getenv "E8_ORACLE_DIR") (file-name-directory load-file-name)))
        (golden (expand-file-name "golden" dir)))
   (make-directory golden t)
   ;; Messages from the cases themselves go to stderr; keep the output to the summary.
   (let ((inhibit-message t))
     (dolist (file (directory-files (expand-file-name "cases" dir) t "\\.json\\'"))
-      ;; GNISTA_ORACLE_ONLY records only the case files whose names have it.
-      (when (string-search (or (getenv "GNISTA_ORACLE_ONLY") "") (file-name-nondirectory file))
+      ;; E8_ORACLE_ONLY records only the case files whose names have it.
+      (when (string-search (or (getenv "E8_ORACLE_ONLY") "") (file-name-nondirectory file))
         (let ((inhibit-message nil))
-          (gnista-oracle--record-file file golden))))))
+          (e8-oracle--record-file file golden))))))
 
 ;;; record.el ends here

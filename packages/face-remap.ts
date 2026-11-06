@@ -4,26 +4,26 @@
 // itself is the core's, from face-remapping-alist, as in face-remap.c.
 
 /** What face-remap-add-relative returns, to take the remapping away again. */
-type Cookie = [string, gnista.Value];
+type Cookie = [string, e8.Value];
 
 /** The current buffer's remappings, as [face, ...specs] entries. */
-function remappings(): gnista.Value[][] {
-  const alist = gnista.variable("face-remapping-alist");
-  return Array.isArray(alist) ? alist.filter((e): e is gnista.Value[] => Array.isArray(e)) : [];
+function remappings(): e8.Value[][] {
+  const alist = e8.variable("face-remapping-alist");
+  return Array.isArray(alist) ? alist.filter((e): e is e8.Value[] => Array.isArray(e)) : [];
 }
 
-function setRemapping(entries: gnista.Value[][]): void {
-  gnista.makeLocalVariable("face-remapping-alist");
-  gnista.setVariable("face-remapping-alist", entries.length === 0 ? null : entries);
+function setRemapping(entries: e8.Value[][]): void {
+  e8.makeLocalVariable("face-remapping-alist");
+  e8.setVariable("face-remapping-alist", entries.length === 0 ? null : entries);
 }
 
 /**
  * Remaps a face in the current buffer, over what it already looks like
  * there, as face-remap-add-relative: `specs` are a face name or an
- * attribute list, `[gnista.intern(":height"), 1.2]`. Returns a cookie for
+ * attribute list, `[e8.intern(":height"), 1.2]`. Returns a cookie for
  * faceRemapRemoveRelative.
  */
-export function faceRemapAddRelative(face: string, specs: gnista.Value): Cookie {
+export function faceRemapAddRelative(face: string, specs: e8.Value): Cookie {
   const alist = remappings();
   const i = alist.findIndex((e) => e[0] === face);
   const entry = i < 0 ? [face, face] : alist[i];
@@ -39,7 +39,7 @@ export function faceRemapRemoveRelative(cookie: Cookie): void {
   const i = alist.findIndex((e) => e[0] === face);
   if (i < 0) return;
   const entry = alist[i];
-  const same = (a: gnista.Value, b: gnista.Value) => JSON.stringify(a, symbols) === JSON.stringify(b, symbols);
+  const same = (a: e8.Value, b: e8.Value) => JSON.stringify(a, symbols) === JSON.stringify(b, symbols);
   const j = entry.findIndex((spec, k) => k > 0 && same(spec, specs));
   if (j < 0) return;
   const rest = [...entry.slice(1, j), ...entry.slice(j + 1)];
@@ -53,128 +53,128 @@ const symbols = (_key: string, v: unknown) => (typeof v === "symbol" ? `#${v.des
 
 // Scaling a buffer's text.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "text-scale-mode-step",
   doc: "How much each step of text-scale-adjust scales the buffer's text by.",
   value: 1.2,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "text-scale-mode-amount",
   doc: "How many steps the buffer's text is scaled by, negative for smaller.",
   value: 0,
   local: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "text-scale-mode-lighter",
   doc: "What text-scale-mode shows in the mode line: the steps, as +1 or -2.",
   value: "+0",
   local: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "text-scale-mode-remapping",
   doc: "The remapping text-scale-mode made, to take away when it changes.",
   value: null,
   local: true,
 });
 
-const textScaleMode = gnista.defineMinorMode({
+const textScaleMode = e8.defineMinorMode({
   name: "text-scale-mode",
   doc:
     "Show the buffer's text bigger or smaller, by text-scale-mode-amount steps of text-scale-mode-step.\n\n" +
     "Faces with a height of their own keep it; text-scale-adjust turns it on and off.",
   onChange: (on) => {
-    const old = gnista.variable("text-scale-mode-remapping");
+    const old = e8.variable("text-scale-mode-remapping");
     if (Array.isArray(old)) faceRemapRemoveRelative(old as Cookie);
-    const amount = Number(gnista.variable("text-scale-mode-amount") ?? 0);
-    gnista.setVariable("text-scale-mode-lighter", amount >= 0 ? `+${amount}` : `${amount}`);
-    const step = Number(gnista.variable("text-scale-mode-step") ?? 1.2);
-    gnista.setVariable("text-scale-mode-remapping", on ? faceRemapAddRelative("default", [gnista.intern(":height"), step ** amount]) : null);
+    const amount = Number(e8.variable("text-scale-mode-amount") ?? 0);
+    e8.setVariable("text-scale-mode-lighter", amount >= 0 ? `+${amount}` : `${amount}`);
+    const step = Number(e8.variable("text-scale-mode-step") ?? 1.2);
+    e8.setVariable("text-scale-mode-remapping", on ? faceRemapAddRelative("default", [e8.intern(":height"), step ** amount]) : null);
   },
 });
 // Its lighter shows the steps, as (" " text-scale-mode-lighter) does in Emacs.
 {
-  const alist = (gnista.defaultValue("minor-mode-alist") as gnista.Value[] | null) ?? [];
-  gnista.setDefault("minor-mode-alist", [...alist, [gnista.intern("text-scale-mode"), [" ", gnista.intern("text-scale-mode-lighter")]]]);
+  const alist = (e8.defaultValue("minor-mode-alist") as e8.Value[] | null) ?? [];
+  e8.setDefault("minor-mode-alist", [...alist, [e8.intern("text-scale-mode"), [" ", e8.intern("text-scale-mode-lighter")]]]);
 }
 
 /** Sets the buffer's text scale to `level` steps, as text-scale-set. */
 function textScaleSet(level: number): void {
-  gnista.setVariable("text-scale-mode-amount", level);
-  gnista.callWithPrefix(level === 0 ? -1 : 1, textScaleMode);
+  e8.setVariable("text-scale-mode-amount", level);
+  e8.callWithPrefix(level === 0 ? -1 : 1, textScaleMode);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "text-scale-increase",
   doc: "Make the buffer's text a step bigger, or with a prefix argument that many; 0 goes back to its usual size.",
   params: [{ name: "inc", kind: "count" }],
-  run: (inc) => textScaleSet(inc === 0 ? 0 : Number(gnista.variable("text-scale-mode-amount") ?? 0) + inc),
+  run: (inc) => textScaleSet(inc === 0 ? 0 : Number(e8.variable("text-scale-mode-amount") ?? 0) + inc),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "text-scale-decrease",
   doc: "Make the buffer's text a step smaller, or with a prefix argument that many.",
   params: [{ name: "dec", kind: "count" }],
-  run: (dec) => gnista.call("text-scale-increase", -dec),
+  run: (dec) => e8.call("text-scale-increase", -dec),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "text-scale-set",
   doc: "Scale the buffer's text by a number of steps of text-scale-mode-step; 0 is its usual size.",
   params: [{ name: "level", kind: "count" }],
   run: (level) => textScaleSet(level),
 });
 
-const textScaleAdjust = gnista.defineCommand({
+const textScaleAdjust = e8.defineCommand({
   name: "text-scale-adjust",
   doc:
     "Make the buffer's text bigger or smaller, as the last key says: + or = a step bigger, - a step smaller, 0 its usual size.\n\n" +
     "A prefix argument gives how many steps. The same keys then go on adjusting, without C-x.",
   params: [{ name: "inc", kind: "count" }],
   run: (inc) => {
-    const key = (gnista.lastKey() ?? "").replace(/^(?:[CMSs]-)+/, "");
+    const key = (e8.lastKey() ?? "").replace(/^(?:[CMSs]-)+/, "");
     const step = key === "-" ? -inc : key === "0" ? 0 : inc;
-    gnista.call("text-scale-increase", step);
+    e8.call("text-scale-increase", step);
     const again: Record<string, "text-scale-adjust"> = {};
     for (const k of ["+", "=", "-", "0"]) again[k] = again[`C-${k}`] = "text-scale-adjust";
-    gnista.setTransientMap(again);
-    gnista.message("Use +, =, -, 0 for further adjustment");
+    e8.setTransientMap(again);
+    e8.message("Use +, =, -, 0 for further adjustment");
   },
 });
-for (const key of ["C-x C-+", "C-x C-=", "C-x C--", "C-x C-0"]) gnista.bindKey(key, textScaleAdjust);
+for (const key of ["C-x C-+", "C-x C-=", "C-x C--", "C-x C-0"]) e8.bindKey(key, textScaleAdjust);
 
 // A face for the whole buffer: buffer-face-mode and variable-pitch-mode.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "buffer-face-mode-face",
   doc: "The face buffer-face-mode shows the buffer's text in.",
   value: "variable-pitch",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "buffer-face-mode-remapping",
   doc: "The remapping buffer-face-mode made, to take away when it is turned off.",
   value: null,
   local: true,
 });
 
-const bufferFaceMode = gnista.defineMinorMode({
+const bufferFaceMode = e8.defineMinorMode({
   name: "buffer-face-mode",
   lighter: " BufFace",
   doc: "Show the buffer's text in the face buffer-face-mode-face says, variable-pitch to begin with.",
   onChange: (on) => {
-    const old = gnista.variable("buffer-face-mode-remapping");
+    const old = e8.variable("buffer-face-mode-remapping");
     if (Array.isArray(old)) faceRemapRemoveRelative(old as Cookie);
-    const face = String(gnista.variable("buffer-face-mode-face") ?? "variable-pitch");
-    gnista.setVariable("buffer-face-mode-remapping", on ? faceRemapAddRelative("default", face) : null);
+    const face = String(e8.variable("buffer-face-mode-face") ?? "variable-pitch");
+    e8.setVariable("buffer-face-mode-remapping", on ? faceRemapAddRelative("default", face) : null);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "variable-pitch-mode",
   doc: "Show the buffer's text in a proportional font, the variable-pitch face, as buffer-face-mode does with it. A prefix argument turns it on if positive, off if not.",
   params: [{ name: "arg", kind: "prefix" }],
   run: (arg) => {
-    gnista.makeLocalVariable("buffer-face-mode-face");
-    gnista.setVariable("buffer-face-mode-face", "variable-pitch");
-    gnista.callWithPrefix(arg === null || arg === undefined ? (gnista.variable("buffer-face-mode") === true ? -1 : 1) : gnista.prefixNumericValue(arg), bufferFaceMode);
+    e8.makeLocalVariable("buffer-face-mode-face");
+    e8.setVariable("buffer-face-mode-face", "variable-pitch");
+    e8.callWithPrefix(arg === null || arg === undefined ? (e8.variable("buffer-face-mode") === true ? -1 : 1) : e8.prefixNumericValue(arg), bufferFaceMode);
   },
 });

@@ -1,4 +1,4 @@
-# The V8 spike of docs/multithreading.md's step 4, outside Gnista's workspace:
+# The V8 spike of docs/multithreading.md's step 4, outside E8's workspace:
 #   CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc cargo run --release --manifest-path spikes/v8/Cargo.toml -- FILE.org
 [package]
 name = "v8spike"

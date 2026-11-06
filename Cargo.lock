@@ -1315,6 +1315,99 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd8e701084c37e7ef62d3f9e453b618130cbc0ef3573847785952a3ac3f746bf"
 
 [[package]]
+name = "e8"
+version = "0.3.0"
+dependencies = [
+ "e8-agent",
+ "e8-core",
+ "e8-mcp",
+ "e8-script",
+ "ratatui",
+]
+
+[[package]]
+name = "e8-agent"
+version = "0.3.0"
+dependencies = [
+ "e8-core",
+ "e8-mcp",
+ "e8-script",
+ "keyring",
+ "serde_json",
+ "tempfile",
+ "ureq",
+]
+
+[[package]]
+name = "e8-core"
+version = "0.3.0"
+dependencies = [
+ "encoding_rs",
+ "image",
+ "libc",
+ "libloading",
+ "memchr",
+ "regex",
+ "resvg",
+ "ropey",
+ "tempfile",
+ "trash",
+ "tree-sitter",
+ "tree-sitter-javascript",
+ "tree-sitter-json",
+ "tree-sitter-language",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "unicode-width",
+]
+
+[[package]]
+name = "e8-gui"
+version = "0.3.0"
+dependencies = [
+ "arboard",
+ "e8-agent",
+ "e8-core",
+ "e8-mcp",
+ "e8-script",
+ "eframe",
+ "egui",
+ "egui_kittest",
+ "fontique",
+ "objc2-app-kit 0.3.2",
+ "tempfile",
+]
+
+[[package]]
+name = "e8-mcp"
+version = "0.3.0"
+dependencies = [
+ "e8-core",
+ "e8-script",
+ "libc",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "e8-script"
+version = "0.3.0"
+dependencies = [
+ "e8-core",
+ "regex",
+ "rquickjs",
+ "serde",
+ "serde_json",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_parser",
+ "swc_ecma_visit",
+ "swc_ts_fast_strip",
+ "tempfile",
+ "v8",
+]
+
+[[package]]
 name = "ecolor"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2053,99 +2146,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c4ee00b289aba7a9e5306d57c2d05499b2e5dc427f84ac708bd2c090212cf3e"
 dependencies = [
  "gl_generator",
-]
-
-[[package]]
-name = "gnista"
-version = "0.2.2"
-dependencies = [
- "gnista-agent",
- "gnista-core",
- "gnista-mcp",
- "gnista-script",
- "ratatui",
-]
-
-[[package]]
-name = "gnista-agent"
-version = "0.2.2"
-dependencies = [
- "gnista-core",
- "gnista-mcp",
- "gnista-script",
- "keyring",
- "serde_json",
- "tempfile",
- "ureq",
-]
-
-[[package]]
-name = "gnista-core"
-version = "0.2.2"
-dependencies = [
- "encoding_rs",
- "image",
- "libc",
- "libloading",
- "memchr",
- "regex",
- "resvg",
- "ropey",
- "tempfile",
- "trash",
- "tree-sitter",
- "tree-sitter-javascript",
- "tree-sitter-json",
- "tree-sitter-language",
- "tree-sitter-python",
- "tree-sitter-rust",
- "unicode-width",
-]
-
-[[package]]
-name = "gnista-gui"
-version = "0.2.2"
-dependencies = [
- "arboard",
- "eframe",
- "egui",
- "egui_kittest",
- "fontique",
- "gnista-agent",
- "gnista-core",
- "gnista-mcp",
- "gnista-script",
- "objc2-app-kit 0.3.2",
- "tempfile",
-]
-
-[[package]]
-name = "gnista-mcp"
-version = "0.2.2"
-dependencies = [
- "gnista-core",
- "gnista-script",
- "libc",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
-name = "gnista-script"
-version = "0.2.2"
-dependencies = [
- "gnista-core",
- "regex",
- "rquickjs",
- "serde",
- "serde_json",
- "swc_common",
- "swc_ecma_ast",
- "swc_ecma_parser",
- "swc_ecma_visit",
- "swc_ts_fast_strip",
- "tempfile",
- "v8",
 ]
 
 [[package]]

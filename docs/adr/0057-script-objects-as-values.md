@@ -4,7 +4,7 @@ Status: accepted · 2026-11-04
 
 ## Context
 
-A Lisp record, such as an org-roam node, goes anywhere a value goes: through `funcall`, advice, hooks and variables, and comes back as itself. Gnista's values were editor values only: null, booleans, numbers, strings, lists, functions and the editor's own objects (buffers, markers, keymaps and the rest). A script's plain object had no value, so a call that went through the editor, as every call through advice does, gave back `t` for it. With consult-org-roam on, `org-roam-node-read` is advised, and `C-c n f` gave `org-roam-node-find` the node `true` rather than the one chosen, which it then tried to visit by an ID that was not there.
+A Lisp record, such as an org-roam node, goes anywhere a value goes: through `funcall`, advice, hooks and variables, and comes back as itself. E8's values were editor values only: null, booleans, numbers, strings, lists, functions and the editor's own objects (buffers, markers, keymaps and the rest). A script's plain object had no value, so a call that went through the editor, as every call through advice does, gave back `t` for it. With consult-org-roam on, `org-roam-node-read` is advised, and `C-c n f` gave `org-roam-node-find` the node `true` rather than the one chosen, which it then tried to visit by an ID that was not there.
 
 ## Options considered
 

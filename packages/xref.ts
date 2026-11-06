@@ -4,9 +4,9 @@
 // the buffer, and next-error steps through them. project-find-regexp (C-x
 // p g) fills it.
 
-gnista.defineFace({ name: "xref-file-header", doc: "The file names heading *xref*'s groups.", attributes: { inherit: "compilation-info" } });
-gnista.defineFace({ name: "xref-line-number", doc: "Line numbers in *xref*.", attributes: { inherit: "compilation-line-number" } });
-gnista.defineFace({ name: "xref-match", doc: "What matched, in *xref*.", attributes: { inherit: "match" } });
+e8.defineFace({ name: "xref-file-header", doc: "The file names heading *xref*'s groups.", attributes: { inherit: "compilation-info" } });
+e8.defineFace({ name: "xref-line-number", doc: "Line numbers in *xref*.", attributes: { inherit: "compilation-line-number" } });
+e8.defineFace({ name: "xref-match", doc: "What matched, in *xref*.", attributes: { inherit: "match" } });
 
 /** A place found: its file, line and column, and the text shown for it. */
 export type Xref = { file: string; line: number; col: number; length: number; summary: string; group: string };
@@ -20,12 +20,12 @@ const toExtended = (re: string): string => re.replace(/\\([(){}|])|([(){}|])/g, 
  * input, grouped by file.
  */
 export function matchesInFiles(regexp: string, files: string[], dir: string, fold = false): Xref[] {
-  const result = gnista.callProcess(
+  const result = e8.callProcess(
     ["xargs", "-0", "grep", ...(fold ? ["-i"] : []), "--null", "-snHE", "-e", toExtended(regexp)],
     { directory: dir, input: files.join("\0") },
   );
   // grep says 1 for no matches; more is a failure, as of the regexp.
-  if (result.exit > 1 && !/\0\d+:/.test(result.output)) gnista.userError(`Search failed with status ${result.exit}: ${result.output.trim()}`);
+  if (result.exit > 1 && !/\0\d+:/.test(result.output)) e8.userError(`Search failed with status ${result.exit}: ${result.output.trim()}`);
   let js: RegExp | undefined;
   try {
     js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
@@ -46,53 +46,53 @@ export function matchesInFiles(regexp: string, files: string[], dir: string, fol
 }
 
 /** What each *xref* buffer shows, kept by buffer so renaming it keeps it. */
-const shown = new Map<gnista.Buffer, { byLine: Map<number, Xref>; current?: number }>();
-gnista.addHook("kill-buffer-hook", () => shown.delete(gnista.currentBuffer()));
+const shown = new Map<e8.Buffer, { byLine: Map<number, Xref>; current?: number }>();
+e8.addHook("kill-buffer-hook", () => shown.delete(e8.currentBuffer()));
 
 /** Shows places in *xref*, grouped by file as xref--insert-xrefs does, and selects it. */
 function showXrefs(xrefs: Xref[]): void {
   const name = "*xref*";
-  gnista.getBufferCreate(name);
+  e8.getBufferCreate(name);
   const byLine = new Map<number, Xref>();
-  gnista.withCurrentBuffer(name, () => {
-    gnista.setReadOnly(false);
-    gnista.deleteRegion(0, gnista.bufferSize());
-    gnista.call("xref--xref-buffer-mode");
+  e8.withCurrentBuffer(name, () => {
+    e8.setReadOnly(false);
+    e8.deleteRegion(0, e8.bufferSize());
+    e8.call("xref--xref-buffer-mode");
     const groups = new Map<string, Xref[]>();
     for (const x of xrefs) groups.set(x.group, [...(groups.get(x.group) ?? []), x]);
     for (const [group, items] of groups) {
-      const start = gnista.point();
-      gnista.insert(`${group}\n`);
-      gnista.putTextProperty(start, start + group.length, "face", "xref-file-header");
+      const start = e8.point();
+      e8.insert(`${group}\n`);
+      e8.putTextProperty(start, start + group.length, "face", "xref-file-header");
       const width = String(Math.max(...items.map((x) => x.line))).length;
       let previous: number | undefined;
       for (const x of items) {
         // Hits on one line share it, as xref shows them.
         if (x.line === previous) continue;
         previous = x.line;
-        const at = gnista.point();
+        const at = e8.point();
         const prefix = `${String(x.line).padStart(width)}:`;
-        gnista.insert(`${prefix}${x.summary}\n`);
-        gnista.putTextProperty(at, at + width, "face", "xref-line-number");
+        e8.insert(`${prefix}${x.summary}\n`);
+        e8.putTextProperty(at, at + width, "face", "xref-line-number");
         const matchAt = at + prefix.length + x.col;
-        if (x.length > 0) gnista.addFaceTextProperty(matchAt, matchAt + x.length, "xref-match");
-        byLine.set(gnista.lineOf(at), x);
+        if (x.length > 0) e8.addFaceTextProperty(matchAt, matchAt + x.length, "xref-match");
+        byLine.set(e8.lineOf(at), x);
       }
     }
-    gnista.setReadOnly(true);
-    gnista.setBufferModified(false);
-    gnista.gotoChar(0);
+    e8.setReadOnly(true);
+    e8.setBufferModified(false);
+    e8.gotoChar(0);
   });
-  shown.set(gnista.getBuffer(name)!, { byLine });
-  gnista.setVariable("next-error-last-buffer", gnista.getBuffer(name) ?? null);
-  gnista.call("pop-to-buffer", name);
+  shown.set(e8.getBuffer(name)!, { byLine });
+  e8.setVariable("next-error-last-buffer", e8.getBuffer(name) ?? null);
+  e8.call("pop-to-buffer", name);
 }
 
 // For code that finds places, as project-find-regexp: a list of { file, line, col, length, summary, group }.
-gnista.defun("xref-show-xrefs", showXrefs);
+e8.defun("xref-show-xrefs", showXrefs);
 
-function items(buffer: gnista.BufferLike = gnista.currentBuffer()) {
-  const b = gnista.getBuffer(buffer);
+function items(buffer: e8.BufferLike = e8.currentBuffer()) {
+  const b = e8.getBuffer(buffer);
   const s = b === undefined ? undefined : shown.get(b);
   if (s === undefined) throw new Error("Not in an xref buffer");
   return s;
@@ -100,66 +100,66 @@ function items(buffer: gnista.BufferLike = gnista.currentBuffer()) {
 
 /** Goes to a place's line and to its column there, counted in characters as forward-char goes. */
 function gotoXref(x: Xref): void {
-  const line = Math.min(x.line - 1, gnista.lineCount() - 1);
-  gnista.gotoChar(Math.min(gnista.lineStart(line) + x.col, gnista.lineEnd(line)));
+  const line = Math.min(x.line - 1, e8.lineCount() - 1);
+  e8.gotoChar(Math.min(e8.lineStart(line) + x.col, e8.lineEnd(line)));
 }
 
 /** Shows a place in another window, selecting it if `select`, as xref--show-location. */
 function showLocation(x: Xref, select: boolean): void {
-  const from = gnista.selectedWindow();
-  const buffer = gnista.findFileNoselect(x.file);
-  gnista.call("pop-to-buffer", buffer);
+  const from = e8.selectedWindow();
+  const buffer = e8.findFileNoselect(x.file);
+  e8.call("pop-to-buffer", buffer);
   // Not the xref window itself.
-  if (gnista.selectedWindow() === from) gnista.call("switch-to-buffer-other-window", buffer);
+  if (e8.selectedWindow() === from) e8.call("switch-to-buffer-other-window", buffer);
   gotoXref(x);
-  if (!select) gnista.selectWindow(from);
+  if (!select) e8.selectWindow(from);
 }
 
 /** Moves to the next or earlier place from point's line, as xref--search-property. */
 function moveToItem(n: number): Xref {
   const s = items();
   const lines = [...s.byLine.keys()].sort((a, b) => a - b);
-  const here = gnista.lineOf(gnista.point());
+  const here = e8.lineOf(e8.point());
   const target = n > 0 ? lines.filter((l) => l > here)[n - 1] : lines.filter((l) => l < here).reverse()[-n - 1];
   if (target === undefined) throw new Error(n > 0 ? "No next xref" : "No previous xref");
-  gnista.gotoChar(gnista.lineStart(target));
+  e8.gotoChar(e8.lineStart(target));
   return s.byLine.get(target)!;
 }
 
 const itemAtPoint = (): Xref => {
-  const x = items().byLine.get(gnista.lineOf(gnista.point()));
-  if (x === undefined) gnista.userError("No reference at point");
+  const x = items().byLine.get(e8.lineOf(e8.point()));
+  if (x === undefined) e8.userError("No reference at point");
   return x;
 };
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-next-line",
   doc: "Move to the next place and show it in another window.",
-  run: () => showLocation(moveToItem(gnista.prefixNumericValue(gnista.prefixArg())), false),
+  run: () => showLocation(moveToItem(e8.prefixNumericValue(e8.prefixArg())), false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-prev-line",
   doc: "Move to the place before and show it in another window.",
-  run: () => showLocation(moveToItem(-gnista.prefixNumericValue(gnista.prefixArg())), false),
+  run: () => showLocation(moveToItem(-e8.prefixNumericValue(e8.prefixArg())), false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-goto-xref",
   doc: "Visit the place at point in another window.",
   run: () => showLocation(itemAtPoint(), true),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-show-location-at-point",
   doc: "Show the place at point in another window, keeping this one selected.",
   run: () => showLocation(itemAtPoint(), false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-quit-and-goto-xref",
   doc: "Quit *xref* and visit the place at point.",
   run: () => {
     const x = itemAtPoint();
-    gnista.call("quit-window");
-    const buffer = gnista.findFileNoselect(x.file);
-    gnista.call("switch-to-buffer", buffer);
+    e8.call("quit-window");
+    const buffer = e8.findFileNoselect(x.file);
+    e8.call("switch-to-buffer", buffer);
     gotoXref(x);
   },
 });
@@ -169,21 +169,21 @@ function moveGroup(n: number): void {
   const s = items();
   const lines = [...s.byLine.keys()].sort((a, b) => a - b);
   const group = (l: number) => s.byLine.get(l)!.group;
-  const here = gnista.lineOf(gnista.point());
+  const here = e8.lineOf(e8.point());
   const current = s.byLine.has(here) ? group(here) : undefined;
   const firsts = lines.filter((l, i) => i === 0 || group(lines[i - 1]) !== group(l));
   const target = n > 0 ? firsts.find((l) => l > here && group(l) !== current) : firsts.filter((l) => l < here && group(l) !== current).pop();
   if (target !== undefined) {
-    gnista.gotoChar(gnista.lineStart(target));
+    e8.gotoChar(e8.lineStart(target));
     showLocation(s.byLine.get(target)!, false);
   }
 }
-gnista.defineCommand({ name: "xref-next-group", doc: "Move to the first place in the next file.", run: () => moveGroup(1) });
-gnista.defineCommand({ name: "xref-prev-group", doc: "Move to the first place in the file before.", run: () => moveGroup(-1) });
+e8.defineCommand({ name: "xref-next-group", doc: "Move to the first place in the next file.", run: () => moveGroup(1) });
+e8.defineCommand({ name: "xref-prev-group", doc: "Move to the first place in the file before.", run: () => moveGroup(-1) });
 
 /** Visits the place `n` places on in an xref buffer, from the first if `reset`, as next-error does there. */
 function xrefNextError(n: number, reset: boolean): void {
-  const buffer = gnista.bufferName();
+  const buffer = e8.bufferName();
   const s = items(buffer);
   const lines = [...s.byLine.keys()].sort((a, b) => a - b);
   const from = reset || s.current === undefined ? -1 : s.current;
@@ -195,22 +195,22 @@ function xrefNextError(n: number, reset: boolean): void {
         : lines.filter((l) => l < from).reverse()[-n - 1];
   if (target === undefined) throw new Error(n < 0 ? "No previous xref" : "No next xref");
   s.current = target;
-  const window = gnista.windowList().find((w) => gnista.windowBuffer(w) === buffer);
+  const window = e8.windowList().find((w) => e8.windowBuffer(w) === buffer);
   if (window !== undefined) {
-    const selected = gnista.selectedWindow();
-    gnista.selectWindow(window);
-    gnista.gotoChar(gnista.lineStart(target));
-    gnista.selectWindow(selected);
+    const selected = e8.selectedWindow();
+    e8.selectWindow(window);
+    e8.gotoChar(e8.lineStart(target));
+    e8.selectWindow(selected);
   }
   const x = s.byLine.get(target)!;
-  const file = gnista.findFileNoselect(x.file);
-  if (window === gnista.selectedWindow()) gnista.call("pop-to-buffer", file);
-  else gnista.call("switch-to-buffer", file);
+  const file = e8.findFileNoselect(x.file);
+  if (window === e8.selectedWindow()) e8.call("pop-to-buffer", file);
+  else e8.call("switch-to-buffer", file);
   gotoXref(x);
 }
-gnista.defun("xref--next-error-function", xrefNextError);
+e8.defun("xref--next-error-function", xrefNextError);
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "xref--xref-buffer-mode",
   modeName: "XREF",
   doc: "The mode of *xref*: places found, by file. n and p show the next and previous, RET visits one, TAB visits it and quits, q quits.",
@@ -227,7 +227,7 @@ gnista.defineMajorMode({
     q: "quit-window",
   },
   setup: () => {
-    gnista.setVariable("next-error-function", "xref--next-error-function");
+    e8.setVariable("next-error-function", "xref--next-error-function");
   },
 });
 
@@ -250,45 +250,45 @@ export function defineXrefBackend(name: string, backend: XrefBackend): void {
   backends.set(name, backend);
 }
 
-gnista.defineHook(
+e8.defineHook(
   "xref-backend-functions",
   "Functions that give the name of the xref backend for the current buffer, tried in turn, as defineXrefBackend names them.",
 );
 
 /** The symbol at point, by the syntax table, as the default backend's identifier. */
 function symbolAtPoint(): string | undefined {
-  return gnista.saveExcursion(() => {
-    gnista.skipSyntaxBackward("w_");
-    const start = gnista.point();
-    gnista.skipSyntaxForward("w_");
-    return gnista.point() > start ? gnista.bufferText(start, gnista.point()) : undefined;
+  return e8.saveExcursion(() => {
+    e8.skipSyntaxBackward("w_");
+    const start = e8.point();
+    e8.skipSyntaxForward("w_");
+    return e8.point() > start ? e8.bufferText(start, e8.point()) : undefined;
   });
 }
 
 /** The backend for the current buffer, as xref-find-backend asks xref-backend-functions. */
 function findBackend(): XrefBackend {
-  const name = gnista.runHookWithArgsUntilSuccess("xref-backend-functions");
+  const name = e8.runHookWithArgsUntilSuccess("xref-backend-functions");
   const backend = typeof name === "string" ? backends.get(name) : undefined;
   return backend ?? { identifierAtPoint: symbolAtPoint, definitions: () => [], references: () => [] };
 }
 
 /** Where M-. was typed, for M-, to go back to, and where M-, came from, for C-M-, as xref--history. */
-const history: { back: gnista.Marker[]; forward: gnista.Marker[] } = { back: [], forward: [] };
+const history: { back: e8.Marker[]; forward: e8.Marker[] } = { back: [], forward: [] };
 
-function pushMarker(stack: gnista.Marker[]): void {
-  stack.unshift(gnista.makeMarker(gnista.point()));
-  const max = Number(gnista.variable("xref-history-max") ?? 16);
-  for (const m of stack.splice(max)) gnista.deleteMarker(m);
+function pushMarker(stack: e8.Marker[]): void {
+  stack.unshift(e8.makeMarker(e8.point()));
+  const max = Number(e8.variable("xref-history-max") ?? 16);
+  for (const m of stack.splice(max)) e8.deleteMarker(m);
 }
 
-gnista.defineVariable({ name: "xref-history-max", doc: "How many places M-, can go back to.", value: 16 });
+e8.defineVariable({ name: "xref-history-max", doc: "How many places M-, can go back to.", value: 16 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "xref-show-xrefs-function",
   doc: "The function that shows the places references are found, called with them: xref-show-xrefs lists them in *xref*; consult-xref reads one.",
   value: "xref-show-xrefs",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "xref-show-definitions-function",
   doc: "The function that shows several definitions, called with them, as xref-show-xrefs-function shows references.",
   value: "xref-show-xrefs",
@@ -296,18 +296,18 @@ gnista.defineVariable({
 
 /** Shows places with the function a variable names, as xref--show-xrefs does. */
 function showWith(variable: string, xrefs: Xref[]): void {
-  const fn = gnista.variable(variable);
+  const fn = e8.variable(variable);
   if (fn === "xref-show-xrefs" || fn === null || fn === undefined) showXrefs(xrefs);
-  else gnista.funcall(fn as string, xrefs);
+  else e8.funcall(fn as string, xrefs);
 }
 
 /** Goes to one place, or lists several, as xref--show-xrefs does for definitions. */
 function showOrGo(xrefs: Xref[], kind: string, identifier: string): void {
-  if (xrefs.length === 0) gnista.userError(`No ${kind} found for: ${identifier}`);
+  if (xrefs.length === 0) e8.userError(`No ${kind} found for: ${identifier}`);
   pushMarker(history.back);
-  for (const m of history.forward.splice(0)) gnista.deleteMarker(m);
+  for (const m of history.forward.splice(0)) e8.deleteMarker(m);
   if (xrefs.length === 1) {
-    gnista.call("switch-to-buffer", gnista.findFileNoselect(xrefs[0].file));
+    e8.call("switch-to-buffer", e8.findFileNoselect(xrefs[0].file));
     gotoXref(xrefs[0]);
   } else showWith("xref-show-definitions-function", xrefs);
 }
@@ -316,12 +316,12 @@ function showOrGo(xrefs: Xref[], kind: string, identifier: string): void {
 function readIdentifier(prompt: string, ask: boolean): string {
   const at = findBackend().identifierAtPoint();
   if (at !== undefined && !ask) return at;
-  const answer = gnista.readString(at ? `${prompt} (default ${at}): ` : `${prompt}: `, { default: at });
-  if (answer === "") gnista.userError("There is no default identifier");
+  const answer = e8.readString(at ? `${prompt} (default ${at}): ` : `${prompt}: `, { default: at });
+  if (answer === "") e8.userError("There is no default identifier");
   return answer;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-find-definitions",
   doc: "Go to where the identifier at point is defined, or list the places if there are several. With a prefix argument, ask for it.",
   params: [{ name: "arg", kind: "prefix" }],
@@ -331,44 +331,44 @@ gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-find-references",
   doc: "List the places that refer to the identifier at point. With a prefix argument, ask for it.",
   params: [{ name: "arg", kind: "prefix" }],
   run: (arg) => {
     const id = readIdentifier("Find references to", arg !== null && arg !== undefined);
     const xrefs = findBackend().references(id);
-    if (xrefs.length === 0) gnista.userError(`No references found for: ${id}`);
+    if (xrefs.length === 0) e8.userError(`No references found for: ${id}`);
     pushMarker(history.back);
     showWith("xref-show-xrefs-function", xrefs);
   },
 });
 
 /** Goes to a marker of a history stack, keeping where point was on the other, as xref-go-back and xref-go-forward. */
-function goAlong(from: gnista.Marker[], to: gnista.Marker[], none: string): void {
+function goAlong(from: e8.Marker[], to: e8.Marker[], none: string): void {
   const m = from.shift();
-  if (!m) gnista.userError(none);
+  if (!m) e8.userError(none);
   pushMarker(to);
-  const buffer = gnista.markerBuffer(m);
+  const buffer = e8.markerBuffer(m);
   if (buffer) {
-    gnista.call("switch-to-buffer", buffer);
-    gnista.gotoChar(gnista.markerPosition(m)!);
+    e8.call("switch-to-buffer", buffer);
+    e8.gotoChar(e8.markerPosition(m)!);
   }
-  gnista.deleteMarker(m);
+  e8.deleteMarker(m);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-go-back",
   doc: "Go back to where M-. or M-? was typed.",
   run: () => goAlong(history.back, history.forward, "At start of xref history"),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "xref-go-forward",
   doc: "Go forward again to where M-, came from.",
   run: () => goAlong(history.forward, history.back, "At end of xref history"),
 });
 
-gnista.bindKey("M-.", "xref-find-definitions");
-gnista.bindKey("M-?", "xref-find-references");
-gnista.bindKey("M-,", "xref-go-back");
-gnista.bindKey("C-M-,", "xref-go-forward");
+e8.bindKey("M-.", "xref-find-definitions");
+e8.bindKey("M-?", "xref-find-references");
+e8.bindKey("M-,", "xref-go-back");
+e8.bindKey("C-M-,", "xref-go-forward");

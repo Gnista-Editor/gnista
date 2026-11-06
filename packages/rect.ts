@@ -9,18 +9,18 @@
  * "coerce", only the tab does. Returns the column reached.
  */
 export function moveToColumn(column: number, force: boolean | "coerce" = false): number {
-  const reached = gnista.moveToColumn(column);
-  if (reached > column && force !== false && gnista.point() > gnista.pointMin() && gnista.charAfter(gnista.point() - 1) === "\t") {
-    const tab = gnista.point() - 1;
-    gnista.gotoChar(tab);
-    const from = gnista.currentColumn();
-    gnista.deleteRegion(tab, tab + 1);
-    gnista.insert(" ".repeat(reached - from));
-    return gnista.moveToColumn(column);
+  const reached = e8.moveToColumn(column);
+  if (reached > column && force !== false && e8.point() > e8.pointMin() && e8.charAfter(e8.point() - 1) === "\t") {
+    const tab = e8.point() - 1;
+    e8.gotoChar(tab);
+    const from = e8.currentColumn();
+    e8.deleteRegion(tab, tab + 1);
+    e8.insert(" ".repeat(reached - from));
+    return e8.moveToColumn(column);
   }
   if (reached < column && force === true) {
-    gnista.indentTo(column);
-    return gnista.currentColumn();
+    e8.indentTo(column);
+    return e8.currentColumn();
   }
   return reached;
 }
@@ -28,9 +28,9 @@ export function moveToColumn(column: number, force: boolean | "coerce" = false):
 /** The columns of a rectangle's corners, left first. */
 function columns(start: number, end: number): [number, number] {
   const col = (pos: number) =>
-    gnista.saveExcursion(() => {
-      gnista.gotoChar(pos);
-      return gnista.currentColumn();
+    e8.saveExcursion(() => {
+      e8.gotoChar(pos);
+      return e8.currentColumn();
     });
   const [a, b] = [col(start), col(end)];
   return a <= b ? [a, b] : [b, a];
@@ -42,19 +42,19 @@ function columns(start: number, end: number): [number, number] {
  */
 export function applyOnRectangle(f: (startcol: number, endcol: number) => void, startIn: number, endIn: number): number {
   const [start, end] = [Math.min(startIn, endIn), Math.max(startIn, endIn)];
-  return gnista.saveExcursion(() => {
+  return e8.saveExcursion(() => {
     const [startcol, endcol] = columns(startIn, endIn);
-    const endpt = gnista.makeMarker(gnista.lineEndPosition(end));
-    gnista.gotoChar(gnista.lineBeginningPosition(start));
-    let final = gnista.point();
+    const endpt = e8.makeMarker(e8.lineEndPosition(end));
+    e8.gotoChar(e8.lineBeginningPosition(start));
+    let final = e8.point();
     for (;;) {
       f(startcol, endcol);
-      final = gnista.point();
-      const next = gnista.lineEndPosition() + 1;
-      if (next > gnista.pointMax() || next > gnista.markerPosition(endpt)!) break;
-      gnista.gotoChar(next);
+      final = e8.point();
+      const next = e8.lineEndPosition() + 1;
+      if (next > e8.pointMax() || next > e8.markerPosition(endpt)!) break;
+      e8.gotoChar(next);
     }
-    gnista.deleteMarker(endpt);
+    e8.deleteMarker(endpt);
     return final;
   });
 }
@@ -68,26 +68,26 @@ function extract(start: number, end: number, del: boolean, fill = false): string
         lines.push(" ".repeat(endcol - startcol));
         return;
       }
-      const pt = gnista.point();
+      const pt = e8.point();
       moveToColumn(endcol, true);
-      lines.push(gnista.bufferSubstringNoProperties(pt, gnista.point()));
-      gnista.deleteRegion(pt, gnista.point());
+      lines.push(e8.bufferSubstringNoProperties(pt, e8.point()));
+      e8.deleteRegion(pt, e8.point());
     } else {
       // As extract-rectangle-line: tabs across the edges come out as spaces.
-      gnista.moveToColumn(startcol);
-      const s = gnista.point();
-      let begextra = gnista.currentColumn() - startcol;
-      gnista.moveToColumn(endcol);
-      let endextra = endcol - gnista.currentColumn();
+      e8.moveToColumn(startcol);
+      const s = e8.point();
+      let begextra = e8.currentColumn() - startcol;
+      e8.moveToColumn(endcol);
+      let endextra = endcol - e8.currentColumn();
       let line = "";
-      gnista.saveExcursion(() => {
-        const e = gnista.point();
-        gnista.gotoChar(s);
-        while (gnista.point() < e) {
-          const c = gnista.charAfter(gnista.point())!;
-          const before = gnista.currentColumn();
-          gnista.gotoChar(gnista.point() + 1);
-          line += c === "\t" ? " ".repeat(gnista.currentColumn() - before) : c;
+      e8.saveExcursion(() => {
+        const e = e8.point();
+        e8.gotoChar(s);
+        while (e8.point() < e) {
+          const c = e8.charAfter(e8.point())!;
+          const before = e8.currentColumn();
+          e8.gotoChar(e8.point() + 1);
+          line += c === "\t" ? " ".repeat(e8.currentColumn() - before) : c;
         }
       });
       if (begextra < 0) {
@@ -103,20 +103,20 @@ function extract(start: number, end: number, del: boolean, fill = false): string
 
 /** Inserts a rectangle's lines at point and the lines after, at point's column, as insert-rectangle: the mark at its top left, point at its bottom right. */
 export function insertRectangle(lines: string[]): void {
-  const column = gnista.currentColumn();
-  gnista.pushMark(gnista.point());
+  const column = e8.currentColumn();
+  e8.pushMark(e8.point());
   lines.forEach((line, i) => {
     if (i > 0) {
-      const next = gnista.lineEndPosition() + 1;
-      if (next > gnista.pointMax()) {
-        gnista.gotoChar(gnista.pointMax());
-        gnista.insert("\n");
+      const next = e8.lineEndPosition() + 1;
+      if (next > e8.pointMax()) {
+        e8.gotoChar(e8.pointMax());
+        e8.insert("\n");
       } else {
-        gnista.gotoChar(next);
+        e8.gotoChar(next);
       }
       moveToColumn(column, true);
     }
-    gnista.insertForYank(line);
+    e8.insertForYank(line);
   });
 }
 
@@ -131,112 +131,112 @@ const region = [
 ] as const;
 
 const readOnly = () => {
-  if (gnista.bufferReadOnly()) gnista.signal("buffer-read-only", `Buffer is read-only: ${gnista.bufferName()}`);
+  if (e8.bufferReadOnly()) e8.signal("buffer-read-only", `Buffer is read-only: ${e8.bufferName()}`);
 };
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "delete-rectangle",
   doc: "Delete the text in the rectangle between point and the mark; with a prefix argument, lines too short are padded first.",
   params: [...region, { name: "fill", kind: "prefix" }],
-  run: (start: number, end: number, fill: gnista.PrefixArg) => {
+  run: (start: number, end: number, fill: e8.PrefixArg) => {
     readOnly();
     const p = applyOnRectangle((startcol, endcol) => {
       if (moveToColumn(startcol, fill !== null ? true : "coerce") >= startcol) {
-        const from = gnista.point();
+        const from = e8.point();
         moveToColumn(endcol, "coerce");
-        gnista.deleteRegion(from, gnista.point());
+        e8.deleteRegion(from, e8.point());
       }
     }, start, end);
-    gnista.gotoChar(p);
+    e8.gotoChar(p);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "kill-rectangle",
   doc: "Kill the text in the rectangle between point and the mark, to be yanked with C-x r y; with a prefix argument, short lines are padded.",
   params: [...region, { name: "fill", kind: "prefix" }],
-  run: (start: number, end: number, fill: gnista.PrefixArg) => {
-    if (gnista.bufferReadOnly()) {
+  run: (start: number, end: number, fill: e8.PrefixArg) => {
+    if (e8.bufferReadOnly()) {
       killedRectangle = extract(start, end, false);
-      gnista.signal("buffer-read-only", `Buffer is read-only: ${gnista.bufferName()}`);
+      e8.signal("buffer-read-only", `Buffer is read-only: ${e8.bufferName()}`);
     }
     killedRectangle = extract(start, end, true, fill !== null);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "copy-rectangle-as-kill",
   doc: "Copy the text in the rectangle between point and the mark, to be yanked with C-x r y.",
   params: [...region],
   run: (start: number, end: number) => {
     killedRectangle = extract(start, end, false);
-    gnista.deactivateMark();
+    e8.deactivateMark();
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "yank-rectangle",
   doc: "Insert the rectangle killed last, its top left corner at point.",
   run: () => {
     readOnly();
-    if (killedRectangle === undefined) gnista.userError("No rectangle to yank");
+    if (killedRectangle === undefined) e8.userError("No rectangle to yank");
     insertRectangle(killedRectangle!);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "open-rectangle",
   doc: "Insert blank space filling the rectangle between point and the mark, pushing its text right; with a prefix argument, short lines too.",
   params: [...region, { name: "fill", kind: "prefix" }],
-  run: (start: number, end: number, fill: gnista.PrefixArg) => {
+  run: (start: number, end: number, fill: e8.PrefixArg) => {
     readOnly();
     applyOnRectangle((startcol, endcol) => {
-      if (moveToColumn(startcol, fill !== null ? true : "coerce") === startcol && !(fill === null && gnista.point() === gnista.lineEndPosition())) {
-        gnista.indentTo(endcol);
+      if (moveToColumn(startcol, fill !== null ? true : "coerce") === startcol && !(fill === null && e8.point() === e8.lineEndPosition())) {
+        e8.indentTo(endcol);
       }
     }, start, end);
-    gnista.gotoChar(start);
+    e8.gotoChar(start);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "clear-rectangle",
   doc: "Replace the text in the rectangle between point and the mark with spaces; with a prefix argument, short lines are padded too.",
   params: [...region, { name: "fill", kind: "prefix" }],
-  run: (start: number, end: number, fill: gnista.PrefixArg) => {
+  run: (start: number, end: number, fill: e8.PrefixArg) => {
     readOnly();
     applyOnRectangle((startcol, endcolIn) => {
       let endcol = endcolIn;
-      const pt = gnista.lineEndPosition();
+      const pt = e8.lineEndPosition();
       if (moveToColumn(startcol, fill !== null ? true : "coerce") !== startcol) return;
-      const eolCol = gnista.saveExcursion(() => {
-        gnista.gotoChar(pt);
-        return gnista.currentColumn();
+      const eolCol = e8.saveExcursion(() => {
+        e8.gotoChar(pt);
+        return e8.currentColumn();
       });
       if (fill === null && eolCol <= endcol) {
-        gnista.deleteRegion(gnista.point(), pt);
+        e8.deleteRegion(e8.point(), pt);
       } else {
-        const from = gnista.point();
+        const from = e8.point();
         moveToColumn(endcol, true);
-        endcol = gnista.currentColumn();
-        gnista.deleteRegion(from, gnista.point());
-        gnista.indentTo(endcol);
+        endcol = e8.currentColumn();
+        e8.deleteRegion(from, e8.point());
+        e8.indentTo(endcol);
       }
     }, start, end);
   },
 });
 
-gnista.defineVariable({ name: "string-rectangle-history", doc: "Strings given to C-x r t, newest first.", value: [] });
+e8.defineVariable({ name: "string-rectangle-history", doc: "Strings given to C-x r t, newest first.", value: [] });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "string-rectangle",
   doc: "Replace the text in the rectangle between point and the mark with a string on each line.",
   params: [...region],
   run: async (start: number, end: number) => {
     readOnly();
-    const history = gnista.variable("string-rectangle-history");
+    const history = e8.variable("string-rectangle-history");
     const def = Array.isArray(history) && typeof history[0] === "string" ? history[0] : undefined;
-    const answer = await gnista.readString(def === undefined ? "String rectangle: " : `String rectangle (default ${def}): `, {
+    const answer = await e8.readString(def === undefined ? "String rectangle: " : `String rectangle (default ${def}): `, {
       history: "string-rectangle-history",
       default: def,
     });
@@ -244,34 +244,34 @@ gnista.defineCommand({
     const final = applyOnRectangle((startcol, endcol) => {
       moveToColumn(startcol, true);
       if (moveToColumn(startcol, "coerce") >= startcol) {
-        const from = gnista.point();
+        const from = e8.point();
         moveToColumn(endcol, "coerce");
-        gnista.deleteRegion(from, gnista.point());
+        e8.deleteRegion(from, e8.point());
       }
-      gnista.insert(string);
+      e8.insert(string);
     }, start, end);
-    gnista.gotoChar(final);
+    e8.gotoChar(final);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "rectangle-number-lines",
   doc:
     "Insert numbers down the left edge of the rectangle between point and the mark, from 1.\n\n" +
     "With a prefix argument, ask for the first number and the format, %d by default, padded to the widest.",
   params: [...region, { name: "arg", kind: "prefix" }],
-  run: async (start: number, end: number, arg: gnista.PrefixArg) => {
+  run: async (start: number, end: number, arg: e8.PrefixArg) => {
     readOnly();
-    const lines = gnista.lineOf(Math.max(start, end)) - gnista.lineOf(Math.min(start, end)) + 1;
+    const lines = e8.lineOf(Math.max(start, end)) - e8.lineOf(Math.min(start, end)) + 1;
     let first = 1;
     let format: string | undefined;
     if (arg !== null) {
-      first = Number(await gnista.readString("Number to count from (default 1): ")) || 1;
+      first = Number(await e8.readString("Number to count from (default 1): ")) || 1;
     }
     const width = String(first + lines - 1).length;
     if (arg !== null) {
       const def = `%${width}d `;
-      const answer = await gnista.readString(`Format string (default ${def}): `);
+      const answer = await e8.readString(`Format string (default ${def}): `);
       format = answer === "" ? def : answer;
     }
     format ??= `%${width}d `;
@@ -280,7 +280,7 @@ gnista.defineCommand({
     // Point stays where it was, as apply-on-rectangle leaves it.
     applyOnRectangle((startcol) => {
       moveToColumn(startcol, true);
-      gnista.insert(format!.replace(/%(-?)(\d*)d/, (_, left: string, w: string) => (left ? String(n).padEnd(Number(w || 0)) : pad(String(n), Number(w || 0)))));
+      e8.insert(format!.replace(/%(-?)(\d*)d/, (_, left: string, w: string) => (left ? String(n).padEnd(Number(w || 0)) : pad(String(n), Number(w || 0)))));
       n++;
     }, start, end);
   },
@@ -296,5 +296,5 @@ for (const [keys, command] of [
   ["C-x r N", "rectangle-number-lines"],
   ["C-x r M-w", "copy-rectangle-as-kill"],
 ] as const) {
-  gnista.bindKey(keys, command);
+  e8.bindKey(keys, command);
 }

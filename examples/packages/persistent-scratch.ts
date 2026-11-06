@@ -9,7 +9,7 @@
 // other's.
 //
 // Copyright (c) 2015-2023, Fanael Linithien
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,51 +36,51 @@
 
 import { truthy } from "subr";
 
-gnista.defun("persistent-scratch-default-scratch-buffer-p", () => gnista.bufferName() === "*scratch*");
+e8.defun("persistent-scratch-default-scratch-buffer-p", () => e8.bufferName() === "*scratch*");
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-scratch-buffer-p-function",
   doc: "A function, called with no arguments in a buffer, that says whether it is a scratch buffer, to be saved.",
   value: "persistent-scratch-default-scratch-buffer-p",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-save-file",
   doc: "File to save to the scratch buffers to.",
   value: (() => {
-    const dir = gnista.variable("user-emacs-directory");
-    return typeof dir === "string" ? gnista.expandFileName(".persistent-scratch", dir) : null;
+    const dir = e8.variable("user-emacs-directory");
+    return typeof dir === "string" ? e8.expandFileName(".persistent-scratch", dir) : null;
   })(),
 });
-gnista.defineHook(
+e8.defineHook(
   "persistent-scratch-before-save-commit-functions",
   "Functions called with the temporary file holding the save data, before it is moved to persistent-scratch-save-file, as to change its permissions.",
 );
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-what-to-save",
   doc: 'What to save of each scratch buffer besides its name and text: "major-mode", "point" (and the mark), "narrowing" and "text-properties".',
   value: ["major-mode", "point", "narrowing"],
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-autosave-interval",
-  doc: 'Seconds between autosaves, or ["idle", N] to save each time Gnista has been idle for N seconds. Turn persistent-scratch-autosave-mode on again after changing it.',
+  doc: 'Seconds between autosaves, or ["idle", N] to save each time E8 has been idle for N seconds. Turn persistent-scratch-autosave-mode on again after changing it.',
   value: 300,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-backup-directory",
   doc: "Directory to save old versions of scratch buffer saves to. When nil, backups are disabled.",
   value: null,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-backup-filter",
   doc: "A function called with the names of the files in the backup directory, unsorted, that returns those to delete. By default none are.",
   value: "ignore",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "persistent-scratch-backup-file-name-format",
   doc: "Format of backup file names, as format-time-string takes it.",
   value: "%Y-%m-%d--%H-%M-%S-%N",
 });
-if (!gnista.fboundp("ignore")) gnista.defun("ignore", () => undefined);
+if (!e8.fboundp("ignore")) e8.defun("ignore", () => undefined);
 
 // Printing and reading the save file, as prin1 and read do for its forms.
 
@@ -113,12 +113,12 @@ function read(text: string, at = { pos: 0 }): Form {
   };
   skip();
   const c = text[at.pos];
-  if (c === undefined) gnista.signal("end-of-file", "End of file during parsing");
+  if (c === undefined) e8.signal("end-of-file", "End of file during parsing");
   if (c === '"') {
     let s = "";
     at.pos++;
     while (text[at.pos] !== '"') {
-      if (at.pos >= text.length) gnista.signal("end-of-file", "End of file during parsing");
+      if (at.pos >= text.length) e8.signal("end-of-file", "End of file during parsing");
       let ch = text[at.pos++];
       if (ch === "\\") {
         ch = text[at.pos++];
@@ -166,35 +166,35 @@ function read(text: string, at = { pos: 0 }): Form {
 // Saving and restoring.
 
 function whatToSave(): string[] {
-  const value = gnista.variable("persistent-scratch-what-to-save");
+  const value = e8.variable("persistent-scratch-what-to-save");
   return Array.isArray(value) ? value.map(String) : [];
 }
 
-/** Whether transient-mark-mode is on: always, unless a config defines the variable as nil, as Gnista has no other mode. */
+/** Whether transient-mark-mode is on: always, unless a config defines the variable as nil, as E8 has no other mode. */
 const transientMarkMode = (): boolean => {
-  const value = gnista.variable("transient-mark-mode");
+  const value = e8.variable("transient-mark-mode");
   return value === undefined || truthy(value);
 };
 
-const isScratch = (): boolean => truthy(gnista.funcall(gnista.variable("persistent-scratch-scratch-buffer-p-function") as string));
+const isScratch = (): boolean => truthy(e8.funcall(e8.variable("persistent-scratch-scratch-buffer-p-function") as string));
 
 /** The current buffer's state, as persistent-scratch--get-buffer-state: name, text, point and mark, mode, narrowing, whether the region is active. */
 function bufferState(): Form {
   const what = whatToSave();
-  const text = gnista.saveRestriction(() => {
-    gnista.widen();
-    return gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax());
+  const text = e8.saveRestriction(() => {
+    e8.widen();
+    return e8.bufferSubstringNoProperties(e8.pointMin(), e8.pointMax());
   });
-  const mark = gnista.mark();
-  const narrowed = gnista.bufferNarrowedP();
+  const mark = e8.mark();
+  const narrowed = e8.bufferNarrowedP();
   return {
     vector: [
-      gnista.bufferName(),
+      e8.bufferName(),
       text,
-      what.includes("point") ? { cons: [gnista.point() + 1], tail: typeof mark === "number" ? mark + 1 : nil } : nil,
-      what.includes("major-mode") ? { symbol: String(gnista.variable("major-mode")) } : nil,
-      narrowed && what.includes("narrowing") ? { cons: [gnista.pointMin() + 1], tail: gnista.pointMax() + 1 } : nil,
-      what.includes("point") ? (!transientMarkMode() || gnista.regionActive() ? t : nil) : nil,
+      what.includes("point") ? { cons: [e8.point() + 1], tail: typeof mark === "number" ? mark + 1 : nil } : nil,
+      what.includes("major-mode") ? { symbol: String(e8.variable("major-mode")) } : nil,
+      narrowed && what.includes("narrowing") ? { cons: [e8.pointMin() + 1], tail: e8.pointMax() + 1 } : nil,
+      what.includes("point") ? (!transientMarkMode() || e8.regionActive() ? t : nil) : nil,
     ],
   };
 }
@@ -203,8 +203,8 @@ function bufferState(): Form {
 function saveBuffersState(): [string[], string] {
   const buffers: string[] = [];
   const data: Form[] = [];
-  for (const buffer of gnista.bufferList()) {
-    gnista.withCurrentBuffer(buffer, () => {
+  for (const buffer of e8.bufferList()) {
+    e8.withCurrentBuffer(buffer, () => {
       if (!isScratch()) return;
       buffers.unshift(buffer);
       data.unshift(bufferState());
@@ -233,28 +233,28 @@ let currentBackupTime = new Date();
 
 /** Where the scratch buffers are saved, or undefined when persistent-scratch-save-file is nil, as without a user-emacs-directory. */
 function saveFile(): string | undefined {
-  const file = gnista.variable("persistent-scratch-save-file");
+  const file = e8.variable("persistent-scratch-save-file");
   return typeof file === "string" ? file : undefined;
 }
 
 /** Copies the save file into the backup directory, as persistent-scratch--update-backup. */
 function updateBackup(): void {
-  const dir = gnista.variable("persistent-scratch-backup-directory");
+  const dir = e8.variable("persistent-scratch-backup-directory");
   if (typeof dir !== "string") return;
-  const name = gnista.expandFileName(formatTime(String(gnista.variable("persistent-scratch-backup-file-name-format")), currentBackupTime), dir);
-  gnista.makeDirectory(dir, { parents: true });
+  const name = e8.expandFileName(formatTime(String(e8.variable("persistent-scratch-backup-file-name-format")), currentBackupTime), dir);
+  e8.makeDirectory(dir, { parents: true });
   const file = saveFile();
-  if (file !== undefined) gnista.copyFile(file, name, { okIfExists: true, keepTime: true });
+  if (file !== undefined) e8.copyFile(file, name, { okIfExists: true, keepTime: true });
 }
 
 /** Deletes the backups persistent-scratch-backup-filter names, as persistent-scratch--cleanup-backups. */
 function cleanupBackups(): void {
-  const dir = gnista.variable("persistent-scratch-backup-directory");
+  const dir = e8.variable("persistent-scratch-backup-directory");
   if (typeof dir !== "string") return;
-  const directory = gnista.fileNameAsDirectory(dir);
-  const names = gnista.directoryFiles(directory, { nosort: true }).filter((n) => n !== "." && n !== "..");
-  const doomed = gnista.funcall(gnista.variable("persistent-scratch-backup-filter") as string, names);
-  if (Array.isArray(doomed)) for (const name of doomed) gnista.deleteFile(directory + String(name));
+  const directory = e8.fileNameAsDirectory(dir);
+  const names = e8.directoryFiles(directory, { nosort: true }).filter((n) => n !== "." && n !== "..");
+  const doomed = e8.funcall(e8.variable("persistent-scratch-backup-filter") as string, names);
+  if (Array.isArray(doomed)) for (const name of doomed) e8.deleteFile(directory + String(name));
 }
 
 /**
@@ -267,10 +267,10 @@ export function save(file?: string): string | undefined {
   if (actual === undefined) return undefined;
   const tmp = `${actual}.new`;
   const [buffers, text] = saveBuffersState();
-  gnista.writeTextFile(tmp, text, { mode: 0o600 });
-  gnista.runHooks("persistent-scratch-before-save-commit-functions", tmp);
-  gnista.renameFile(tmp, actual, { okIfExists: true });
-  for (const buffer of buffers) gnista.withCurrentBuffer(buffer, () => gnista.setBufferModified(false));
+  e8.writeTextFile(tmp, text, { mode: 0o600 });
+  e8.runHooks("persistent-scratch-before-save-commit-functions", tmp);
+  e8.renameFile(tmp, actual, { okIfExists: true });
+  for (const buffer of buffers) e8.withCurrentBuffer(buffer, () => e8.setBufferModified(false));
   if (file === undefined) {
     updateBackup();
     cleanupBackups();
@@ -282,34 +282,34 @@ export function save(file?: string): string | undefined {
 export function restore(file?: string): void {
   const from = file ?? saveFile();
   if (from === undefined) return;
-  const text = gnista.readTextFile(gnista.expandFileName(from));
+  const text = e8.readTextFile(e8.expandFileName(from));
   const data = read(text);
   if (isNil(data)) return;
-  if (typeof data !== "object" || !("cons" in data)) gnista.signal("invalid-read-syntax", "Not a list of saved buffers");
+  if (typeof data !== "object" || !("cons" in data)) e8.signal("invalid-read-syntax", "Not a list of saved buffers");
   for (const saved of data.cons) {
     if (typeof saved !== "object" || !("vector" in saved)) continue;
     const [name, contents, pointAndMark, mode, narrowing, active] = saved.vector;
-    gnista.getBufferCreate(String(name));
-    gnista.withCurrentBuffer(String(name), () => {
-      gnista.widen();
-      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-      gnista.insert(String(contents));
-      if (typeof mode === "object" && "symbol" in mode && !isNil(mode) && gnista.fboundp(mode.symbol)) gnista.call(mode.symbol as gnista.CommandName);
-      const max = gnista.pointMax();
+    e8.getBufferCreate(String(name));
+    e8.withCurrentBuffer(String(name), () => {
+      e8.widen();
+      e8.deleteRegion(e8.pointMin(), e8.pointMax());
+      e8.insert(String(contents));
+      if (typeof mode === "object" && "symbol" in mode && !isNil(mode) && e8.fboundp(mode.symbol)) e8.call(mode.symbol as e8.CommandName);
+      const max = e8.pointMax();
       const position = (f: Form | undefined) => (typeof f === "number" ? Math.max(0, Math.min(f - 1, max)) : undefined);
       if (typeof pointAndMark === "object" && "cons" in pointAndMark) {
         const point = position(pointAndMark.cons[0]);
-        if (point !== undefined) gnista.gotoChar(point);
+        if (point !== undefined) e8.gotoChar(point);
         const mark = position(pointAndMark.tail);
-        gnista.setMark(mark ?? null);
+        e8.setMark(mark ?? null);
         // set-mark activates the mark, in transient-mark-mode.
-        if (mark !== undefined && transientMarkMode()) gnista.activateMark();
+        if (mark !== undefined && transientMarkMode()) e8.activateMark();
       }
       if (typeof narrowing === "object" && "cons" in narrowing) {
         const [start, end] = [position(narrowing.cons[0]), position(narrowing.tail)];
-        if (start !== undefined && end !== undefined) gnista.narrowToRegion(start, end);
+        if (start !== undefined && end !== undefined) e8.narrowToRegion(start, end);
       }
-      if (saved.vector.length >= 6 && isNil(active)) gnista.deactivateMark();
+      if (saved.vector.length >= 6 && isNil(active)) e8.deactivateMark();
     });
   }
 }
@@ -319,74 +319,74 @@ let autoRestored = false;
 /** Restores the scratch buffers once a session, showing what went wrong rather than failing, as persistent-scratch--auto-restore. */
 function autoRestore(): void {
   if (autoRestored) return;
-  gnista.conditionCase(() => restore(), {
-    error: (e) => gnista.message(`Failed to restore scratch buffers: ${e.message}`),
+  e8.conditionCase(() => restore(), {
+    error: (e) => e8.message(`Failed to restore scratch buffers: ${e.message}`),
   });
   autoRestored = true;
 }
 
-const saveCommand = gnista.defineCommand({
+const saveCommand = e8.defineCommand({
   name: "persistent-scratch-save",
   doc: "Save the current state of scratch buffers to persistent-scratch-save-file, keeping a backup if persistent-scratch-backup-directory names a directory.",
-  run: () => gnista.message(`Wrote persistent-scratch file ${save()}`),
+  run: () => e8.message(`Wrote persistent-scratch file ${save()}`),
 });
 
-const saveToFile = gnista.defineCommand({
+const saveToFile = e8.defineCommand({
   name: "persistent-scratch-save-to-file",
   doc: "Save the current state of scratch buffers to a file.",
   params: [{ name: "file", kind: "file", prompt: "Save scratch buffers to file: " }],
-  run: (file: string) => gnista.message(`Wrote persistent-scratch file ${save(file)}`),
+  run: (file: string) => e8.message(`Wrote persistent-scratch file ${save(file)}`),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "persistent-scratch-restore",
   doc: "Restore the scratch buffers saved in persistent-scratch-save-file. A buffer of the same name as a saved one has its text replaced.",
   run: () => restore(),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "persistent-scratch-restore-from-file",
   doc: "Restore the scratch buffers from a file.",
   params: [{ name: "file", kind: "file", prompt: "Restore scratch buffers from file: " }],
   run: (file: string) => restore(file),
 });
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "persistent-scratch-mode",
   lighter: " PS",
   doc: "Save scratch buffers with save-buffer and write-file, as persistent-scratch-save and persistent-scratch-save-to-file. Only in a scratch buffer.",
   onChange: (enabled) => {
     if (enabled && !isScratch()) {
-      gnista.setVariable("persistent-scratch-mode", false);
-      gnista.signal("error", "This buffer isn't managed by `persistent-scratch', not enabling mode.");
+      e8.setVariable("persistent-scratch-mode", false);
+      e8.signal("error", "This buffer isn't managed by `persistent-scratch', not enabling mode.");
     }
   },
 });
-gnista.remapCommand("persistent-scratch-mode-map", "save-buffer", saveCommand);
-gnista.remapCommand("persistent-scratch-mode-map", "write-file", saveToFile);
+e8.remapCommand("persistent-scratch-mode-map", "save-buffer", saveCommand);
+e8.remapCommand("persistent-scratch-mode-map", "write-file", saveToFile);
 
 let autosaveTimer: number | undefined;
 const saveQuietly = () => void save();
 
 function autosaveOff(): void {
-  gnista.removeHook("kill-emacs-hook", saveQuietly);
-  if (autosaveTimer !== undefined) gnista.cancelTimer(autosaveTimer);
+  e8.removeHook("kill-emacs-hook", saveQuietly);
+  if (autosaveTimer !== undefined) e8.cancelTimer(autosaveTimer);
   autosaveTimer = undefined;
 }
 
 function autosaveOn(): void {
-  gnista.addHook("kill-emacs-hook", saveQuietly);
-  const interval = gnista.variable("persistent-scratch-autosave-interval");
+  e8.addHook("kill-emacs-hook", saveQuietly);
+  const interval = e8.variable("persistent-scratch-autosave-interval");
   autosaveTimer =
     Array.isArray(interval) && interval[0] === "idle"
-      ? gnista.runWithIdleTimer(Number(interval[1]), true, saveQuietly)
-      : gnista.runWithTimer(Number(interval), Number(interval), saveQuietly);
+      ? e8.runWithIdleTimer(Number(interval[1]), true, saveQuietly)
+      : e8.runWithTimer(Number(interval), Number(interval), saveQuietly);
 }
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "persistent-scratch-autosave-mode",
   global: true,
-  doc: "Save the scratch buffers every persistent-scratch-autosave-interval seconds and when Gnista quits. Turning it on restores them first, once a session.",
+  doc: "Save the scratch buffers every persistent-scratch-autosave-interval seconds and when E8 quits. Turning it on restores them first, once a session.",
   onChange: (enabled) => {
     autoRestore();
     autosaveOff();
@@ -394,7 +394,7 @@ gnista.defineMinorMode({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "persistent-scratch-new-backup",
   doc: "Start a new backup file: the next save makes it and keeps using it.",
   run: () => {
@@ -405,21 +405,21 @@ gnista.defineCommand({
 /** Turns persistent-scratch-autosave-mode on and restores the scratch buffers, as persistent-scratch-setup-default. */
 export function setupDefault(): void {
   autoRestore();
-  gnista.call("persistent-scratch-autosave-mode" as gnista.CommandName);
+  e8.call("persistent-scratch-autosave-mode" as e8.CommandName);
 }
-gnista.defun("persistent-scratch-setup-default", setupDefault);
+e8.defun("persistent-scratch-setup-default", setupDefault);
 
 /** A backup filter that keeps the N newest backups, as persistent-scratch-keep-n-newest-backups. */
 export function keepNNewestBackups(n: number): (files: string[]) => string[] {
   return (files) => [...files].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0)).slice(n);
 }
-gnista.defun("persistent-scratch-keep-n-newest-backups", keepNNewestBackups);
+e8.defun("persistent-scratch-keep-n-newest-backups", keepNNewestBackups);
 
 /** A backup filter that keeps the backups newer than SECONDS, as persistent-scratch-keep-backups-not-older-than. */
 export function keepBackupsNotOlderThan(seconds: number): (files: string[]) => string[] {
   return (files) => {
-    const limit = formatTime(String(gnista.variable("persistent-scratch-backup-file-name-format")), new Date(Date.now() - seconds * 1000));
+    const limit = formatTime(String(e8.variable("persistent-scratch-backup-file-name-format")), new Date(Date.now() - seconds * 1000));
     return files.filter((f) => f < limit);
   };
 }
-gnista.defun("persistent-scratch-keep-backups-not-older-than", keepBackupsNotOlderThan);
+e8.defun("persistent-scratch-keep-backups-not-older-than", keepBackupsNotOlderThan);

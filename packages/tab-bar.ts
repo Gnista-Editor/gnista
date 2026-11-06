@@ -10,9 +10,9 @@ import { forwardLine, truthy } from "subr";
 
 // --- Faces and options ------------------------------------------------------
 
-gnista.defineFace({ name: "tab-bar", doc: "The tab bar, across the top of a frame." });
-gnista.defineFace({ name: "tab-bar-tab", doc: "The selected tab on the tab bar.", attributes: { inherit: "tab-bar" } });
-gnista.defineFace({ name: "tab-bar-tab-inactive", doc: "The tabs on the tab bar that are not selected.", attributes: { inherit: "tab-bar-tab" } });
+e8.defineFace({ name: "tab-bar", doc: "The tab bar, across the top of a frame." });
+e8.defineFace({ name: "tab-bar-tab", doc: "The selected tab on the tab bar.", attributes: { inherit: "tab-bar" } });
+e8.defineFace({ name: "tab-bar-tab-inactive", doc: "The tabs on the tab bar that are not selected.", attributes: { inherit: "tab-bar-tab" } });
 
 for (const [name, value, doc] of [
   ["tab-bar-show", true, "When the tab bar shows: t always, once tab-bar-mode is on; a number, when there are more tabs than that; nil never."],
@@ -43,18 +43,18 @@ for (const [name, value, doc] of [
   ["tab-bar-back-button", " < ", "The button that goes back in the tab's history."],
   ["tab-bar-forward-button", " > ", "The button that goes forward in the tab's history."],
 ] as const) {
-  gnista.defineVariable({ name, value: value as gnista.Value, doc });
+  e8.defineVariable({ name, value: value as e8.Value, doc });
 }
-gnista.defineHook("tab-bar-tab-post-open-functions", "Functions called with the new tab's name after a tab is made.");
-gnista.defineHook("tab-bar-tab-post-select-functions", "Functions called after selecting a tab, with the names of the tab left and the tab selected.");
-gnista.defineHook("tab-bar-tab-pre-close-functions", "Functions called with the name of a tab about to be closed, and whether it is the frame's only one.");
+e8.defineHook("tab-bar-tab-post-open-functions", "Functions called with the new tab's name after a tab is made.");
+e8.defineHook("tab-bar-tab-post-select-functions", "Functions called after selecting a tab, with the names of the tab left and the tab selected.");
+e8.defineHook("tab-bar-tab-pre-close-functions", "Functions called with the name of a tab about to be closed, and whether it is the frame's only one.");
 
 // --- Tabs -------------------------------------------------------------------
 
 /** A window configuration and where point was in it, as a tab's wc and wc-point. */
 interface Saved {
-  wc: gnista.WindowConfiguration;
-  point: gnista.Marker;
+  wc: e8.WindowConfiguration;
+  point: e8.Marker;
 }
 
 interface Tab {
@@ -83,37 +83,37 @@ const closedTabs: { frame: number; index: number; tab: Tab }[] = [];
 
 /** The name tab-bar-tab-name-function gives the current tab. */
 function autoName(): string {
-  const fn = gnista.variable("tab-bar-tab-name-function");
-  const name = typeof fn === "string" || typeof fn === "function" ? gnista.funcall(fn as string) : undefined;
+  const fn = e8.variable("tab-bar-tab-name-function");
+  const name = typeof fn === "string" || typeof fn === "function" ? e8.funcall(fn as string) : undefined;
   return typeof name === "string" ? name : currentName();
 }
 
 /** The name of the buffer a tab is named after: the window's the minibuffer was entered from, while it is open, as Emacs's tab-bar names do. */
 function currentName(): string {
-  return gnista.windowBuffer(gnista.minibufferSelectedWindow() ?? gnista.selectedWindow()) ?? "";
+  return e8.windowBuffer(e8.minibufferSelectedWindow() ?? e8.selectedWindow()) ?? "";
 }
 
-gnista.defun("tab-bar-tab-name-current", () => currentName());
-gnista.defun("tab-bar-tab-name-current-with-count", () => {
-  const count = gnista.windowList().length;
+e8.defun("tab-bar-tab-name-current", () => currentName());
+e8.defun("tab-bar-tab-name-current-with-count", () => {
+  const count = e8.windowList().length;
   const name = currentName();
   return count > 1 ? `${name} (${count})` : name;
 });
-gnista.defun("tab-bar-tab-name-all", () => [...new Set(gnista.windowList().map((w) => gnista.windowBuffer(w)))].join(", "));
-gnista.defun("tab-bar-tab-name-truncated", () => {
+e8.defun("tab-bar-tab-name-all", () => [...new Set(e8.windowList().map((w) => e8.windowBuffer(w)))].join(", "));
+e8.defun("tab-bar-tab-name-truncated", () => {
   const name = currentName();
-  const max = Number(gnista.variable("tab-bar-tab-name-truncated-max") ?? 20);
+  const max = Number(e8.variable("tab-bar-tab-name-truncated-max") ?? 20);
   return [...name].length < max ? name : `${[...name].slice(0, max - 1).join("")}…`;
 });
 
 /** A frame's tabs, the selected frame's by default, made with one current tab if it has none, as tab-bar-tabs. */
-function tabs(frame = gnista.selectedFrame()): Tab[] {
+function tabs(frame = e8.selectedFrame()): Tab[] {
   let list = frameTabs.get(frame);
   if (!list) {
-    list = [{ id: nextId++, name: frame === gnista.selectedFrame() ? autoName() : "", explicitName: false, time: ++clock, current: true }];
+    list = [{ id: nextId++, name: frame === e8.selectedFrame() ? autoName() : "", explicitName: false, time: ++clock, current: true }];
     frameTabs.set(frame, list);
-    gnista.runHooks("tab-bar-tab-post-open-functions", list[0].name);
-  } else if (frame === gnista.selectedFrame()) {
+    e8.runHooks("tab-bar-tab-post-open-functions", list[0].name);
+  } else if (frame === e8.selectedFrame()) {
     const current = list.find((t) => t.current);
     if (current && !current.explicitName) current.name = autoName();
   }
@@ -123,23 +123,23 @@ function tabs(frame = gnista.selectedFrame()): Tab[] {
 const currentIndex = (list: Tab[]): number => Math.max(0, list.findIndex((t) => t.current));
 
 /** Where point is now, kept as a marker. */
-const pointMarker = (): gnista.Marker => gnista.makeMarker(gnista.point());
+const pointMarker = (): e8.Marker => e8.makeMarker(e8.point());
 
 /** The current windows, kept for the tab being left, as tab-bar--tab does. */
 function leave(tab: Tab): void {
-  tab.saved = { wc: gnista.currentWindowConfiguration(), point: pointMarker() };
+  tab.saved = { wc: e8.currentWindowConfiguration(), point: pointMarker() };
   tab.time = ++clock;
   tab.current = false;
   if (historyMode()) {
-    tab.back = history(gnista.selectedFrame()).back;
-    tab.forward = history(gnista.selectedFrame()).forward;
+    tab.back = history(e8.selectedFrame()).back;
+    tab.forward = history(e8.selectedFrame()).forward;
   }
 }
 
 /** Puts saved windows back, with point in the buffer that is current then. */
 function restore(saved: Saved): void {
-  gnista.setWindowConfiguration(saved.wc);
-  if (gnista.markerBuffer(saved.point) === gnista.currentBuffer().name) gnista.gotoChar(gnista.markerPosition(saved.point)!);
+  e8.setWindowConfiguration(saved.wc);
+  if (e8.markerBuffer(saved.point) === e8.currentBuffer().name) e8.gotoChar(e8.markerPosition(saved.point)!);
 }
 
 /** The tabs ordered by when they were last left, most recent first, the current one left out, as tab-bar--tabs-recent. */
@@ -161,16 +161,16 @@ interface Item {
 const shownItems = new Map<number, { item: Item; from: number; to: number; closeFrom?: number }[]>();
 
 const separator = (): string => {
-  const sep = gnista.variable("tab-bar-separator");
-  return typeof sep === "string" ? sep : gnista.displayGraphicP() ? " " : "|";
+  const sep = e8.variable("tab-bar-separator");
+  return typeof sep === "string" ? sep : e8.displayGraphicP() ? " " : "|";
 };
 
 /** A tab's name as the tab bar shows it, as tab-bar-tab-name-format-default with its hints and close button. */
 function formatTabName(tab: Tab, i: number): { text: string; close: string } {
-  const hints = truthy(gnista.variable("tab-bar-tab-hints"));
-  const show = gnista.variable("tab-bar-close-button-show");
+  const hints = truthy(e8.variable("tab-bar-tab-hints"));
+  const show = e8.variable("tab-bar-close-button-show");
   const closeShown = truthy(show) && show !== (tab.current ? "non-selected" : "selected");
-  const close = closeShown ? String(gnista.variable("tab-bar-close-button") ?? " x") : "";
+  const close = closeShown ? String(e8.variable("tab-bar-close-button") ?? " x") : "";
   return { text: `${hints ? `${i} ` : ""}${tab.name}`, close };
 }
 
@@ -179,9 +179,9 @@ const formats: { [name: string]: (frame: number) => Item[] } = {
     historyMode()
       ? [
           { text: separator() },
-          { text: String(gnista.variable("tab-bar-back-button") ?? " < "), command: "tab-bar-history-back" },
+          { text: String(e8.variable("tab-bar-back-button") ?? " < "), command: "tab-bar-history-back" },
           { text: separator() },
-          { text: String(gnista.variable("tab-bar-forward-button") ?? " > "), command: "tab-bar-history-forward" },
+          { text: String(e8.variable("tab-bar-forward-button") ?? " > "), command: "tab-bar-history-forward" },
         ]
       : [],
   "tab-bar-format-tabs": (frame) =>
@@ -190,16 +190,16 @@ const formats: { [name: string]: (frame: number) => Item[] } = {
       return [{ text: separator() }, { text: text + close, face: tab.current ? "tab-bar-tab" : "tab-bar-tab-inactive", tab: k + 1 }];
     }),
   "tab-bar-separator": () => [{ text: separator() }],
-  "tab-bar-format-add-tab": () => [{ text: String(gnista.variable("tab-bar-new-button") ?? " + "), command: "tab-bar-new-tab" }],
+  "tab-bar-format-add-tab": () => [{ text: String(e8.variable("tab-bar-new-button") ?? " + "), command: "tab-bar-new-tab" }],
 };
 
 /** What the width limits say for this display: the pixel width over the default font's for a graphical one. */
 function autoWidthLimit(name: string): number | undefined {
-  const value = gnista.variable(name);
+  const value = e8.variable(name);
   if (!Array.isArray(value)) return undefined;
-  if (!gnista.displayGraphicP()) return Number(value[1]);
+  if (!e8.displayGraphicP()) return Number(value[1]);
   const pixels = Array.isArray(value[0]) ? Number(value[0][0]) : Number(value[0]);
-  return Math.floor(pixels / Math.max(1, gnista.frameCharWidth()));
+  return Math.floor(pixels / Math.max(1, e8.frameCharWidth()));
 }
 
 /**
@@ -209,26 +209,26 @@ function autoWidthLimit(name: string): number | undefined {
  */
 function autoWidth(items: Item[], frame: number): { item: Item; shadowFrom?: number; closeLength: number }[] {
   const tabItems = items.filter((i) => i.tab !== undefined);
-  const others = items.filter((i) => i.tab === undefined).reduce((n, i) => n + gnista.stringWidth(i.text), 0);
-  let width = tabItems.length ? Math.floor((gnista.frameWidth(frame) - others) / tabItems.length) : 0;
+  const others = items.filter((i) => i.tab === undefined).reduce((n, i) => n + e8.stringWidth(i.text), 0);
+  let width = tabItems.length ? Math.floor((e8.frameWidth(frame) - others) / tabItems.length) : 0;
   const min = autoWidthLimit("tab-bar-auto-width-min");
   const max = autoWidthLimit("tab-bar-auto-width-max");
   if (min !== undefined) width = Math.max(width, min);
   if (max !== undefined) width = Math.min(width, max);
-  const close = String(gnista.variable("tab-bar-close-button") ?? " x");
+  const close = String(e8.variable("tab-bar-close-button") ?? " x");
   return items.map((item) => {
     const closeLength = item.tab !== undefined && item.text.endsWith(close) && formatTabName(tabs(frame)[item.tab - 1], item.tab).close ? [...close].length : 0;
-    if (item.tab === undefined || !truthy(gnista.variable("tab-bar-auto-width"))) return { item, closeLength };
+    if (item.tab === undefined || !truthy(e8.variable("tab-bar-auto-width"))) return { item, closeLength };
     let chars = [...item.text];
     const at = chars.length - closeLength;
-    if (gnista.stringWidth(item.text) < width) {
+    if (e8.stringWidth(item.text) < width) {
       // Spaces before the close button while it stays narrower than the width.
-      while (gnista.stringWidth(chars.join("")) + 1 < width) chars.splice(chars.length - closeLength, 0, " ");
+      while (e8.stringWidth(chars.join("")) + 1 < width) chars.splice(chars.length - closeLength, 0, " ");
       return { item: { ...item, text: chars.join("") }, closeLength };
     }
     let shadowFrom: number | undefined;
-    if (gnista.stringWidth(item.text) > width) {
-      while (gnista.stringWidth(chars.join("")) > width && chars.length > closeLength) chars.splice(chars.length - closeLength - 1, 1);
+    if (e8.stringWidth(item.text) > width) {
+      while (e8.stringWidth(chars.join("")) > width && chars.length > closeLength) chars.splice(chars.length - closeLength - 1, 1);
       chars = chars.slice();
       shadowFrom = Math.max(0, chars.length - closeLength - 2);
       void at;
@@ -238,17 +238,17 @@ function autoWidth(items: Item[], frame: number): { item: Item; shadowFrom?: num
 }
 
 /** A frame's tab bar from tab-bar-format, as tab-bar-make-keymap-1 builds it at redisplay. */
-function tabBarLine(frame: number): string | gnista.PropertizedString {
-  const format = gnista.variable("tab-bar-format");
+function tabBarLine(frame: number): string | e8.PropertizedString {
+  const format = e8.variable("tab-bar-format");
   const items = (Array.isArray(format) ? format : []).flatMap((f) => {
     if (typeof f === "string" && formats[f]) return formats[f](frame);
     if (typeof f === "string" || typeof f === "function") {
-      const text = gnista.funcall(f as string);
+      const text = e8.funcall(f as string);
       return typeof text === "string" ? [{ text }] : [];
     }
     return [];
   });
-  let line: string | gnista.PropertizedString = "";
+  let line: string | e8.PropertizedString = "";
   const shown: { item: Item; from: number; to: number; closeFrom?: number }[] = [];
   let column = 0;
   for (const { item, shadowFrom, closeLength } of autoWidth(items, frame)) {
@@ -256,15 +256,15 @@ function tabBarLine(frame: number): string | gnista.PropertizedString {
     const face = item.face ?? "tab-bar";
     const parts =
       shadowFrom === undefined
-        ? [gnista.propertize(item.text, { face })]
+        ? [e8.propertize(item.text, { face })]
         : [
-            gnista.propertize(chars.slice(0, shadowFrom).join(""), { face }),
-            gnista.propertize(chars.slice(shadowFrom, chars.length - closeLength).join(""), { face: ["shadow", face] }),
-            gnista.propertize(chars.slice(chars.length - closeLength).join(""), { face }),
+            e8.propertize(chars.slice(0, shadowFrom).join(""), { face }),
+            e8.propertize(chars.slice(shadowFrom, chars.length - closeLength).join(""), { face: ["shadow", face] }),
+            e8.propertize(chars.slice(chars.length - closeLength).join(""), { face }),
           ];
-    line = gnista.concat(line, ...parts);
-    const width = gnista.stringWidth(item.text);
-    const closeFrom = closeLength ? column + width - gnista.stringWidth(chars.slice(chars.length - closeLength).join("")) : undefined;
+    line = e8.concat(line, ...parts);
+    const width = e8.stringWidth(item.text);
+    const closeFrom = closeLength ? column + width - e8.stringWidth(chars.slice(chars.length - closeLength).join("")) : undefined;
     shown.push({ item, from: column, to: column + width, closeFrom });
     column += width;
   }
@@ -274,8 +274,8 @@ function tabBarLine(frame: number): string | gnista.PropertizedString {
 
 /** Whether a frame shows the tab bar, as tab-bar--tab-bar-lines-for-frame decides. */
 function tabBarLinesFor(frame: number): number {
-  if (!truthy(gnista.variable("tab-bar-mode"))) return 0;
-  const show = gnista.variable("tab-bar-show");
+  if (!truthy(e8.variable("tab-bar-mode"))) return 0;
+  const show = e8.variable("tab-bar-show");
   if (!truthy(show)) return 0;
   if (typeof show === "number") return tabs(frame).length > show ? 1 : 0;
   return 1;
@@ -283,21 +283,21 @@ function tabBarLinesFor(frame: number): number {
 
 /** Shows or hides each frame's tab bar, and brings what it shows up to date. */
 function update(): void {
-  for (const frame of gnista.frameList()) {
+  for (const frame of e8.frameList()) {
     const lines = tabBarLinesFor(frame);
-    if (gnista.frameParameter(frame, "tab-bar-lines") !== lines) gnista.setFrameParameter(frame, "tab-bar-lines", lines);
+    if (e8.frameParameter(frame, "tab-bar-lines") !== lines) e8.setFrameParameter(frame, "tab-bar-lines", lines);
     // Formatted at each redisplay, so it shows the tabs as they are then.
-    if (lines > 0 && gnista.frameParameter(frame, "tab-bar-line") === undefined) {
-      gnista.setFrameParameter(frame, "tab-bar-line", [Symbol.for(":eval"), () => tabBarLine(frame)] as unknown as gnista.Value);
+    if (lines > 0 && e8.frameParameter(frame, "tab-bar-line") === undefined) {
+      e8.setFrameParameter(frame, "tab-bar-line", [Symbol.for(":eval"), () => tabBarLine(frame)] as unknown as e8.Value);
     }
   }
 }
 
-gnista.addHook("post-command-hook", () => {
-  if (truthy(gnista.variable("tab-bar-mode"))) update();
+e8.addHook("post-command-hook", () => {
+  if (truthy(e8.variable("tab-bar-mode"))) update();
 });
 
-const tabBarMode = gnista.defineMinorMode({
+const tabBarMode = e8.defineMinorMode({
   name: "tab-bar-mode",
   global: true,
   doc:
@@ -308,7 +308,7 @@ const tabBarMode = gnista.defineMinorMode({
 
 /** Turns tab-bar-mode on if tab-bar-show says to, else updates the bar, as making a tab does. */
 function showAfterChange(): void {
-  if (truthy(gnista.variable("tab-bar-show")) && !truthy(gnista.variable("tab-bar-mode"))) gnista.callWithPrefix(1, tabBarMode);
+  if (truthy(e8.variable("tab-bar-show")) && !truthy(e8.variable("tab-bar-mode"))) e8.callWithPrefix(1, tabBarMode);
   else update();
 }
 
@@ -327,31 +327,31 @@ function selectTab(n: number): void {
   toTab.saved = undefined;
   toTab.current = true;
   if (historyMode()) {
-    const h = history(gnista.selectedFrame());
+    const h = history(e8.selectedFrame());
     h.back = toTab.back ?? [];
     h.forward = toTab.forward ?? [];
     historyOmit = true;
   }
   toTab.back = toTab.forward = undefined;
   if (!toTab.explicitName) toTab.name = autoName();
-  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Selected tab '${toTab.name}'`);
-  gnista.runHooks("tab-bar-tab-post-select-functions", fromTab.name, toTab.name);
+  if (!truthy(e8.variable("tab-bar-mode"))) e8.message(`Selected tab '${toTab.name}'`);
+  e8.runHooks("tab-bar-tab-post-select-functions", fromTab.name, toTab.name);
   update();
 }
 
-const selectTabCommand = gnista.defineCommand({
+const selectTabCommand = e8.defineCommand({
   name: "tab-bar-select-tab",
   doc: "Select a tab by its number on the tab bar, from 1; negative counts from the end. Bound to a digit, the digit says.",
   params: [{ name: "n", kind: "prefix" }],
   run: (n) => {
     if (typeof n === "number") return selectTab(n);
-    const key = gnista.lastKey() ?? "";
+    const key = e8.lastKey() ?? "";
     const digit = /([1-9])$/.exec(key);
     selectTab(digit ? Number(digit[1]) : 0);
   },
 });
 
-const nextTab = gnista.defineCommand({
+const nextTab = e8.defineCommand({
   name: "tab-bar-switch-to-next-tab",
   doc: "Select the next tab, or the one that many on with a prefix argument, round to the first after the last.",
   params: [{ name: "arg", kind: "count" }],
@@ -362,21 +362,21 @@ const nextTab = gnista.defineCommand({
   },
 });
 
-const prevTab = gnista.defineCommand({
+const prevTab = e8.defineCommand({
   name: "tab-bar-switch-to-prev-tab",
   doc: "Select the previous tab, or the one that many back with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg) => gnista.callWithPrefix(-arg, nextTab),
+  run: (arg) => e8.callWithPrefix(-arg, nextTab),
 });
 
-const lastTab = gnista.defineCommand({
+const lastTab = e8.defineCommand({
   name: "tab-bar-switch-to-last-tab",
   doc: "Select the last tab, or the one that many from the end with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg) => selectTab(tabs().length - (Math.abs(arg) - 1)),
 });
 
-const recentTab = gnista.defineCommand({
+const recentTab = e8.defineCommand({
   name: "tab-bar-switch-to-recent-tab",
   doc: "Select the tab used most recently before this one, or the one that many back in recency with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
@@ -384,11 +384,11 @@ const recentTab = gnista.defineCommand({
     const list = tabs();
     const tab = recentTabs(list)[arg - 1];
     if (tab) selectTab(list.indexOf(tab) + 1);
-    else gnista.message("No more recent tabs");
+    else e8.message("No more recent tabs");
   },
 });
 
-const switchTab = gnista.defineCommand({
+const switchTab = e8.defineCommand({
   name: "tab-bar-switch-to-tab",
   doc: "Select the tab of a name, the most recent ones offered first; a name no tab has makes a new tab of that name.",
   params: [
@@ -420,21 +420,21 @@ function newTabTo(n?: number): void {
   const list = tabs();
   const from = currentIndex(list);
   const fromTab = list[from];
-  const choice = gnista.variable("tab-bar-new-tab-choice");
-  const clone = choice === "clone" ? gnista.currentWindowConfiguration() : undefined;
+  const choice = e8.variable("tab-bar-new-tab-choice");
+  const clone = choice === "clone" ? e8.currentWindowConfiguration() : undefined;
   leave(fromTab);
   if (truthy(choice)) {
-    if (clone) gnista.setWindowConfiguration(clone);
-    else gnista.call("delete-other-windows");
+    if (clone) e8.setWindowConfiguration(clone);
+    else e8.call("delete-other-windows");
     let buffer: string | undefined;
-    if (typeof choice === "function") buffer = String(gnista.funcall(choice as unknown as string));
+    if (typeof choice === "function") buffer = String(e8.funcall(choice as unknown as string));
     else if (typeof choice === "string" && choice !== "clone" && choice !== "window") {
-      buffer = gnista.getBuffer(choice)?.name ?? gnista.findFileNoselect(choice);
+      buffer = e8.getBuffer(choice)?.name ?? e8.findFileNoselect(choice);
     }
-    if (buffer !== undefined && gnista.bufferLiveP(gnista.getBuffer(buffer))) gnista.call("switch-to-buffer", buffer);
+    if (buffer !== undefined && e8.bufferLiveP(e8.getBuffer(buffer))) e8.call("switch-to-buffer", buffer);
   }
   const tab: Tab = { id: nextId++, name: autoName(), explicitName: false, time: ++clock, current: true };
-  const where = gnista.variable("tab-bar-new-tab-to");
+  const where = e8.variable("tab-bar-new-tab-to");
   let to =
     n !== undefined
       ? n < 0
@@ -450,17 +450,17 @@ function newTabTo(n?: number): void {
   to = Math.max(0, Math.min(to, list.length));
   list.splice(to, 0, tab);
   if (historyMode()) {
-    const h = history(gnista.selectedFrame());
+    const h = history(e8.selectedFrame());
     h.back = [];
     h.forward = [];
     historyOmit = true;
   }
-  gnista.runHooks("tab-bar-tab-post-open-functions", tab.name);
+  e8.runHooks("tab-bar-tab-post-open-functions", tab.name);
   showAfterChange();
-  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Added new tab at ${String(where)}`);
+  if (!truthy(e8.variable("tab-bar-mode"))) e8.message(`Added new tab at ${String(where)}`);
 }
 
-const newTab = gnista.defineCommand({
+const newTab = e8.defineCommand({
   name: "tab-bar-new-tab",
   doc:
     "Make a new tab, showing what tab-bar-new-tab-choice says, where tab-bar-new-tab-to says; with a prefix argument, " +
@@ -469,22 +469,22 @@ const newTab = gnista.defineCommand({
   run: (arg) => {
     if (arg === null || arg === undefined) return newTabTo();
     const list = tabs();
-    newTabTo(currentIndex(list) + 1 + gnista.prefixNumericValue(arg));
+    newTabTo(currentIndex(list) + 1 + e8.prefixNumericValue(arg));
   },
 });
 
-const newTabToCommand = gnista.defineCommand({
+const newTabToCommand = e8.defineCommand({
   name: "tab-bar-new-tab-to",
   doc: "Make a new tab at a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.",
   params: [{ name: "n", kind: "prefix" }],
-  run: (n) => newTabTo(n === null || n === undefined ? undefined : gnista.prefixNumericValue(n)),
+  run: (n) => newTabTo(n === null || n === undefined ? undefined : e8.prefixNumericValue(n)),
 });
 
-const duplicateTab = gnista.defineCommand({
+const duplicateTab = e8.defineCommand({
   name: "tab-bar-duplicate-tab",
   doc: "Make a new tab showing the same windows as the current one.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg) => gnista.letBind({ "tab-bar-new-tab-choice": "clone" }, () => gnista.callWithPrefix(arg, newTab)),
+  run: (arg) => e8.letBind({ "tab-bar-new-tab-choice": "clone" }, () => e8.callWithPrefix(arg, newTab)),
 });
 
 /** Gives tab `n`, the current one by default, a name, or back its automatic name if empty, as tab-bar-rename-tab. */
@@ -494,10 +494,10 @@ function renameTab(name: string, n?: number): void {
   tab.explicitName = name !== "";
   tab.name = name !== "" ? name : tab.current ? autoName() : tab.name;
   update();
-  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Renamed tab to '${tab.name}'`);
+  if (!truthy(e8.variable("tab-bar-mode"))) e8.message(`Renamed tab to '${tab.name}'`);
 }
 
-const renameTabCommand = gnista.defineCommand({
+const renameTabCommand = e8.defineCommand({
   name: "tab-bar-rename-tab",
   doc: "Name the current tab, or the tab a prefix argument numbers. An empty name gives it back its automatic name.",
   params: [
@@ -507,7 +507,7 @@ const renameTabCommand = gnista.defineCommand({
     },
     { name: "n", kind: "prefix" },
   ],
-  run: (name, n) => renameTab(name, n === null || n === undefined ? undefined : gnista.prefixNumericValue(n)),
+  run: (name, n) => renameTab(name, n === null || n === undefined ? undefined : e8.prefixNumericValue(n)),
 });
 
 /** Moves tab `from`, the current one by default, to position `to`, both from 1, as tab-bar-move-tab-to. */
@@ -520,14 +520,14 @@ function moveTabTo(to: number, from?: number): void {
   update();
 }
 
-const moveTabToCommand = gnista.defineCommand({
+const moveTabToCommand = e8.defineCommand({
   name: "tab-bar-move-tab-to",
   doc: "Move the current tab to a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.",
   params: [{ name: "to", kind: "count" }],
   run: (to) => moveTabTo(to),
 });
 
-const moveTab = gnista.defineCommand({
+const moveTab = e8.defineCommand({
   name: "tab-bar-move-tab",
   doc: "Move the current tab one place right, or that many with a prefix argument, left if negative.",
   params: [{ name: "arg", kind: "count" }],
@@ -538,11 +538,11 @@ const moveTab = gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-bar-move-tab-backward",
   doc: "Move the current tab one place left, or that many with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg) => gnista.callWithPrefix(-arg, moveTab),
+  run: (arg) => e8.callWithPrefix(-arg, moveTab),
 });
 
 /** Closes tab `n`, the current one by default, then selecting `to` or the one tab-bar-close-tab-select says, as tab-bar-close-tab. */
@@ -551,17 +551,17 @@ function closeTab(n?: number, to?: number): void {
   const current = currentIndex(list);
   const index = n === undefined ? current : n - 1;
   const last = list.length === 1;
-  gnista.runHooks("tab-bar-tab-pre-close-functions", list[index].name, last);
+  e8.runHooks("tab-bar-tab-pre-close-functions", list[index].name, last);
   if (last) {
-    const choice = gnista.variable("tab-bar-close-last-tab-choice");
-    if (choice === "delete-frame") gnista.deleteFrame();
-    else if (choice === "tab-bar-mode-disable") gnista.callWithPrefix(-1, tabBarMode);
-    else if (typeof choice === "function" || (typeof choice === "string" && choice !== "")) gnista.funcall(choice as string, list[index].name);
-    else gnista.userError("Attempt to delete the sole tab in a frame");
+    const choice = e8.variable("tab-bar-close-last-tab-choice");
+    if (choice === "delete-frame") e8.deleteFrame();
+    else if (choice === "tab-bar-mode-disable") e8.callWithPrefix(-1, tabBarMode);
+    else if (typeof choice === "function" || (typeof choice === "string" && choice !== "")) e8.funcall(choice as string, list[index].name);
+    else e8.userError("Attempt to delete the sole tab in a frame");
     return;
   }
   if (index === current) {
-    const select = gnista.variable("tab-bar-close-tab-select");
+    const select = e8.variable("tab-bar-close-tab-select");
     let next =
       to !== undefined
         ? to - 1
@@ -575,32 +575,32 @@ function closeTab(n?: number, to?: number): void {
               : current - 1
             : list.indexOf(recentTabs(list)[0]);
     next = Math.max(0, Math.min(next, list.length - 1));
-    gnista.letBind({ "inhibit-message": true }, () => selectTab(next + 1));
+    e8.letBind({ "inhibit-message": true }, () => selectTab(next + 1));
     list = tabs();
   }
   const tab = list[index];
   if (tab.current) leave(tab);
-  closedTabs.unshift({ frame: gnista.selectedFrame(), index, tab });
+  closedTabs.unshift({ frame: e8.selectedFrame(), index, tab });
   list.splice(index, 1);
   update();
-  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Deleted tab and switched to ${String(gnista.variable("tab-bar-close-tab-select"))}`);
+  if (!truthy(e8.variable("tab-bar-mode"))) e8.message(`Deleted tab and switched to ${String(e8.variable("tab-bar-close-tab-select"))}`);
 }
 
-const closeTabCommand = gnista.defineCommand({
+const closeTabCommand = e8.defineCommand({
   name: "tab-bar-close-tab",
   doc: "Close the current tab, or the tab a prefix argument numbers, selecting the one tab-bar-close-tab-select says.",
   params: [{ name: "n", kind: "prefix" }],
   run: (n) => closeTab(typeof n === "number" ? n : undefined),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-bar-close-tab-by-name",
   doc: "Close the tab of a name.",
   params: [{ name: "name", prompt: "Close tab by name: ", collection: () => tabs().map((t) => t.name), requireMatch: true }],
   run: (name) => closeTab(tabs().findIndex((t) => t.name === name) + 1),
 });
 
-const closeOtherTabs = gnista.defineCommand({
+const closeOtherTabs = e8.defineCommand({
   name: "tab-bar-close-other-tabs",
   doc: "Close every tab of the frame but the current one.",
   run: () => {
@@ -608,26 +608,26 @@ const closeOtherTabs = gnista.defineCommand({
     const keep = currentIndex(list);
     list.forEach((tab, index) => {
       if (index === keep) return;
-      closedTabs.unshift({ frame: gnista.selectedFrame(), index, tab });
-      gnista.runHooks("tab-bar-tab-pre-close-functions", tab.name, false);
+      closedTabs.unshift({ frame: e8.selectedFrame(), index, tab });
+      e8.runHooks("tab-bar-tab-pre-close-functions", tab.name, false);
     });
-    frameTabs.set(gnista.selectedFrame(), [list[keep]]);
+    frameTabs.set(e8.selectedFrame(), [list[keep]]);
     update();
-    if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message("Deleted all other tabs");
+    if (!truthy(e8.variable("tab-bar-mode"))) e8.message("Deleted all other tabs");
   },
 });
 
-const undoCloseTab = gnista.defineCommand({
+const undoCloseTab = e8.defineCommand({
   name: "tab-bar-undo-close-tab",
   doc: "Open again the tab closed last.",
   run: () => {
-    while (closedTabs.length && !gnista.frameList().includes(closedTabs[0].frame)) closedTabs.shift();
+    while (closedTabs.length && !e8.frameList().includes(closedTabs[0].frame)) closedTabs.shift();
     const closed = closedTabs.shift();
     if (!closed) {
-      gnista.message("No more closed tabs to undo");
+      e8.message("No more closed tabs to undo");
       return;
     }
-    if (closed.frame !== gnista.selectedFrame()) gnista.selectFrame(closed.frame);
+    if (closed.frame !== e8.selectedFrame()) e8.selectFrame(closed.frame);
     const list = tabs();
     const index = Math.max(0, Math.min(closed.index, list.length));
     list.splice(index, 0, closed.tab);
@@ -638,7 +638,7 @@ const undoCloseTab = gnista.defineCommand({
 
 // --- History, as tab-bar-history-mode ---------------------------------------
 
-const historyMode = (): boolean => truthy(gnista.variable("tab-bar-history-mode"));
+const historyMode = (): boolean => truthy(e8.variable("tab-bar-history-mode"));
 /** Each frame's current tab's history, as tab-bar-history-back and -forward. */
 const histories = new Map<number, { back: Saved[]; forward: Saved[] }>();
 function history(frame: number): { back: Saved[]; forward: Saved[] } {
@@ -652,31 +652,31 @@ let historyOmit = false;
 let historyOld: { saved: Saved; shape: string } | undefined;
 
 /** What the selected frame's windows show, to tell whether a command changed them, as window-configuration-change-hook would. */
-const windowShape = (): string => gnista.windowList().map((w) => `${w}:${gnista.windowBuffer(w)}`).join(" ");
+const windowShape = (): string => e8.windowList().map((w) => `${w}:${e8.windowBuffer(w)}`).join(" ");
 
-gnista.addHook("pre-command-hook", () => {
+e8.addHook("pre-command-hook", () => {
   if (!historyMode()) return;
   historyOmit = false;
-  if (gnista.minibufferDepth() === 0) historyOld = { saved: { wc: gnista.currentWindowConfiguration(), point: pointMarker() }, shape: windowShape() };
+  if (e8.minibufferDepth() === 0) historyOld = { saved: { wc: e8.currentWindowConfiguration(), point: pointMarker() }, shape: windowShape() };
 });
 
-gnista.addHook("post-command-hook", () => {
-  if (!historyMode() || historyOmit || !historyOld || gnista.minibufferDepth() !== 0) return;
+e8.addHook("post-command-hook", () => {
+  if (!historyMode() || historyOmit || !historyOld || e8.minibufferDepth() !== 0) return;
   if (windowShape() === historyOld.shape) return;
-  const h = history(gnista.selectedFrame());
-  h.back = [historyOld.saved, ...h.back].slice(0, Number(gnista.variable("tab-bar-history-limit") ?? 10));
+  const h = history(e8.selectedFrame());
+  h.back = [historyOld.saved, ...h.back].slice(0, Number(e8.variable("tab-bar-history-limit") ?? 10));
   historyOld = undefined;
 });
 
-const historyBack = gnista.defineCommand({
+const historyBack = e8.defineCommand({
   name: "tab-bar-history-back",
   doc: "Put back the windows the current tab had before, going back in its history.",
   run: () => {
     historyOmit = true;
-    const h = history(gnista.selectedFrame());
+    const h = history(e8.selectedFrame());
     const saved = h.back.shift();
     if (!saved) {
-      gnista.message("No more tab back history");
+      e8.message("No more tab back history");
       return;
     }
     if (historyOld) h.forward.unshift(historyOld.saved);
@@ -684,15 +684,15 @@ const historyBack = gnista.defineCommand({
   },
 });
 
-const historyForward = gnista.defineCommand({
+const historyForward = e8.defineCommand({
   name: "tab-bar-history-forward",
   doc: "Undo going back in the current tab's history.",
   run: () => {
     historyOmit = true;
-    const h = history(gnista.selectedFrame());
+    const h = history(e8.selectedFrame());
     const saved = h.forward.shift();
     if (!saved) {
-      gnista.message("No more tab forward history");
+      e8.message("No more tab forward history");
       return;
     }
     if (historyOld) h.back.unshift(historyOld.saved);
@@ -700,7 +700,7 @@ const historyForward = gnista.defineCommand({
   },
 });
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "tab-bar-history-mode",
   global: true,
   doc: "Keep each tab's earlier window configurations: C-c <left> goes back to them and C-c <right> forward again.",
@@ -710,60 +710,60 @@ gnista.defineMinorMode({
 
 // --- Clicking the tab bar ---------------------------------------------------
 
-const mouse1 = gnista.defineCommand({
+const mouse1 = e8.defineCommand({
   name: "tab-bar-mouse-1",
   doc: "On the tab bar: select the tab clicked, close it if its close button was, or run the button clicked.",
   run: () => {
-    const column = gnista.lastMouseEvent()?.tabBar;
+    const column = e8.lastMouseEvent()?.tabBar;
     if (column === undefined) return;
-    const hit = (shownItems.get(gnista.selectedFrame()) ?? []).find((s) => column >= s.from && column < s.to);
+    const hit = (shownItems.get(e8.selectedFrame()) ?? []).find((s) => column >= s.from && column < s.to);
     if (!hit) return;
     if (hit.item.tab !== undefined) {
       if (hit.closeFrom !== undefined && column >= hit.closeFrom) closeTab(hit.item.tab);
       else selectTab(hit.item.tab);
-    } else if (hit.item.command) gnista.call(hit.item.command as gnista.CommandName);
+    } else if (hit.item.command) e8.call(hit.item.command as e8.CommandName);
   },
 });
-gnista.bindKey("<tab-bar> <mouse-1>", mouse1);
+e8.bindKey("<tab-bar> <mouse-1>", mouse1);
 
 // --- Commands that show a buffer in another tab -----------------------------
 
-const switchToBufferOtherTab = gnista.defineCommand({
+const switchToBufferOtherTab = e8.defineCommand({
   name: "switch-to-buffer-other-tab",
   doc: "Show a buffer in a new tab, creating the buffer if there is none.",
   params: [{ name: "buffer", kind: "buffer", prompt: "Switch to buffer in other tab: " }],
   run: (buffer) => {
-    const name = buffer === "" ? (gnista.windowBuffer() ?? "*scratch*") : buffer;
-    gnista.getBufferCreate(name);
+    const name = buffer === "" ? (e8.windowBuffer() ?? "*scratch*") : buffer;
+    e8.getBufferCreate(name);
     newTabTo();
-    gnista.call("switch-to-buffer", name);
+    e8.call("switch-to-buffer", name);
   },
 });
 
-const findFileOtherTab = gnista.defineCommand({
+const findFileOtherTab = e8.defineCommand({
   name: "find-file-other-tab",
   doc: "Visit a file in a new tab.",
   params: [{ name: "file", kind: "file", prompt: "Find file in other tab: " }],
-  run: (file) => gnista.call(switchToBufferOtherTab, gnista.findFileNoselect(file)),
+  run: (file) => e8.call(switchToBufferOtherTab, e8.findFileNoselect(file)),
 });
 
-const findFileReadOnlyOtherTab = gnista.defineCommand({
+const findFileReadOnlyOtherTab = e8.defineCommand({
   name: "find-file-read-only-other-tab",
   doc: "Visit a file in a new tab, read-only.",
   params: [{ name: "file", kind: "file", prompt: "Find file read-only in other tab: " }],
   run: (file) => {
-    gnista.call(findFileOtherTab, file);
-    gnista.setReadOnly(true);
+    e8.call(findFileOtherTab, file);
+    e8.setReadOnly(true);
   },
 });
 
-const diredOtherTab = gnista.defineCommand({
+const diredOtherTab = e8.defineCommand({
   name: "dired-other-tab",
   doc: "Show a directory in Dired in a new tab.",
   params: [{ name: "directory", kind: "file", prompt: "Dired in other tab (directory): " }],
   run: (directory) => {
     newTabTo();
-    gnista.call("dired", directory);
+    e8.call("dired", directory);
   },
 });
 
@@ -772,7 +772,7 @@ const diredOtherTab = gnista.defineCommand({
 /** The column the tab switcher's names start at, after its mark. */
 let switcherColumn = 3;
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "tab-switcher-mode",
   modeName: "Window Configurations",
   doc:
@@ -794,49 +794,49 @@ gnista.defineMajorMode({
     u: "tab-switcher-unmark",
   },
   setup: () => {
-    gnista.setVariable("truncate-lines", true);
+    e8.setVariable("truncate-lines", true);
   },
 });
 
 /** The tab on the switcher's line, by its id, as tab-switcher-current-tab. */
 function switcherTab(required: boolean): Tab | undefined {
-  const where = gnista.lineBeginningPosition() + 2 + switcherColumn;
-  const id = where < gnista.pointMax() ? gnista.getTextProperty(where, "tab") : undefined;
+  const where = e8.lineBeginningPosition() + 2 + switcherColumn;
+  const id = where < e8.pointMax() ? e8.getTextProperty(where, "tab") : undefined;
   const tab = typeof id === "number" ? tabs().find((t) => t.id === id) : undefined;
-  if (!tab && required) gnista.userError("No window configuration on this line");
+  if (!tab && required) e8.userError("No window configuration on this line");
   return tab;
 }
 
-const toColumn = () => gnista.moveToColumn(switcherColumn);
+const toColumn = () => e8.moveToColumn(switcherColumn);
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher",
   doc: "List the tabs other than the current one, most recent first, in a tab of its own, to select or close them.",
   run: () => {
-    const dir = gnista.variable("default-directory");
-    gnista.letBind({ "tab-bar-new-tab-choice": true, "tab-bar-show": null }, () => newTabTo());
+    const dir = e8.variable("default-directory");
+    e8.letBind({ "tab-bar-new-tab-choice": true, "tab-bar-show": null }, () => newTabTo());
     const others = recentTabs(tabs());
-    const buffer = gnista.getBufferCreate(` *Tabs*<${gnista.selectedFrame()}>`);
-    gnista.call("switch-to-buffer", buffer.name!);
-    gnista.setReadOnly(false);
-    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-    gnista.call("tab-switcher-mode");
-    const height = gnista.windowSize()?.height ?? 0;
-    gnista.insert("\n".repeat(Math.max(0, Math.floor((height - others.length - 1) / 2))));
-    switcherColumn = Math.max(0, Math.floor(gnista.frameWidth() / 2) - 15);
+    const buffer = e8.getBufferCreate(` *Tabs*<${e8.selectedFrame()}>`);
+    e8.call("switch-to-buffer", buffer.name!);
+    e8.setReadOnly(false);
+    e8.deleteRegion(e8.pointMin(), e8.pointMax());
+    e8.call("tab-switcher-mode");
+    const height = e8.windowSize()?.height ?? 0;
+    e8.insert("\n".repeat(Math.max(0, Math.floor((height - others.length - 1) / 2))));
+    switcherColumn = Math.max(0, Math.floor(e8.frameWidth() / 2) - 15);
     for (const tab of others) {
-      gnista.insert(gnista.propertize(`${" ".repeat(switcherColumn)} ${tab.name}\n`, { tab: tab.id }));
+      e8.insert(e8.propertize(`${" ".repeat(switcherColumn)} ${tab.name}\n`, { tab: tab.id }));
     }
-    gnista.gotoChar(gnista.pointMin());
-    gnista.gotoChar(gnista.nextSinglePropertyChange(gnista.point(), "tab") ?? gnista.pointMin());
+    e8.gotoChar(e8.pointMin());
+    e8.gotoChar(e8.nextSinglePropertyChange(e8.point(), "tab") ?? e8.pointMin());
     if (others.length > 1) {
       forwardLines(1);
     }
     toColumn();
-    gnista.setBufferModified(false);
-    gnista.setReadOnly(true);
-    if (typeof dir === "string") gnista.setVariable("default-directory", dir);
-    gnista.message("Commands: d, x; RET; q to quit; ? for help.");
+    e8.setBufferModified(false);
+    e8.setReadOnly(true);
+    if (typeof dir === "string") e8.setVariable("default-directory", dir);
+    e8.message("Commands: d, x; RET; q to quit; ? for help.");
   },
 });
 
@@ -845,13 +845,13 @@ function forwardLines(n: number): void {
   toColumn();
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-next-line",
   doc: "Move to the next tab's line.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg) => forwardLines(arg),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-prev-line",
   doc: "Move to the previous tab's line.",
   params: [{ name: "arg", kind: "count" }],
@@ -860,15 +860,15 @@ gnista.defineCommand({
 
 /** Puts a mark before the line's tab: "D" or a space. */
 function markLine(mark: string): void {
-  gnista.gotoChar(gnista.lineBeginningPosition());
+  e8.gotoChar(e8.lineBeginningPosition());
   toColumn();
-  gnista.letBind({ "inhibit-read-only": true }, () => {
-    if (gnista.point() < gnista.pointMax() && gnista.charAfter() !== "\n") gnista.deleteRegion(gnista.point(), gnista.point() + 1);
-    gnista.insert(mark);
+  e8.letBind({ "inhibit-read-only": true }, () => {
+    if (e8.point() < e8.pointMax() && e8.charAfter() !== "\n") e8.deleteRegion(e8.point(), e8.point() + 1);
+    e8.insert(mark);
   });
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-unmark",
   doc: "Take the mark off the line's tab, and move down, or up with a prefix argument.",
   params: [{ name: "backup", kind: "prefix" }],
@@ -877,7 +877,7 @@ gnista.defineCommand({
     forwardLines(backup === null || backup === undefined ? 1 : -1);
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-backup-unmark",
   doc: "Move up a line and take the mark off its tab.",
   run: () => {
@@ -886,7 +886,7 @@ gnista.defineCommand({
     toColumn();
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-delete",
   doc: "Mark the line's tab to be closed by x, and move down; a prefix argument marks that many, up if negative.",
   params: [{ name: "arg", kind: "count" }],
@@ -899,44 +899,44 @@ gnista.defineCommand({
     toColumn();
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-delete-backwards",
   doc: "Mark the line's tab to be closed by x, and move up.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg) => gnista.callWithPrefix(-arg, "tab-switcher-delete"),
+  run: (arg) => e8.callWithPrefix(-arg, "tab-switcher-delete"),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-execute",
   doc: "Close the tabs marked with d.",
   run: () => {
-    gnista.saveExcursion(() => {
-      gnista.gotoChar(gnista.pointMin());
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        while (gnista.reSearchForward(`^${" ".repeat(switcherColumn)}D`, { noerror: true }) != null) {
-          gnista.gotoChar(gnista.point() - 1);
+    e8.saveExcursion(() => {
+      e8.gotoChar(e8.pointMin());
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        while (e8.reSearchForward(`^${" ".repeat(switcherColumn)}D`, { noerror: true }) != null) {
+          e8.gotoChar(e8.point() - 1);
           const tab = switcherTab(false);
           if (tab) {
             const list = tabs();
-            closedTabs.unshift({ frame: gnista.selectedFrame(), index: list.indexOf(tab), tab });
+            closedTabs.unshift({ frame: e8.selectedFrame(), index: list.indexOf(tab), tab });
             list.splice(list.indexOf(tab), 1);
-            const bol = gnista.lineBeginningPosition();
-            gnista.deleteRegion(bol, Math.min(gnista.pointMax(), gnista.lineEndPosition() + 1));
-          } else gnista.gotoChar(gnista.lineEndPosition());
+            const bol = e8.lineBeginningPosition();
+            e8.deleteRegion(bol, Math.min(e8.pointMax(), e8.lineEndPosition() + 1));
+          } else e8.gotoChar(e8.lineEndPosition());
         }
       });
     });
-    gnista.gotoChar(gnista.lineBeginningPosition());
+    e8.gotoChar(e8.lineBeginningPosition());
     toColumn();
     update();
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "tab-switcher-select",
   doc: "Select the line's tab, closing the switcher's own.",
   run: () => {
     const tab = switcherTab(true)!;
-    gnista.call("kill-buffer", gnista.currentBuffer().name!);
-    gnista.letBind({ "inhibit-message": true }, () => {
+    e8.call("kill-buffer", e8.currentBuffer().name!);
+    e8.letBind({ "inhibit-message": true }, () => {
       const saved = closedTabs.length;
       closeTab(undefined, tabs().indexOf(tab) + 1);
       closedTabs.splice(0, closedTabs.length - saved);
@@ -951,7 +951,7 @@ export function currentTabName(): string {
   const list = tabs();
   return list[currentIndex(list)]?.name ?? "";
 }
-gnista.defun("tab-bar--current-tab-name", () => currentTabName());
+e8.defun("tab-bar--current-tab-name", () => currentTabName());
 
 for (const [alias, command] of [
   ["tab-new", "tab-bar-new-tab"],
@@ -971,10 +971,10 @@ for (const [alias, command] of [
   ["tab-rename", "tab-bar-rename-tab"],
   ["tab-list", "tab-switcher"],
 ] as const) {
-  gnista.defalias(alias, command);
+  e8.defalias(alias, command);
 }
 
-const tabPrefixMap = gnista.defineKeymap("tab-prefix-map");
+const tabPrefixMap = e8.defineKeymap("tab-prefix-map");
 for (const [keys, command] of [
   ["n", duplicateTab],
   ["N", newTabToCommand],
@@ -994,11 +994,11 @@ for (const [keys, command] of [
   ["C-r", findFileReadOnlyOtherTab],
   ["d", diredOtherTab],
 ] as const) {
-  gnista.bindKey(keys, command, "tab-prefix-map");
+  e8.bindKey(keys, command, "tab-prefix-map");
 }
-gnista.bindKey("C-x t", tabPrefixMap);
-gnista.bindKey("C-<tab>", nextTab, "tab-bar-mode-map");
-gnista.bindKey("C-S-<tab>", prevTab, "tab-bar-mode-map");
+e8.bindKey("C-x t", tabPrefixMap);
+e8.bindKey("C-<tab>", nextTab, "tab-bar-mode-map");
+e8.bindKey("C-S-<tab>", prevTab, "tab-bar-mode-map");
 
 void selectTabCommand;
 void lastTab;

@@ -13,7 +13,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]
@@ -38,7 +38,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "one"
         ]
@@ -63,7 +63,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "three"
         ]
@@ -88,7 +88,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "three"
         ]
@@ -113,7 +113,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]
@@ -138,7 +138,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "nowhere"
         ]
@@ -163,7 +163,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]
@@ -175,7 +175,7 @@
       "mark_active": false,
       "kill_ring": [],
       "modified": false,
-      "error": "Before first headline at position 1 in buffer *gnista-oracle*"
+      "error": "Before first headline at position 1 in buffer *e8-oracle*"
     },
     {
       "name": "refile-copy",
@@ -188,7 +188,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "three"
         ]
@@ -213,7 +213,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "three"
         ]
@@ -238,7 +238,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]
@@ -263,7 +263,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]
@@ -288,7 +288,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]
@@ -313,7 +313,7 @@
         ],
         "call": [],
         "platform": null,
-        "visit": "gnista-oracle-refile.org",
+        "visit": "e8-oracle-refile.org",
         "answers": [
           "two"
         ]

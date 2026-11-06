@@ -8,97 +8,97 @@
 // C-n and C-p to move through them.
 //
 // Emacs keeps the sorted completions in completion-all-sorted-completions,
-// which the rotating commands change; Gnista's core keeps them for the open
+// which the rotating commands change; E8's core keeps them for the open
 // prompt, and these commands change them with cacheAllSortedCompletions.
 // Emacs can wait a moment before working out completions while you type;
-// Gnista works them out at once.
+// E8 works them out at once.
 
-gnista.defineFace({
+e8.defineFace({
   name: "icomplete-first-match",
   doc: "The first of the completions icomplete lists, which C-j takes.",
   attributes: { bold: true },
 });
-gnista.defineFace({
+e8.defineFace({
   name: "icomplete-selected-match",
   doc: "The completion selected in a vertical list, which C-j takes.",
   attributes: { background: "selection" },
 });
-gnista.defineFace({
+e8.defineFace({
   name: "completions-common-part",
   doc: "The part of a completion that matches the input.",
   attributes: { foreground: "accent-ink" },
 });
-gnista.defineFace({
+e8.defineFace({
   name: "completions-annotations",
   doc: "What a completion list adds after a completion, such as a command's key.",
   attributes: { inherit: "shadow", italic: true },
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "icomplete-separator",
   doc: "What icomplete puts between the completions it lists in a line.",
   value: " | ",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "icomplete-hide-common-prefix",
   doc: "Whether icomplete leaves out of each completion it lists the part they all share, which it shows after the input instead.",
   value: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "icomplete-show-matches-on-no-input",
   doc: "Whether icomplete lists completions before anything is typed. fido-mode turns it on.",
   value: false,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "icomplete-matches-format",
   doc: "How a vertical list that scrolls says which completion is selected, of how many: %s for each number, or nil for nothing.",
   value: "%s/%s ",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "icomplete-prospects-height",
   doc: "How many lines icomplete's list may take, with the input. Vertical lists take up to 25, as max-mini-window-height allows.",
   value: 2,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "icomplete-scroll",
   doc: "Whether moving through completions scrolls the list rather than rotating it. fido-vertical-mode turns it on.",
   value: false,
 });
-gnista.defineHook(
+e8.defineHook(
   "icomplete-minibuffer-setup-hook",
   "Run when icomplete starts on a prompt, in the minibuffer, to set it up for this prompt.",
 );
 
 const on = (name: string): boolean => {
-  const value = gnista.variable(name);
+  const value = e8.variable(name);
   return value !== null && value !== false && value !== undefined;
 };
 
-const setLocal = (name: string, value: gnista.Value): void => {
-  gnista.makeLocalVariable(name);
-  gnista.setVariable(name, value);
+const setLocal = (name: string, value: e8.Value): void => {
+  e8.makeLocalVariable(name);
+  e8.setVariable(name, value);
 };
 
 /** Text in a face, or plain. */
 type FacedText = string | { text: string; face?: string | string[] | null };
 
 /** Pieces of text as one propertized string, the cursor on its first character if `cursor`, as icomplete-exhibit puts it there. */
-function faced(pieces: FacedText[], cursor: boolean): gnista.PropertizedString {
+function faced(pieces: FacedText[], cursor: boolean): e8.PropertizedString {
   const parts = pieces.map((p) => (typeof p === "string" ? { text: p, face: null } : p));
-  const strings: (string | gnista.PropertizedString)[] = [];
+  const strings: (string | e8.PropertizedString)[] = [];
   let first = cursor;
   for (const { text, face } of parts) {
     if (text === "") continue;
-    const props: { [name: string]: gnista.Value } = face ? { face } : {};
+    const props: { [name: string]: e8.Value } = face ? { face } : {};
     if (first) {
       const [c, ...rest] = [...text];
-      strings.push(gnista.propertize(c, { ...props, cursor: true }), gnista.propertize(rest.join(""), props));
+      strings.push(e8.propertize(c, { ...props, cursor: true }), e8.propertize(rest.join(""), props));
       first = false;
     } else {
-      strings.push(gnista.propertize(text, props));
+      strings.push(e8.propertize(text, props));
     }
   }
-  return gnista.concat(...strings);
+  return e8.concat(...strings);
 }
 
 /**
@@ -109,18 +109,18 @@ function faced(pieces: FacedText[], cursor: boolean): gnista.PropertizedString {
 let overlays: { count: number; list: number } | undefined;
 
 /** Shows `count` before the prompt and `list` after the input. */
-function showOverlays(count: gnista.PropertizedString | string, list: gnista.PropertizedString): void {
-  if (overlays === undefined || gnista.overlayStart(overlays.count) === undefined || gnista.overlayStart(overlays.list) === undefined) {
-    overlays = { count: gnista.makeOverlay(gnista.pointMin(), gnista.pointMin()), list: gnista.makeOverlay(gnista.pointMax(), gnista.pointMax()) };
+function showOverlays(count: e8.PropertizedString | string, list: e8.PropertizedString): void {
+  if (overlays === undefined || e8.overlayStart(overlays.count) === undefined || e8.overlayStart(overlays.list) === undefined) {
+    overlays = { count: e8.makeOverlay(e8.pointMin(), e8.pointMin()), list: e8.makeOverlay(e8.pointMax(), e8.pointMax()) };
   }
-  gnista.moveOverlay(overlays.count, gnista.pointMin(), gnista.pointMin());
-  gnista.moveOverlay(overlays.list, gnista.pointMax(), gnista.pointMax());
-  gnista.overlayPut(overlays.count, "before-string", count);
-  gnista.overlayPut(overlays.list, "after-string", list);
+  e8.moveOverlay(overlays.count, e8.pointMin(), e8.pointMin());
+  e8.moveOverlay(overlays.list, e8.pointMax(), e8.pointMax());
+  e8.overlayPut(overlays.count, "before-string", count);
+  e8.overlayPut(overlays.list, "after-string", list);
 }
 
 /** The minibuffer's input, after its prompt, icomplete--field-string. */
-const fieldString = (): string => gnista.minibufferContents();
+const fieldString = (): string => e8.minibufferContents();
 
 /** The input the prompt opened with, icomplete--initial-input. */
 let initialInput = "";
@@ -129,14 +129,14 @@ let scrolledPast: string[] = [];
 /** When the list scrolls, the completions from the selected one on, before the input changed. */
 let scrolledCompletions: string[] | undefined;
 
-const category = (): string | null => gnista.minibufferInfo()?.category ?? null;
+const category = (): string | null => e8.minibufferInfo()?.category ?? null;
 
 /** Whether the prompt completes, and icomplete should work on it: icomplete-simple-completing-p. */
-const simpleCompleting = (): boolean => !gnista.executingKbdMacro() && gnista.minibufferInfo()?.completing === true;
+const simpleCompleting = (): boolean => !e8.executingKbdMacro() && e8.minibufferInfo()?.completing === true;
 
 function ignoredFileName(name: string): boolean {
   if (name === "../") return true;
-  const ignored = gnista.variable("completion-ignored-extensions");
+  const ignored = e8.variable("completion-ignored-extensions");
   return Array.isArray(ignored) && ignored.some((ext) => typeof ext === "string" && name.endsWith(ext));
 }
 
@@ -149,10 +149,10 @@ function ignoredFileName(name: string): boolean {
 function sortedCompletions(): { base: string; completions: string[] } | undefined {
   const field = fieldString();
   // icomplete-exhibit works them out with point at the end of the input.
-  const all = gnista.completionAllSortedCompletions({ atEnd: true });
+  const all = e8.completionAllSortedCompletions({ atEnd: true });
   if (all === undefined || !all.fresh) return all;
   scrolledPast = [];
-  const info = gnista.minibufferInfo();
+  const info = e8.minibufferInfo();
   let comps = all.completions;
   // icomplete-completions leaves out ../ and ignored extensions.
   if (info?.category === "file") comps = comps.filter((c) => !ignoredFileName(c));
@@ -171,11 +171,11 @@ function sortedCompletions(): { base: string; completions: string[] } | undefine
       break;
     }
   }
-  gnista.cacheAllSortedCompletions(comps);
+  e8.cacheAllSortedCompletions(comps);
   return { base: all.base, completions: comps };
 }
 
-const foldCase = (): boolean => gnista.minibufferInfo()?.ignoreCase ?? on("completion-ignore-case");
+const foldCase = (): boolean => e8.minibufferInfo()?.ignoreCase ?? on("completion-ignore-case");
 
 /** The completion with the characters the input matched in completions-common-part, as completion-lazy-hilit does. */
 function hilit(comp: string, name: string): FacedText[] {
@@ -242,14 +242,14 @@ function compareStrings(a: string, b: string): number | true {
 /** What a completion list adds after a command: its key, as read-extended-command--affixation does. */
 function suffix(comp: string): FacedText[] {
   if (category() !== "command") return [];
-  const keys = gnista.whereIs(comp);
+  const keys = e8.whereIs(comp);
   return keys === undefined ? [] : [{ text: ` (${keys})`, face: "completions-annotations" }];
 }
 
 /** The completions down the minibuffer, as icomplete--render-vertical. */
 function renderVertical(comps: string[], name: string): FacedText[] {
-  const height = Number(gnista.variable("icomplete-prospects-height") ?? 25);
-  const totalSpace = Math.min(height, Math.trunc(gnista.frameSize().maxMiniWindowLines)) - 1;
+  const height = Number(e8.variable("icomplete-prospects-height") ?? 25);
+  const totalSpace = Math.min(height, Math.trunc(e8.frameSize().maxMiniWindowLines)) - 1;
   const scroll = on("icomplete-scroll");
   // After the input changed, keep the selection on the completion it was
   // on, if it is still there.
@@ -258,7 +258,7 @@ function renderVertical(comps: string[], name: string): FacedText[] {
     if (i >= 0) {
       scrolledPast = comps.slice(0, i).reverse();
       comps = comps.slice(i);
-      gnista.cacheAllSortedCompletions(comps);
+      e8.cacheAllSortedCompletions(comps);
     } else {
       scrolledCompletions = undefined;
     }
@@ -311,7 +311,7 @@ function completionsDisplay(name: string, requireMatch: boolean): FacedText[] {
   // Over the whole table for a file name, whose completions have a base,
   // and else over the completions themselves, as Emacs does.
   const mostTry = hide || comps.length === 1
-    ? gnista.completionTryCompletion(name, base.length > 0 ? undefined : comps)
+    ? e8.completionTryCompletion(name, base.length > 0 ? undefined : comps)
     : undefined;
   const most = typeof mostTry === "object" ? mostTry.text : mostTry === true ? comps[0] : "";
   const ellipsis = "…";
@@ -327,11 +327,11 @@ function completionsDisplay(name: string, requireMatch: boolean): FacedText[] {
       close;
   }
   if (mostTry === true || (!scroll && comps.length === 1)) return [`${determ ?? ""} [Matched]`];
-  const prompt = gnista.minibufferInfo()?.prompt ?? "";
-  const separator = String(gnista.variable("icomplete-separator") ?? " | ");
+  const prompt = e8.minibufferInfo()?.prompt ?? "";
+  const separator = String(e8.variable("icomplete-separator") ?? " | ");
   let prospectsLen = width(determ ?? open + close) + width(separator) + 2 + width(ellipsis) + width(prompt + name);
-  const columns = gnista.frameSize().columns;
-  const height = Number(gnista.variable("icomplete-prospects-height") ?? 2);
+  const columns = e8.frameSize().columns;
+  const height = Number(e8.variable("icomplete-prospects-height") ?? 2);
   const prospectsMax = (height + Math.trunc(prospectsLen / columns)) * columns;
   const prefix = hide ? commonPrefix(comps) : undefined;
   const prefixLen = prefix !== undefined && (foldCase() ? most.toLowerCase().startsWith(prefix.toLowerCase()) : most.startsWith(prefix))
@@ -366,39 +366,39 @@ function exhibit(): void {
   const field = fieldString();
   // Back at the input it started with, what was shown stays, as in Emacs.
   if (!on("icomplete-show-matches-on-no-input") && field === initialInput) return;
-  const info = gnista.minibufferInfo()!;
+  const info = e8.minibufferInfo()!;
   const after = completionsDisplay(field, info.requireMatch);
   let before = "";
-  const format = gnista.variable("icomplete-matches-format");
+  const format = e8.variable("icomplete-matches-format");
   if (on("icomplete-scroll") && typeof format === "string") {
     const past = scrolledPast.length;
-    const kept = gnista.minibufferInfo()?.kept ?? 0;
+    const kept = e8.minibufferInfo()?.kept ?? 0;
     before = format.replace("%s", String(past + 1)).replace("%s", String(past + kept));
   }
-  showOverlays(before === "" ? "" : gnista.propertize(before, { face: "shadow" }), faced(after, true));
+  showOverlays(before === "" ? "" : e8.propertize(before, { face: "shadow" }), faced(after, true));
 }
 
-gnista.defineKeymap("icomplete-minibuffer-map");
-gnista.defineKeymap("icomplete-fido-mode-map");
-gnista.defineKeymap("icomplete-vertical-mode-minibuffer-map");
+e8.defineKeymap("icomplete-minibuffer-map");
+e8.defineKeymap("icomplete-fido-mode-map");
+e8.defineKeymap("icomplete-vertical-mode-minibuffer-map");
 
 function icompleteSetup(): void {
   initialInput = fieldString();
   scrolledPast = [];
   scrolledCompletions = undefined;
-  gnista.composeLocalMap("icomplete-minibuffer-map");
-  gnista.addHook("post-command-hook", exhibit, { local: true });
-  gnista.runHooks("icomplete-minibuffer-setup-hook");
+  e8.composeLocalMap("icomplete-minibuffer-map");
+  e8.addHook("post-command-hook", exhibit, { local: true });
+  e8.runHooks("icomplete-minibuffer-setup-hook");
 }
 
 function fidoSetup(): void {
-  gnista.composeLocalMap("icomplete-fido-mode-map");
+  e8.composeLocalMap("icomplete-fido-mode-map");
   setLocal("icomplete-show-matches-on-no-input", true);
   setLocal("icomplete-hide-common-prefix", false);
   setLocal("icomplete-scroll", on("icomplete-vertical-mode"));
   setLocal("completion-styles", ["flex"]);
   // Flex first in each category too, as icomplete--fido-ccd puts it.
-  const defaults = gnista.variable("completion-category-defaults");
+  const defaults = e8.variable("completion-category-defaults");
   if (Array.isArray(defaults)) {
     setLocal("completion-category-defaults", defaults.map((entry) => {
       if (!Array.isArray(entry) || !Array.isArray(entry[1])) return entry;
@@ -409,14 +409,14 @@ function fidoSetup(): void {
 }
 
 function verticalSetup(): void {
-  gnista.composeLocalMap("icomplete-vertical-mode-minibuffer-map");
+  e8.composeLocalMap("icomplete-vertical-mode-minibuffer-map");
   setLocal("icomplete-hide-common-prefix", false);
   setLocal("icomplete-prospects-height", 25);
 }
 
 // Emacs adds fido's setup to minibuffer-setup-hook after icomplete's, so
 // it runs first, and icomplete's keymap goes in front of fido's.
-gnista.addHook("minibuffer-setup-hook", () => {
+e8.addHook("minibuffer-setup-hook", () => {
   if (!on("icomplete-mode") || !simpleCompleting()) return;
   if (on("fido-mode")) fidoSetup();
   icompleteSetup();
@@ -429,7 +429,7 @@ gnista.addHook("minibuffer-setup-hook", () => {
 function step(forward: boolean): boolean {
   // As Emacs's completion-all-sorted-completions: the kept completions, or
   // freshly sorted ones without what icomplete's display leaves out.
-  const sorted = gnista.completionAllSortedCompletions();
+  const sorted = e8.completionAllSortedCompletions();
   if (sorted === undefined) return false;
   const comps = [...sorted.completions];
   const scroll = on("icomplete-scroll");
@@ -453,21 +453,21 @@ function step(forward: boolean): boolean {
     comps.unshift(comps.pop()!);
     stepped = true;
   }
-  gnista.cacheAllSortedCompletions(comps);
+  e8.cacheAllSortedCompletions(comps);
   return stepped;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-forward-completions",
   doc: "Step forward through the completions icomplete shows: the second becomes the first, which C-j takes.",
   run: () => void step(true),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-backward-completions",
   doc: "Step back through the completions icomplete shows: the last becomes the first, which C-j takes.",
   run: () => void step(false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-vertical-goto-first",
   doc: "Go to the first of the completions, in a list that scrolls (icomplete-scroll).",
   run: () => {
@@ -475,7 +475,7 @@ gnista.defineCommand({
     while (step(false));
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-vertical-goto-last",
   doc: "Go to the last of the completions, in a list that scrolls (icomplete-scroll).",
   run: () => {
@@ -483,27 +483,27 @@ gnista.defineCommand({
     while (step(true));
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-force-complete",
   doc: "Complete the input to the first of the completions icomplete shows.",
-  run: () => gnista.call("minibuffer-force-complete"),
+  run: () => e8.call("minibuffer-force-complete"),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-force-complete-and-exit",
   doc:
     "Complete the input to the first of the completions icomplete shows, and finish it.\n\n" +
     "With nothing typed, and the completions not listed, finish with the default instead.",
   run: () => {
-    const info = gnista.minibufferInfo();
+    const info = e8.minibufferInfo();
     const field = fieldString();
     const force = field !== initialInput ||
       (info?.default == null && on("icomplete-show-matches-on-no-input")) ||
       (info?.kept ?? 0) > 0;
-    gnista.call(force ? "minibuffer-force-complete-and-exit" : "minibuffer-complete-and-exit");
+    e8.call(force ? "minibuffer-force-complete-and-exit" : "minibuffer-complete-and-exit");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-fido-ret",
   doc: "Finish the input with the first completion, or for a directory, go into it, as ido-mode does.",
   run: () => {
@@ -512,64 +512,64 @@ gnista.defineCommand({
     const field = fieldString();
     const dir = category() === "file" ? field.slice(0, field.lastIndexOf("/") + 1) : undefined;
     const probe = dir !== undefined && current !== undefined ? dir + current.replace(/\/$/, "") : undefined;
-    if (probe !== undefined && current !== "./" && gnista.fileDirectoryP(probe)) {
-      gnista.callInteractively("icomplete-force-complete");
+    if (probe !== undefined && current !== "./" && e8.fileDirectoryP(probe)) {
+      e8.callInteractively("icomplete-force-complete");
     } else {
-      gnista.callInteractively("icomplete-force-complete-and-exit");
+      e8.callInteractively("icomplete-force-complete-and-exit");
     }
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-fido-exit",
   doc:
     "Finish the input as it is typed, not as it would complete.\n\n" +
     "Where the answer must be a completion, complete it first, unless given a prefix argument.",
   run: () => {
-    const force = gnista.prefixArg() !== null;
-    gnista.call(!force && gnista.minibufferInfo()?.requireMatch ? "minibuffer-complete-and-exit" : "exit-minibuffer");
+    const force = e8.prefixArg() !== null;
+    e8.call(!force && e8.minibufferInfo()?.requireMatch ? "minibuffer-complete-and-exit" : "exit-minibuffer");
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-fido-backward-updir",
   doc: "Delete the character before point, or after a directory's slash, go up to the directory above, as ido-mode does.",
   run: () => {
-    const start = gnista.minibufferPromptEnd();
-    const point = gnista.point();
-    if (point > start && gnista.bufferText(point - 1, point) === "/" && category() === "file") {
+    const start = e8.minibufferPromptEnd();
+    const point = e8.point();
+    if (point > start && e8.bufferText(point - 1, point) === "/" && category() === "file") {
       if (fieldString() === "~/") {
-        gnista.deleteRegion(start, gnista.pointMax());
-        gnista.insert(gnista.expandFileName("~/").replace(/\/?$/, "/"));
+        e8.deleteRegion(start, e8.pointMax());
+        e8.insert(e8.expandFileName("~/").replace(/\/?$/, "/"));
       }
       const field = fieldString();
-      const slash = field.lastIndexOf("/", gnista.point() - start - 2);
-      if (slash >= 0) gnista.deleteRegion(start + slash + 1, gnista.pointMax());
+      const slash = field.lastIndexOf("/", e8.point() - start - 2);
+      if (slash >= 0) e8.deleteRegion(start + slash + 1, e8.pointMax());
     } else {
-      gnista.callInteractively("delete-backward-char");
+      e8.callInteractively("delete-backward-char");
     }
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-fido-delete-char",
   doc: "Delete the character after point, or at the end of a file name, open Dired on its directory, as ido-mode does.",
   run: () => {
     const field = fieldString();
-    if (gnista.point() - gnista.minibufferPromptEnd() < field.length || category() !== "file") {
-      gnista.callInteractively("delete-char");
+    if (e8.point() - e8.minibufferPromptEnd() < field.length || category() !== "file") {
+      e8.callInteractively("delete-char");
       return;
     }
-    gnista.call("dired", field.slice(0, field.lastIndexOf("/") + 1));
-    gnista.call("exit-minibuffer");
+    e8.call("dired", field.slice(0, field.lastIndexOf("/") + 1));
+    e8.call("exit-minibuffer");
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "icomplete-fido-kill",
   doc: "Kill the rest of the line, as C-k does, if point is not at the end of the input.",
   run: () => {
-    if (gnista.point() - gnista.minibufferPromptEnd() < fieldString().length) {
-      gnista.callInteractively("kill-line");
+    if (e8.point() - e8.minibufferPromptEnd() < fieldString().length) {
+      e8.callInteractively("kill-line");
       return;
     }
-    throw new Error("Killing the selected completion needs a minibuffer inside the minibuffer, which Gnista does not have yet");
+    throw new Error("Killing the selected completion needs a minibuffer inside the minibuffer, which E8 does not have yet");
   },
 });
 
@@ -579,7 +579,7 @@ for (const [keys, command] of [
   ["C-.", "icomplete-forward-completions"],
   ["C-,", "icomplete-backward-completions"],
 ] as const) {
-  gnista.bindKey(keys, command, "icomplete-minibuffer-map");
+  e8.bindKey(keys, command, "icomplete-minibuffer-map");
 }
 for (const [keys, command] of [
   ["C-k", "icomplete-fido-kill"],
@@ -594,7 +594,7 @@ for (const [keys, command] of [
   ["C-.", "icomplete-forward-completions"],
   ["C-,", "icomplete-backward-completions"],
 ] as const) {
-  gnista.bindKey(keys, command, "icomplete-fido-mode-map");
+  e8.bindKey(keys, command, "icomplete-fido-mode-map");
 }
 for (const [keys, command] of [
   ["C-n", "icomplete-forward-completions"],
@@ -604,16 +604,16 @@ for (const [keys, command] of [
   ["M-<", "icomplete-vertical-goto-first"],
   ["M->", "icomplete-vertical-goto-last"],
 ] as const) {
-  gnista.bindKey(keys, command, "icomplete-vertical-mode-minibuffer-map");
+  e8.bindKey(keys, command, "icomplete-vertical-mode-minibuffer-map");
 }
 
 // The modes. They are global; what they do happens as each prompt opens.
 
-const setMode = (name: gnista.CommandName, enable: boolean): void => {
-  if (on(name) !== enable) gnista.callWithPrefix(enable ? 1 : 0, name);
+const setMode = (name: e8.CommandName, enable: boolean): void => {
+  if (on(name) !== enable) e8.callWithPrefix(enable ? 1 : 0, name);
 };
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "icomplete-mode",
   global: true,
   doc:
@@ -625,11 +625,11 @@ gnista.defineMinorMode({
   onChange: (enabled) => {
     if (enabled && on("fido-mode")) {
       setMode("fido-mode", false);
-      gnista.setVariable("icomplete-mode", true);
+      e8.setVariable("icomplete-mode", true);
     }
   },
 });
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "fido-mode",
   global: true,
   doc:
@@ -640,27 +640,27 @@ gnista.defineMinorMode({
   onChange: (enabled) => {
     if (enabled) {
       setMode("icomplete-mode", false);
-      gnista.setVariable("icomplete-mode", true);
+      e8.setVariable("icomplete-mode", true);
     } else {
-      gnista.setVariable("icomplete-mode", false);
+      e8.setVariable("icomplete-mode", false);
     }
   },
 });
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "icomplete-vertical-mode",
   global: true,
   doc:
     "List completions down the minibuffer, in icomplete-mode or fido-mode, turning icomplete-mode on if neither is.\n\n" +
     "As many show as max-mini-window-height allows. C-n and C-p, or <down> and <up>, move through them.",
   onChange: (enabled) => {
-    gnista.removeHook("icomplete-minibuffer-setup-hook", verticalSetup);
+    e8.removeHook("icomplete-minibuffer-setup-hook", verticalSetup);
     if (enabled) {
       if (!on("icomplete-mode")) setMode("icomplete-mode", true);
-      gnista.addHook("icomplete-minibuffer-setup-hook", verticalSetup);
+      e8.addHook("icomplete-minibuffer-setup-hook", verticalSetup);
     }
   },
 });
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "fido-vertical-mode",
   global: true,
   doc:
@@ -675,5 +675,5 @@ gnista.defineMinorMode({
   },
 });
 
-// Gnista lists completions by default, where Emacs does not.
-gnista.callWithPrefix(1, "icomplete-mode");
+// E8 lists completions by default, where Emacs does not.
+e8.callWithPrefix(1, "icomplete-mode");

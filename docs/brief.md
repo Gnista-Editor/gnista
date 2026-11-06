@@ -4,7 +4,7 @@ Oct 27, 2026 · @Mark Dixon
 
 ## Overview and vision
 
-We are building a fast, natively multithreaded text editor in Rust that works the way Emacs works, has org mode built in, and treats an AI agent as a first class user of the editor alongside the human. The working name was **Ember**, a placeholder; [ADR 0058](adr/0058-the-name-gnista.md) chose **Gnista**.
+We are building a fast, natively multithreaded text editor in Rust that works the way Emacs works, has org mode built in, and treats an AI agent as a first class user of the editor alongside the human. The working name was **Ember**, a placeholder; [ADR 0058](adr/0058-the-name-gnista.md) chose **Gnista**, and [ADR 0063](adr/0063-the-name-e8.md) **E8**.
 
 The pitch in one sentence: an editor that can read its own manual, change itself safely, test those changes, and keep a full history of how it evolved, with the human approving anything important.
 
@@ -212,7 +212,7 @@ Work in small, tested steps, keep decisions written down, and stop to ask when a
 
 ## Open questions
 
-- [x] Final project name: Gnista ([ADR 0058](adr/0058-the-name-gnista.md)).
+- [x] Final project name: E8 ([ADR 0063](adr/0063-the-name-e8.md)).
 - [ ] Extension language: Python or TypeScript, decided after the Phase 0 spike.
 - [ ] GUI toolkit: GPUI, another Rust toolkit, or a custom wgpu renderer.
 - [ ] Licence (GPL in the Emacs tradition, or a permissive licence such as MIT or Apache 2.0).

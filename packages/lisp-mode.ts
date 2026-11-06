@@ -4,7 +4,7 @@
 // lisp-el-font-lock-keywords-2 does. emacs-lisp-mode is in elisp-mode.ts.
 //
 // Copyright (C) 1985-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 
 import { allMatches, forwardLine } from "subr";
 
-const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
+const defvar = (name: string, value: e8.Value, doc: string) => e8.defineVariable({ name, value, doc });
 defvar("lisp-body-indent", 2, "How many columns the body of a (def...) form is indented by, past the form's open paren.");
 defvar("lisp-indent-offset", null, "If a number, how far each level of a list indents past its open paren, in place of lining up under the first argument.");
 
@@ -163,33 +163,33 @@ export const lispDataSyntax: Record<string, string> = (() => {
 
 // Moving over expressions, as Lisp's forward-sexp: an error where there is none to move over.
 function forwardSexp(n = 1): void {
-  const to = gnista.scanSexps(gnista.point(), n);
-  if (to === null) gnista.signal("scan-error", "Containing expression ends prematurely");
-  gnista.gotoChar(to);
+  const to = e8.scanSexps(e8.point(), n);
+  if (to === null) e8.signal("scan-error", "Containing expression ends prematurely");
+  e8.gotoChar(to);
 }
 
 /** Moves to where the next expression starts, not past `limit`, as (parse-partial-sexp (point) limit 0 t). */
 function skipToSexp(limit: number): void {
-  while (gnista.point() < limit) {
-    gnista.forwardComment(gnista.bufferSize());
-    if (gnista.point() >= limit) {
-      gnista.gotoChar(limit);
+  while (e8.point() < limit) {
+    e8.forwardComment(e8.bufferSize());
+    if (e8.point() >= limit) {
+      e8.gotoChar(limit);
       return;
     }
-    const c = gnista.charAfter();
-    if (c !== undefined && gnista.charSyntax(c) === "'") gnista.gotoChar(gnista.point() + 1);
+    const c = e8.charAfter();
+    if (c !== undefined && e8.charSyntax(c) === "'") e8.gotoChar(e8.point() + 1);
     else return;
   }
 }
 
-const nextLineStart = (): number => gnista.saveExcursion(() => (forwardLine(1), gnista.point()));
+const nextLineStart = (): number => e8.saveExcursion(() => (forwardLine(1), e8.point()));
 
 /** Where `pos` is, as lisp-ppss: syntax-ppss, with the last complete expression in the innermost list. */
-function lispPpss(pos: number): gnista.ParseState {
-  const st = gnista.syntaxPpss(pos);
+function lispPpss(pos: number): e8.ParseState {
+  const st = e8.syntaxPpss(pos);
   if (st.lastComplete === null && st.openParens.length > 0) {
     const inner = st.openParens[st.openParens.length - 1];
-    return { ...st, lastComplete: gnista.parsePartialSexp(inner + 1, pos).lastComplete };
+    return { ...st, lastComplete: e8.parsePartialSexp(inner + 1, pos).lastComplete };
   }
   return st;
 }
@@ -197,28 +197,28 @@ function lispPpss(pos: number): gnista.ParseState {
 type Indent = number | [number, number] | undefined;
 
 /** How to indent the body of a defun-like form, as lisp-indent-defform. */
-function indentDefform(state: gnista.ParseState, last: number): Indent {
-  gnista.gotoChar(state.innermostStart!);
+function indentDefform(state: e8.ParseState, last: number): Indent {
+  e8.gotoChar(state.innermostStart!);
   forwardLine(1);
-  if (gnista.point() > last) {
-    gnista.gotoChar(state.innermostStart!);
-    return Number(gnista.variable("lisp-body-indent") ?? 2) + gnista.currentColumn();
+  if (e8.point() > last) {
+    e8.gotoChar(state.innermostStart!);
+    return Number(e8.variable("lisp-body-indent") ?? 2) + e8.currentColumn();
   }
   return undefined;
 }
 
 /** How to indent a form whose first `count` arguments are special, as lisp-indent-specform. */
-function indentSpecform(count: number, state: gnista.ParseState, indentPoint: number, normal: number): Indent {
+function indentSpecform(count: number, state: e8.ParseState, indentPoint: number, normal: number): Indent {
   const start = state.innermostStart!;
   const i = count;
-  gnista.gotoChar(start);
-  const column = gnista.currentColumn();
-  const bodyIndentStep = Number(gnista.variable("lisp-body-indent") ?? 2);
+  e8.gotoChar(start);
+  const column = e8.currentColumn();
+  const bodyIndentStep = Number(e8.variable("lisp-body-indent") ?? 2);
   const bodyIndent = bodyIndentStep + column;
-  gnista.gotoChar(start + 1);
+  e8.gotoChar(start + 1);
   forwardSexp();
   skipToSexp(indentPoint);
-  while (gnista.point() < indentPoint) {
+  while (e8.point() < indentPoint) {
     count--;
     try {
       forwardSexp();
@@ -232,22 +232,22 @@ function indentSpecform(count: number, state: gnista.ParseState, indentPoint: nu
 }
 
 /** Whether a function's arguments indent specially, and how, as lisp-indent-function. */
-function lispIndentFunction(indentPoint: number, state: gnista.ParseState, last: number): Indent {
-  const normal = gnista.currentColumn();
-  gnista.gotoChar(state.innermostStart! + 1);
+function lispIndentFunction(indentPoint: number, state: e8.ParseState, last: number): Indent {
+  const normal = e8.currentColumn();
+  e8.gotoChar(state.innermostStart! + 1);
   skipToSexp(last);
-  if (!gnista.lookingAt("\\sw\\|\\s_")) {
+  if (!e8.lookingAt("\\sw\\|\\s_")) {
     if (!(nextLineStart() > last)) {
-      gnista.gotoChar(last);
-      gnista.gotoChar(gnista.lineBeginningPosition());
+      e8.gotoChar(last);
+      e8.gotoChar(e8.lineBeginningPosition());
       skipToSexp(last);
     }
-    gnista.backwardPrefixChars();
-    return gnista.currentColumn();
+    e8.backwardPrefixChars();
+    return e8.currentColumn();
   }
-  const from = gnista.point();
+  const from = e8.point();
   forwardSexp();
-  const method = indentSpecs.get(gnista.bufferSubstringNoProperties(from, gnista.point()));
+  const method = indentSpecs.get(e8.bufferSubstringNoProperties(from, e8.point()));
   if (method === "defun") return indentDefform(state, last);
   if (typeof method === "number") return indentSpecform(method, state, indentPoint, normal);
   return undefined;
@@ -255,33 +255,33 @@ function lispIndentFunction(indentPoint: number, state: gnista.ParseState, last:
 
 /** A keyword argument lines up under the keyword before it, as calculate-lisp-indent does. */
 function keywordIndent(indentPoint: number, containing: number, last: number): number | undefined {
-  gnista.gotoChar(indentPoint);
-  gnista.skipCharsForward(" \t");
-  if (!gnista.lookingAt(":")) return undefined;
-  gnista.gotoChar(last);
-  gnista.backwardPrefixChars();
+  e8.gotoChar(indentPoint);
+  e8.skipCharsForward(" \t");
+  if (!e8.lookingAt(":")) return undefined;
+  e8.gotoChar(last);
+  e8.backwardPrefixChars();
   for (;;) {
-    const p = gnista.point();
-    gnista.skipCharsBackward(" \t");
-    const stop = gnista.point() === gnista.lineBeginningPosition() || gnista.point() === containing + 1;
-    gnista.gotoChar(p);
+    const p = e8.point();
+    e8.skipCharsBackward(" \t");
+    const stop = e8.point() === e8.lineBeginningPosition() || e8.point() === containing + 1;
+    e8.gotoChar(p);
     if (stop) break;
     forwardSexp(-1);
-    gnista.backwardPrefixChars();
+    e8.backwardPrefixChars();
   }
-  last = gnista.point();
-  gnista.gotoChar(containing + 1);
+  last = e8.point();
+  e8.gotoChar(containing + 1);
   skipToSexp(last);
-  if (!(last > gnista.point())) return undefined;
-  gnista.gotoChar(last);
-  if (gnista.lookingAt(":")) return gnista.currentColumn();
-  const bol = gnista.lineBeginningPosition();
+  if (!(last > e8.point())) return undefined;
+  e8.gotoChar(last);
+  if (e8.lookingAt(":")) return e8.currentColumn();
+  const bol = e8.lineBeginningPosition();
   try {
     forwardSexp(-1);
   } catch {
     return undefined;
   }
-  return bol < gnista.point() && gnista.lookingAt(":") ? gnista.currentColumn() : undefined;
+  return bol < e8.point() && e8.lookingAt(":") ? e8.currentColumn() : undefined;
 }
 
 /**
@@ -290,46 +290,46 @@ function keywordIndent(indentPoint: number, containing: number, last: number): n
  * lines after it at the same depth need not line up with it.
  */
 export function calculateLispIndent(): Indent {
-  return gnista.saveExcursion(() => {
-    gnista.gotoChar(gnista.lineBeginningPosition());
-    const indentPoint = gnista.point();
+  return e8.saveExcursion(() => {
+    e8.gotoChar(e8.lineBeginningPosition());
+    const indentPoint = e8.point();
     const state = lispPpss(indentPoint);
     let desired: number | undefined;
     const last = state.depth > 0 ? state.lastComplete : null;
     const containing = state.depth > 0 ? state.innermostStart : null;
     if (containing !== null) {
-      gnista.gotoChar(containing + 1);
-      const spaceAfterOpen = gnista.lookingAt("\\s-");
-      if (last === null) desired = gnista.currentColumn();
+      e8.gotoChar(containing + 1);
+      const spaceAfterOpen = e8.lookingAt("\\s-");
+      if (last === null) desired = e8.currentColumn();
       else {
         skipToSexp(last);
-        if (gnista.lookingAt("\\s(")) {
+        if (e8.lookingAt("\\s(")) {
           // The first element is a list: indent under it.
         } else if (nextLineStart() > last) {
           // The first line in the list: under its second element, the first argument.
-          if (!(gnista.point() === last || spaceAfterOpen)) {
+          if (!(e8.point() === last || spaceAfterOpen)) {
             forwardSexp();
             skipToSexp(last);
           }
-          gnista.backwardPrefixChars();
+          e8.backwardPrefixChars();
         } else {
           // Under the first expression on the line of the last one.
-          gnista.gotoChar(last);
-          gnista.gotoChar(gnista.lineBeginningPosition());
+          e8.gotoChar(last);
+          e8.gotoChar(e8.lineBeginningPosition());
           skipToSexp(last);
-          gnista.backwardPrefixChars();
+          e8.backwardPrefixChars();
         }
       }
     }
-    const normal = gnista.currentColumn();
+    const normal = e8.currentColumn();
     if (state.inString !== null) return undefined;
-    const offset = gnista.variable("lisp-indent-offset");
+    const offset = e8.variable("lisp-indent-offset");
     if (typeof offset === "number" && containing !== null) {
-      gnista.gotoChar(containing);
-      return gnista.currentColumn() + offset;
+      e8.gotoChar(containing);
+      return e8.currentColumn() + offset;
     }
     if (last !== null && containing !== null) {
-      return gnista.saveExcursion(() => lispIndentFunction(indentPoint, state, last)) ?? gnista.saveExcursion(() => keywordIndent(indentPoint, containing, last)) ?? normal;
+      return e8.saveExcursion(() => lispIndentFunction(indentPoint, state, last)) ?? e8.saveExcursion(() => keywordIndent(indentPoint, containing, last)) ?? normal;
     }
     return desired ?? normal;
   });
@@ -337,56 +337,56 @@ export function calculateLispIndent(): Indent {
 
 /** Indents the current line as Lisp code, as lisp-indent-line, to `indent` if given. */
 export function lispIndentLine(indent?: Indent): void {
-  const fromEnd = gnista.pointMax() - gnista.point();
-  gnista.gotoChar(gnista.lineBeginningPosition());
+  const fromEnd = e8.pointMax() - e8.point();
+  e8.gotoChar(e8.lineBeginningPosition());
   const column = indent ?? calculateLispIndent();
-  gnista.skipCharsForward(" \t");
-  if (column === undefined || gnista.lookingAt("\\s<\\s<\\s<")) {
+  e8.skipCharsForward(" \t");
+  if (column === undefined || e8.lookingAt("\\s<\\s<\\s<")) {
     // A ;;; comment, or a line that starts in a string, stays as it is.
-    gnista.gotoChar(gnista.pointMax() - fromEnd);
+    e8.gotoChar(e8.pointMax() - fromEnd);
     return;
   }
-  if (gnista.lookingAt("\\s<") && !gnista.lookingAt("\\s<\\s<")) {
+  if (e8.lookingAt("\\s<") && !e8.lookingAt("\\s<\\s<")) {
     // A comment of one semicolon goes to comment-column.
-    gnista.call("comment-indent");
-    gnista.gotoChar(gnista.point() - 1);
-  } else gnista.indentLineTo(Array.isArray(column) ? column[0] : column);
-  if (gnista.pointMax() - fromEnd > gnista.point()) gnista.gotoChar(gnista.pointMax() - fromEnd);
+    e8.call("comment-indent");
+    e8.gotoChar(e8.point() - 1);
+  } else e8.indentLineTo(Array.isArray(column) ? column[0] : column);
+  if (e8.pointMax() - fromEnd > e8.point()) e8.gotoChar(e8.pointMax() - fromEnd);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "lisp-indent-line",
   doc: "Indent the current line as Lisp code.",
   run: () => lispIndentLine(),
 });
 
-const indentSexp = gnista.defineCommand({
+const indentSexp = e8.defineCommand({
   name: "indent-sexp",
   doc: "Indent each line of the list that starts just after point, as Lisp code.",
   run: () => {
-    const end = gnista.saveExcursion(() => {
+    const end = e8.saveExcursion(() => {
       try {
         forwardSexp();
       } catch {
-        gnista.gotoChar(gnista.pointMax());
+        e8.gotoChar(e8.pointMax());
       }
-      return gnista.makeMarker(gnista.point());
+      return e8.makeMarker(e8.point());
     });
-    gnista.saveExcursion(() => {
-      while (forwardLine(1) === 0 && gnista.point() < (gnista.markerPosition(end) ?? 0)) {
-        if (gnista.lineBeginningPosition() === gnista.lineEnd(gnista.lineOf(gnista.point()))) continue;
+    e8.saveExcursion(() => {
+      while (forwardLine(1) === 0 && e8.point() < (e8.markerPosition(end) ?? 0)) {
+        if (e8.lineBeginningPosition() === e8.lineEnd(e8.lineOf(e8.point()))) continue;
         lispIndentLine();
       }
     });
-    gnista.deleteMarker(end);
+    e8.deleteMarker(end);
   },
 });
 
 /** Sets what every Lisp mode has, as lisp-mode-variables. */
 export function lispModeVariables(): void {
-  const local = (name: string, value: gnista.Value) => {
-    gnista.makeLocalVariable(name);
-    gnista.setVariable(name, value);
+  const local = (name: string, value: e8.Value) => {
+    e8.makeLocalVariable(name);
+    e8.setVariable(name, value);
   };
   local("indent-line-function", "lisp-indent-line");
   local("comment-start", ";");
@@ -417,58 +417,58 @@ const KEYS = new RegExp(`(?<![^\\s()\\[\\]";'\`,#])[:&]${SYM}`, "g");
 /** Whether the string starting at `start` is a doc string, as lisp-string-in-doc-position-p and lisp-string-after-doc-keyword-p say. */
 function isDocString(listStart: number | null, start: number): boolean {
   if (listStart === null) return false;
-  return gnista.saveExcursion(() => {
-    const head = new RegExp(`^\\([ \\t\\n]*(${SYM})`).exec(gnista.bufferSubstringNoProperties(listStart, Math.min(listStart + 80, gnista.pointMax())));
+  return e8.saveExcursion(() => {
+    const head = new RegExp(`^\\([ \\t\\n]*(${SYM})`).exec(e8.bufferSubstringNoProperties(listStart, Math.min(listStart + 80, e8.pointMax())));
     let elt = head ? docStringElt.get(head[1]) : undefined;
     if (elt !== undefined) {
-      gnista.gotoChar(listStart + 1);
+      e8.gotoChar(listStart + 1);
       try {
-        while (elt > 0 && gnista.point() < start) {
+        while (elt > 0 && e8.point() < start) {
           forwardSexp();
           elt--;
         }
       } catch {
         // Fewer elements than that.
       }
-      if (elt === 0 && gnista.point() <= start) {
-        gnista.forwardComment(gnista.bufferSize());
-        if (gnista.point() === start) return true;
+      if (elt === 0 && e8.point() <= start) {
+        e8.forwardComment(e8.bufferSize());
+        if (e8.point() === start) return true;
       }
     }
-    gnista.gotoChar(start);
+    e8.gotoChar(start);
     try {
       forwardSexp(-1);
     } catch {
       return false;
     }
-    return gnista.lookingAt(":documentation\\_>\\|:doc\\_>");
+    return e8.lookingAt(":documentation\\_>\\|:doc\\_>");
   });
 }
 
 /** The strings and comments from `start` to `end`, and where the last of them ends, with their faces. */
 function fontifySyntactically(start: number, end: number): [number, number][] {
   const spans: [number, number][] = [];
-  let state = gnista.syntaxPpss(start);
+  let state = e8.syntaxPpss(start);
   let pos = start;
-  const text = gnista.bufferSubstringNoProperties(start, end);
+  const text = e8.bufferSubstringNoProperties(start, end);
   // Strings and comments can run on past the end.
-  const at = (p: number) => (p < end ? text[p - start] : gnista.charAfter(p));
+  const at = (p: number) => (p < end ? text[p - start] : e8.charAfter(p));
   const string = (from: number, listStart: number | null) => {
     let p = from + 1;
-    while (p < gnista.pointMax() && at(p) !== '"') p += at(p) === "\\" ? 2 : 1;
-    const to = Math.min(p + 1, gnista.pointMax());
-    gnista.putTextProperty(from, to, "face", isDocString(listStart, from) ? "font-lock-doc-face" : "font-lock-string-face");
+    while (p < e8.pointMax() && at(p) !== '"') p += at(p) === "\\" ? 2 : 1;
+    const to = Math.min(p + 1, e8.pointMax());
+    e8.putTextProperty(from, to, "face", isDocString(listStart, from) ? "font-lock-doc-face" : "font-lock-string-face");
     spans.push([from, to]);
     return to;
   };
   const comment = (from: number) => {
     let p = from;
-    while (p < gnista.pointMax() && at(p) !== "\n") p++;
-    const to = Math.min(p + 1, gnista.pointMax());
+    while (p < e8.pointMax() && at(p) !== "\n") p++;
+    const to = Math.min(p + 1, e8.pointMax());
     const delimiter = /^;+ */.exec(text.slice(from - start, to - start));
     const body = delimiter ? from + delimiter[0].length : from;
-    if (body > from) gnista.putTextProperty(from, body, "face", "font-lock-comment-delimiter-face");
-    if (to > body) gnista.putTextProperty(body, to, "face", "font-lock-comment-face");
+    if (body > from) e8.putTextProperty(from, body, "face", "font-lock-comment-delimiter-face");
+    if (to > body) e8.putTextProperty(body, to, "face", "font-lock-comment-face");
     spans.push([from, to]);
     return to;
   };
@@ -480,7 +480,7 @@ function fontifySyntactically(start: number, end: number): [number, number][] {
     else if (c === "?") pos += at(pos + 1) === "\\" ? 3 : 2;
     else if (c === ";") pos = comment(pos);
     else if (c === '"') {
-      state = gnista.syntaxPpss(pos);
+      state = e8.syntaxPpss(pos);
       pos = string(pos, state.innermostStart);
     } else pos++;
   }
@@ -490,41 +490,41 @@ function fontifySyntactically(start: number, end: number): [number, number][] {
 /** Whether a list at `pos` is evaluated, so its head is called, as lisp--el-funcall-position-p guesses. */
 function funcallPosition(pos: number): boolean {
   // '(lambda ...) is not called, but #'(lambda ...) is.
-  if (gnista.charAfter(pos - 1) === "'") return gnista.charAfter(pos - 2) === "#";
-  return gnista.saveExcursion(() => {
+  if (e8.charAfter(pos - 1) === "'") return e8.charAfter(pos - 2) === "#";
+  return e8.saveExcursion(() => {
     try {
-      const parens = gnista.syntaxPpss(pos).openParens;
+      const parens = e8.syntaxPpss(pos).openParens;
       if (parens.length === 0) return true;
       const inner = parens[parens.length - 1];
       let parent: string | undefined;
       const outer = parens.length > 1 ? parens[parens.length - 2] : undefined;
-      if (gnista.charAfter(inner) === "(" && outer !== undefined && gnista.lookingAt("(\\_<let\\*?\\_>", outer)) {
+      if (e8.charAfter(inner) === "(" && outer !== undefined && e8.lookingAt("(\\_<let\\*?\\_>", outer)) {
         parent = "let";
-        gnista.gotoChar(outer + 1 + (gnista.lookingAt("(let\\*", outer) ? 4 : 3));
+        e8.gotoChar(outer + 1 + (e8.lookingAt("(let\\*", outer) ? 4 : 3));
       } else {
-        const m = /^\((?:[\w-]|[^\s()\[\]";'`,#\\])+/.exec(gnista.bufferSubstringNoProperties(inner, Math.min(inner + 80, gnista.pointMax())));
+        const m = /^\((?:[\w-]|[^\s()\[\]";'`,#\\])+/.exec(e8.bufferSubstringNoProperties(inner, Math.min(inner + 80, e8.pointMax())));
         if (!m) return true;
         parent = m[0].slice(1);
-        gnista.gotoChar(inner + m[0].length);
+        e8.gotoChar(inner + m[0].length);
       }
       switch (parent) {
         case "declare":
           return false;
         case "let":
           forwardSexp();
-          return pos >= gnista.point();
+          return pos >= e8.point();
         case "defun":
         case "defmacro":
         case "cl-defmethod":
         case "cl-defun":
           forwardSexp(2);
-          return pos >= gnista.point();
+          return pos >= e8.point();
         case "condition-case": {
           if (parens.length > 1) return true;
           forwardSexp();
-          const after = gnista.point();
+          const after = e8.point();
           forwardSexp();
-          return after < pos && pos < gnista.point();
+          return after < pos && pos < e8.point();
         }
         default:
           return true;
@@ -537,14 +537,14 @@ function funcallPosition(pos: number): boolean {
 
 /** Fontifies Emacs Lisp from `start` to `end`, as font-lock does with lisp-el-font-lock-keywords-2. */
 export function fontifyElisp(start: number, end: number): void {
-  start = gnista.lineBeginningPosition(start);
-  end = Math.min(gnista.lineEnd(gnista.lineOf(Math.max(end - 1, start))) + 1, gnista.pointMax());
-  gnista.removeTextProperty(start, end, "face");
+  start = e8.lineBeginningPosition(start);
+  end = Math.min(e8.lineEnd(e8.lineOf(Math.max(end - 1, start))) + 1, e8.pointMax());
+  e8.removeTextProperty(start, end, "face");
   const spans = fontifySyntactically(start, end);
   const inSpan = (p: number) => spans.some(([a, b]) => p >= a && p < b);
-  const text = gnista.bufferSubstringNoProperties(start, end);
+  const text = e8.bufferSubstringNoProperties(start, end);
   const put = (from: number, to: number, face: string) => {
-    if (!inSpan(from)) gnista.putTextProperty(start + from, start + to, "face", face);
+    if (!inSpan(from)) e8.putTextProperty(start + from, start + to, "face", face);
   };
   for (const m of allMatches(DEFS, text)) {
     const at = m.index!;
@@ -559,7 +559,7 @@ export function fontifyElisp(start: number, end: number): void {
   for (const m of allMatches(CALLS, text)) {
     const at = m.index!;
     if (!keywordForms.has(m[1]) || !funcallPosition(start + at)) continue;
-    if (gnista.getTextProperty(start + at + 1, "face") !== undefined) continue;
+    if (e8.getTextProperty(start + at + 1, "face") !== undefined) continue;
     put(at + 1, at + 1 + m[1].length, "font-lock-keyword-face");
   }
   for (const m of allMatches(FEATURES, text)) {
@@ -570,13 +570,13 @@ export function fontifyElisp(start: number, end: number): void {
   for (const m of allMatches(QUOTED, text)) {
     const from = start + m.index! + 1;
     const to = from + m[1].length;
-    const under = gnista.getTextProperty(from, "face");
-    gnista.putTextProperty(from, to, "face", under === undefined ? "font-lock-constant-face" : ["font-lock-constant-face", ...(Array.isArray(under) ? under : [under])]);
+    const under = e8.getTextProperty(from, "face");
+    e8.putTextProperty(from, to, "face", under === undefined ? "font-lock-constant-face" : ["font-lock-constant-face", ...(Array.isArray(under) ? under : [under])]);
   }
   for (const m of allMatches(KEYS, text)) put(m.index!, m.index! + m[0].length, m[0][0] === ":" ? "font-lock-builtin-face" : "font-lock-type-face");
 }
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "lisp-data-mode",
   modeName: "Lisp-Data",
   parent: "prog-mode",
@@ -586,8 +586,8 @@ gnista.defineMajorMode({
   setup: () => lispModeVariables(),
 });
 
-const alist = gnista.defaultValue("auto-mode-alist");
-gnista.setDefault("auto-mode-alist", [
+const alist = e8.defaultValue("auto-mode-alist");
+e8.setDefault("auto-mode-alist", [
   ...(Array.isArray(alist) ? alist : []),
   ["\\.eld\\'", "lisp-data-mode"],
   ["\\.dir-locals\\(?:-2\\)?\\.el\\'", "lisp-data-mode"],

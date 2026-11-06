@@ -4,7 +4,7 @@ Status: accepted · 2026-10-29
 
 ## Context
 
-The modes people turn on in their Emacs init file were missing: filling paragraphs (`M-q`, `auto-fill-mode`), seeing and typing matching parens (`show-paren-mode`, `electric-pair-mode`), line numbers, and coming back to the history and places of an earlier session (`savehist-mode`, `save-place-mode`). Each is Lisp in Emacs, but each leans on something Emacs does in C that Gnista lacked: markers, `subst-char-in-region`, `post-self-insert-hook` and auto-fill in self-insertion, syntax tables with their scanners, change groups, and line numbers drawn by redisplay.
+The modes people turn on in their Emacs init file were missing: filling paragraphs (`M-q`, `auto-fill-mode`), seeing and typing matching parens (`show-paren-mode`, `electric-pair-mode`), line numbers, and coming back to the history and places of an earlier session (`savehist-mode`, `save-place-mode`). Each is Lisp in Emacs, but each leans on something Emacs does in C that E8 lacked: markers, `subst-char-in-region`, `post-self-insert-hook` and auto-fill in self-insertion, syntax tables with their scanners, change groups, and line numbers drawn by redisplay.
 
 ## Options considered
 
@@ -44,7 +44,7 @@ Option 2.
   - A trailing escape leaves a sexp unbalanced.
   - Scan errors name their positions in Emacs's order.
 - **Testing:**
-  - Oracle cases can set buffer-local variables (`vars`), and record.el takes `GNISTA_ORACLE_ONLY`.
+  - Oracle cases can set buffer-local variables (`vars`), and record.el takes `E8_ORACLE_ONLY`.
   - 182 new cases cover filling, sexps and pairing.
   - Fuzzers for filling and for Electric Pair mode ran until their returns dropped: filling from 23 differences in 300 cases to 2, electric pair through 3,800 cases to none.
   - Show Paren mode, line numbers and the two session modes get headless tests, and line numbers a GUI snapshot.
@@ -66,7 +66,7 @@ Left out:
 - Filling of comments, which needs the comment syntax of the coding round.
 - Fill mode's handling of CJK text.
 
-Gnista keeps Show Paren mode's idle timer only while the mode is on, where Emacs keeps it always. The difference cannot be seen.
+E8 keeps Show Paren mode's idle timer only while the mode is on, where Emacs keeps it always. The difference cannot be seen.
 
 ## Dependencies introduced
 

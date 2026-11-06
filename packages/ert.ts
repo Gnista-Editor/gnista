@@ -1,7 +1,7 @@
 // ERT, after Emacs's ert.el: tests defined with ertDeftest and checked
 // with should, run from the command line with
 //
-//   gnista --batch -l test/foo-tests.ts -f ert-run-tests-batch-and-exit
+//   e8 --batch -l test/foo-tests.ts -f ert-run-tests-batch-and-exit
 //
 // or in the editor with M-x ert. A test file is a module, so it imports what
 // it tests and this package by name:
@@ -50,8 +50,8 @@ export interface ErtResult {
  */
 export type ErtSelector = true | string | [string] | { tag: string };
 
-gnista.defineError("ert-test-failed", "error");
-gnista.defineError("ert-test-skipped", "error");
+e8.defineError("ert-test-failed", "error");
+e8.defineError("ert-test-skipped", "error");
 
 const tests = new Map<string, ErtTest>();
 
@@ -107,7 +107,7 @@ function show(value: unknown): string {
 
 /** Fails the running test with a message, as ert-fail. */
 export function ertFail(message: string): never {
-  return gnista.signal("ert-test-failed", message);
+  return e8.signal("ert-test-failed", message);
 }
 
 /** Checks that a value, or what a function returns, is true, as should. */
@@ -154,7 +154,7 @@ export function shouldError(fn: () => unknown, options: { type?: string } = {}):
   try {
     fn();
   } catch (e) {
-    const conditions = gnista.errorConditions(e);
+    const conditions = e8.errorConditions(e);
     const symbol = (e as { symbol?: string })?.symbol ?? "error";
     const message = e instanceof Error ? e.message : String(e);
     if (options.type !== undefined && !conditions.includes(options.type)) {
@@ -168,12 +168,12 @@ export function shouldError(fn: () => unknown, options: { type?: string } = {}):
 
 /** Skips the running test unless a condition holds, as skip-unless. */
 export function skipUnless(condition: unknown, description?: string): void {
-  if (!condition) gnista.signal("ert-test-skipped", `(skip-unless ${description ?? show(condition)})`);
+  if (!condition) e8.signal("ert-test-skipped", `(skip-unless ${description ?? show(condition)})`);
 }
 
 /** Skips the running test if a condition holds, as skip-when. */
 export function skipWhen(condition: unknown, description?: string): void {
-  if (condition) gnista.signal("ert-test-skipped", `(skip-when ${description ?? show(condition)})`);
+  if (condition) e8.signal("ert-test-skipped", `(skip-when ${description ?? show(condition)})`);
 }
 
 /** The tests a selector selects, in the order they were defined, as ert-select-tests. */
@@ -182,7 +182,7 @@ export function ertSelectTests(selector: ErtSelector): ErtTest[] {
   if (selector === true || selector === "t") return all;
   if (Array.isArray(selector)) return all.filter((t) => t.name === selector[0]);
   if (typeof selector === "object") return all.filter((t) => t.tags.includes(selector.tag));
-  return all.filter((t) => gnista.stringMatch(selector, t.name) !== undefined);
+  return all.filter((t) => e8.stringMatch(selector, t.name) !== undefined);
 }
 
 /** Runs one test, as ert-run-test. */
@@ -196,7 +196,7 @@ export function ertRunTest(test: ErtTest): ErtResult {
     const symbol = (e as { symbol?: string })?.symbol ?? (e instanceof Error ? e.name : "error");
     const message = e instanceof Error ? e.message : String(e);
     condition = { symbol, message };
-    status = gnista.errorConditions(e).includes("ert-test-skipped") ? "skipped" : "failed";
+    status = e8.errorConditions(e).includes("ert-test-skipped") ? "skipped" : "failed";
   }
   const seconds = (Date.now() - start) / 1000;
   const expected = status === "skipped" || status === test.expectedResult;
@@ -271,18 +271,18 @@ function summary(stats: ErtStats): string[] {
  */
 export function ertRunTestsBatch(selector: ErtSelector = true): ErtStats {
   const selected = ertSelectTests(selector).length;
-  gnista.message(`Running ${selected} test${selected === 1 ? "" : "s"} (selector ${selectorText(selector)})`);
+  e8.message(`Running ${selected} test${selected === 1 ? "" : "s"} (selector ${selectorText(selector)})`);
   let i = 0;
   const stats = ertRunTests(selector, (event, test, result) => {
     if (event !== "test-ended" || result === undefined) return;
     i++;
     if (result.condition !== undefined && !result.expected) {
-      gnista.message(`Test ${test.name} condition:\n    (${result.condition.symbol} ${result.condition.message})`);
+      e8.message(`Test ${test.name} condition:\n    (${result.condition.symbol} ${result.condition.message})`);
     }
-    gnista.message(`   ${statusWord(result).padStart(7)}  ${i}/${selected}  ${test.name} (${result.seconds.toFixed(6)} sec)`);
+    e8.message(`   ${statusWord(result).padStart(7)}  ${i}/${selected}  ${test.name} (${result.seconds.toFixed(6)} sec)`);
   });
-  gnista.message("");
-  for (const line of summary(stats)) gnista.message(line);
+  e8.message("");
+  for (const line of summary(stats)) e8.message(line);
   return stats;
 }
 
@@ -292,13 +292,13 @@ export function ertRunTestsBatch(selector: ErtSelector = true): ErtStats {
  */
 export function ertRunTestsBatchAndExit(selector: ErtSelector = true): void {
   const stats = ertRunTestsBatch(selector);
-  gnista.killEmacs(stats.unexpected === 0 ? 0 : 1);
+  e8.killEmacs(stats.unexpected === 0 ? 0 : 1);
 }
 
-gnista.defun("ert-run-tests-batch", (selector?: ErtSelector) => ertRunTestsBatch(selector ?? true));
-gnista.defun("ert-run-tests-batch-and-exit", (selector?: ErtSelector) => ertRunTestsBatchAndExit(selector ?? true));
+e8.defun("ert-run-tests-batch", (selector?: ErtSelector) => ertRunTestsBatch(selector ?? true));
+e8.defun("ert-run-tests-batch-and-exit", (selector?: ErtSelector) => ertRunTestsBatchAndExit(selector ?? true));
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "ert",
   doc: 'Run the tests whose names match a regexp, "t" for all, and show the results in *ert*, as Emacs\'s ert.',
   params: [{ name: "selector", prompt: "Run tests (default t): ", history: "ert--selector-history" }],
@@ -311,15 +311,15 @@ gnista.defineCommand({
       if (r.condition !== undefined && !r.expected) lines.push(`    (${r.condition.symbol} ${r.condition.message})`);
     }
     lines.push("", ...summary(stats));
-    const buffer = gnista.getBufferCreate("*ert*");
-    gnista.withCurrentBuffer(buffer, () => {
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-        gnista.insert(lines.join("\n") + "\n");
-        gnista.gotoChar(gnista.pointMin());
+    const buffer = e8.getBufferCreate("*ert*");
+    e8.withCurrentBuffer(buffer, () => {
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        e8.deleteRegion(e8.pointMin(), e8.pointMax());
+        e8.insert(lines.join("\n") + "\n");
+        e8.gotoChar(e8.pointMin());
       });
     });
-    gnista.call("pop-to-buffer", "*ert*");
-    gnista.message(`Ran ${stats.results.length} tests, ${stats.unexpected} unexpected`);
+    e8.call("pop-to-buffer", "*ert*");
+    e8.message(`Ran ${stats.results.length} tests, ${stats.unexpected} unexpected`);
   },
 });

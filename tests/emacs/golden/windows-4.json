@@ -172,7 +172,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 24,
@@ -345,14 +345,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 13,
           "width": 80,
           "height": 12,
@@ -372,7 +372,7 @@
         "windows": true,
         "answers": [
           "b",
-          "*gnista-oracle*"
+          "*e8-oracle*"
         ]
       },
       "text": "one\ntwo",
@@ -385,14 +385,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 7,
           "width": 40,
           "height": 24,
@@ -496,7 +496,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,

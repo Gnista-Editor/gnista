@@ -19,18 +19,18 @@
 
 import { truthy } from "subr";
 
-gnista.defineFace({ name: "transient-heading", doc: "Face used for headings.", attributes: { inherit: "font-lock-keyword-face" } });
-gnista.defineFace({ name: "transient-key", doc: "Face used for keys.", attributes: { inherit: "font-lock-builtin-face" } });
-gnista.defineFace({ name: "transient-argument", doc: "Face used for enabled arguments.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
-gnista.defineFace({ name: "transient-inactive-argument", doc: "Face used for inactive arguments.", attributes: { inherit: "shadow" } });
-gnista.defineFace({ name: "transient-inapt-argument", doc: "Face used for enabled arguments of an inapt suffix.", attributes: { inherit: "shadow", weight: "bold" } });
-gnista.defineFace({ name: "transient-value", doc: "Face used for values.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
-gnista.defineFace({ name: "transient-inactive-value", doc: "Face used for inactive values.", attributes: { inherit: "shadow" } });
-gnista.defineFace({ name: "transient-unreachable", doc: "Face used for suffixes unreachable from the current prefix sequence.", attributes: { inherit: "shadow" } });
-gnista.defineFace({ name: "transient-inapt-suffix", doc: "Face used for suffixes that are inapt at this time.", attributes: { inherit: "shadow", slant: "italic" } });
-gnista.defineFace({ name: "transient-active-infix", doc: "Face used for the infix for which the value is being read.", attributes: { inherit: "highlight" } });
-gnista.defineFace({ name: "transient-delimiter", doc: "Face used for delimiters and separators.", attributes: { inherit: "shadow" } });
-gnista.defineFace({ name: "transient-unreachable-key", doc: "Face used for keys unreachable from the current prefix sequence.", attributes: { inherit: "shadow", weight: "normal" } });
+e8.defineFace({ name: "transient-heading", doc: "Face used for headings.", attributes: { inherit: "font-lock-keyword-face" } });
+e8.defineFace({ name: "transient-key", doc: "Face used for keys.", attributes: { inherit: "font-lock-builtin-face" } });
+e8.defineFace({ name: "transient-argument", doc: "Face used for enabled arguments.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
+e8.defineFace({ name: "transient-inactive-argument", doc: "Face used for inactive arguments.", attributes: { inherit: "shadow" } });
+e8.defineFace({ name: "transient-inapt-argument", doc: "Face used for enabled arguments of an inapt suffix.", attributes: { inherit: "shadow", weight: "bold" } });
+e8.defineFace({ name: "transient-value", doc: "Face used for values.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
+e8.defineFace({ name: "transient-inactive-value", doc: "Face used for inactive values.", attributes: { inherit: "shadow" } });
+e8.defineFace({ name: "transient-unreachable", doc: "Face used for suffixes unreachable from the current prefix sequence.", attributes: { inherit: "shadow" } });
+e8.defineFace({ name: "transient-inapt-suffix", doc: "Face used for suffixes that are inapt at this time.", attributes: { inherit: "shadow", slant: "italic" } });
+e8.defineFace({ name: "transient-active-infix", doc: "Face used for the infix for which the value is being read.", attributes: { inherit: "highlight" } });
+e8.defineFace({ name: "transient-delimiter", doc: "Face used for delimiters and separators.", attributes: { inherit: "shadow" } });
+e8.defineFace({ name: "transient-unreachable-key", doc: "Face used for keys unreachable from the current prefix sequence.", attributes: { inherit: "shadow", weight: "normal" } });
 const keyFaces: [string, string, string, string][] = [
   ["transient-key-stay", "Face used for keys of suffixes that don't exit the menu.", "#22aa22", "#ddffdd"],
   ["transient-key-noop", "Face used for keys of suffixes that currently cannot be invoked.", "grey80", "grey30"],
@@ -40,20 +40,20 @@ const keyFaces: [string, string, string, string][] = [
   ["transient-key-exit", "Face used for keys of suffixes that exit the menu.", "#aa2222", "#ffdddd"],
 ];
 for (const [name, doc, light, dark] of keyFaces) {
-  gnista.defineFace({ name, doc, attributes: { inherit: "transient-key" }, light: { foreground: light }, dark: { foreground: dark } });
+  e8.defineFace({ name, doc, attributes: { inherit: "transient-key" }, light: { foreground: light }, dark: { foreground: dark } });
 }
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "transient-semantic-coloring",
   doc: "Whether keys are coloured by what their suffixes do: stay in the menu, exit it, or go into another.",
   value: true,
 });
-gnista.defineVariable({ name: "transient-force-single-column", doc: "Whether to show the suffixes in one column, rather than side by side.", value: false });
-gnista.defineVariable({ name: "transient-current-command", doc: "The transient prefix command from which the running suffix was invoked.", value: null });
-gnista.defineVariable({ name: "transient-current-prefix", doc: "The name of the prefix whose menu is showing, or from which the running suffix was invoked.", value: null });
+e8.defineVariable({ name: "transient-force-single-column", doc: "Whether to show the suffixes in one column, rather than side by side.", value: false });
+e8.defineVariable({ name: "transient-current-command", doc: "The transient prefix command from which the running suffix was invoked.", value: null });
+e8.defineVariable({ name: "transient-current-prefix", doc: "The name of the prefix whose menu is showing, or from which the running suffix was invoked.", value: null });
 
 /** Text, its faces with it. */
-type Text = string | gnista.PropertizedString;
+type Text = string | e8.PropertizedString;
 /** A description: text, or a function giving it, called in the buffer the menu was invoked from. */
 export type Description = Text | (() => Text | undefined);
 type Command = string;
@@ -146,7 +146,7 @@ interface Active {
   prefix: string;
   layout: Layout[];
   suffixes: Suffix[];
-  buffer: gnista.Buffer;
+  buffer: e8.Buffer;
   window: number;
 }
 let active: Active | undefined;
@@ -157,32 +157,32 @@ let values = new Map<string, string | boolean | undefined>();
 
 const BUFFER = " *transient*";
 const MAP = "transient--map";
-gnista.defineKeymap(MAP);
+e8.defineKeymap(MAP);
 
 // Setting a menu up.
 
 function oneOf(mode: string | string[] | undefined): boolean {
   const modes = mode === undefined ? [] : Array.isArray(mode) ? mode : [mode];
-  return modes.includes(String(gnista.variable("major-mode")));
+  return modes.includes(String(e8.variable("major-mode")));
 }
 
 /** Whether a suffix or group shows, as transient--do-suffix-p. */
 function shows(o: SuffixOptions | Group): boolean {
   const s = o as SuffixOptions;
-  if (s.if) return truthy(s.if() as gnista.Value);
-  if (s.ifNot) return !truthy(s.ifNot() as gnista.Value);
-  if (s.ifNonNil) return truthy(gnista.variable(s.ifNonNil));
-  if (s.ifNil) return !truthy(gnista.variable(s.ifNil));
+  if (s.if) return truthy(s.if() as e8.Value);
+  if (s.ifNot) return !truthy(s.ifNot() as e8.Value);
+  if (s.ifNonNil) return truthy(e8.variable(s.ifNonNil));
+  if (s.ifNil) return !truthy(e8.variable(s.ifNil));
   if (s.ifMode !== undefined) return oneOf(s.ifMode);
   if (s.ifNotMode !== undefined) return !oneOf(s.ifNotMode);
-  if (s.ifDerived !== undefined) return gnista.derivedModeP(...[s.ifDerived].flat());
-  if (s.ifNotDerived !== undefined) return !gnista.derivedModeP(...[s.ifNotDerived].flat());
+  if (s.ifDerived !== undefined) return e8.derivedModeP(...[s.ifDerived].flat());
+  if (s.ifNotDerived !== undefined) return !e8.derivedModeP(...[s.ifNotDerived].flat());
   return true;
 }
 
 function inapt(o: SuffixOptions): boolean {
-  if (o.inaptIf) return truthy(o.inaptIf() as gnista.Value);
-  if (o.inaptIfNot) return !truthy(o.inaptIfNot() as gnista.Value);
+  if (o.inaptIf) return truthy(o.inaptIf() as e8.Value);
+  if (o.inaptIfNot) return !truthy(o.inaptIfNot() as e8.Value);
   return false;
 }
 
@@ -190,7 +190,7 @@ function inapt(o: SuffixOptions): boolean {
 function commandName(prefix: string, key: string, command: Command | DefinedFunction): string {
   if (typeof command === "string") return command;
   const name = `transient:${prefix}:${key.replace(/ /g, "")}`;
-  if (!gnista.fboundp(name)) gnista.defineCommand({ name, doc: "A suffix of a transient menu.", run: () => void command() });
+  if (!e8.fboundp(name)) e8.defineCommand({ name, doc: "A suffix of a transient menu.", run: () => void command() });
   return name;
 }
 
@@ -271,7 +271,7 @@ function initialValue(prefix: string): string[] {
   if (value === undefined) return [];
   if (typeof value === "function") return value();
   if (typeof value === "string") {
-    const v = gnista.variable(value);
+    const v = e8.variable(value);
     return Array.isArray(v) ? v.map(String) : [];
   }
   return value;
@@ -306,7 +306,7 @@ function formatKey(s: Suffix, pad: number | undefined): Text {
 }
 
 function keyFace(s: Suffix): string {
-  if (!truthy(gnista.variable("transient-semantic-coloring"))) return s.command ? "transient-key" : "transient-key-noop";
+  if (!truthy(e8.variable("transient-semantic-coloring"))) return s.command ? "transient-key" : "transient-key-noop";
   const kind = behaviour(s);
   return kind === "stay" || kind === "infix" ? "transient-key-stay" : kind === "stack" ? "transient-key-stack" : kind === "recurse" ? "transient-key-recurse" : "transient-key-exit";
 }
@@ -320,7 +320,7 @@ function behaviour(s: Suffix): "exit" | "stay" | "stack" | "recurse" | "infix" {
 }
 
 function describe(d: Description | undefined): Text | undefined {
-  if (typeof d === "function") return active ? gnista.withCurrentBuffer(active.buffer, d) : d();
+  if (typeof d === "function") return active ? e8.withCurrentBuffer(active.buffer, d) : d();
   return d;
 }
 
@@ -334,14 +334,14 @@ function formatValue(s: Suffix): Text {
     const [before, after] = format.split("%s");
     const choices = (s.options.choices ?? []).flatMap((c, i) => [...(i > 0 ? [face("|", "transient-delimiter")] : []), face(c, format.replace("%s", c) === value ? "transient-value" : "transient-inactive-value")]);
     const f = value ? "transient-argument" : "transient-inactive-argument";
-    return gnista.concat(face(before, f), face("[", "transient-delimiter"), ...choices, face("]", "transient-delimiter"), face(after ?? "", f));
+    return e8.concat(face(before, f), face("[", "transient-delimiter"), ...choices, face("]", "transient-delimiter"), face(after ?? "", f));
   }
   if (value === undefined) return face(s.argument!, "transient-inactive-argument");
-  return gnista.concat(face(s.argument!, s.inapt ? "transient-inapt-argument" : "transient-argument"), face(String(value), s.inapt ? "transient-inapt-argument" : "transient-value"));
+  return e8.concat(face(s.argument!, s.inapt ? "transient-inapt-argument" : "transient-argument"), face(String(value), s.inapt ? "transient-inapt-argument" : "transient-value"));
 }
 
 /** TEXT in face F; text that has faces of its own keeps them, as transient-format-description leaves a description's faces. */
-const face = (text: Text, f: string): Text => (typeof text === "string" ? gnista.propertize(text, { face: f }) : text);
+const face = (text: Text, f: string): Text => (typeof text === "string" ? e8.propertize(text, { face: f }) : text);
 const width = (text: Text): number => [...String(text)].length;
 
 /** A suffix as a line of the menu, as transient-format. */
@@ -352,7 +352,7 @@ function formatSuffix(s: Suffix, pad: number | undefined): Text {
   if (s.inapt) desc = face(desc, "transient-inapt-suffix");
   const key = s.kind === "information" ? (s.key || " ") : formatKey(s, pad);
   const parts = format.split(/(%[kdv%])/).map((p) => (p === "%k" ? key : p === "%d" ? desc! : p === "%v" ? formatValue(s) : p === "%%" ? "%" : p));
-  return gnista.concat(...parts);
+  return e8.concat(...parts);
 }
 
 /** How wide a group's keys are padded, as transient--maybe-pad-keys. */
@@ -372,26 +372,26 @@ function groupDescription(layout: Layout): Text | undefined {
 function insertGroup(layout: Layout, parent?: Layout): void {
   const desc = groupDescription(layout);
   if (desc !== undefined) {
-    gnista.insert(desc);
-    gnista.insert("\n");
+    e8.insert(desc);
+    e8.insert("\n");
   }
-  const kind = truthy(gnista.variable("transient-force-single-column")) && classOf(layout) === "columns" ? "single" : classOf(layout);
+  const kind = truthy(e8.variable("transient-force-single-column")) && classOf(layout) === "columns" ? "single" : classOf(layout);
   const suffixes = (l: Layout) => l.children.filter((c): c is Suffix | string => typeof c === "string" || !("group" in c));
   const cell = (c: Suffix | string, pad: number | undefined) => (typeof c === "string" ? face(c, "transient-heading") : formatSuffix(c, pad));
   if (kind === "row") {
     const pad = padOf(layout, parent);
     for (const s of suffixes(layout)) {
-      gnista.insert(cell(s, pad));
-      gnista.insert("   ");
+      e8.insert(cell(s, pad));
+      e8.insert("   ");
     }
-    gnista.insert("\n");
+    e8.insert("\n");
   } else if (kind === "column") {
     const pad = padOf(layout, parent);
     for (const s of suffixes(layout)) {
       const str = cell(s, pad);
       if (String(str) === "") continue;
-      gnista.insert(str);
-      if (!/.\n$/.test(String(str))) gnista.insert("\n");
+      e8.insert(str);
+      if (!/.\n$/.test(String(str))) e8.insert("\n");
     }
   } else if (kind === "single") {
     for (const c of layout.children) if (typeof c !== "string" && "group" in c) insertGroup(c, layout);
@@ -411,18 +411,18 @@ function insertGroup(layout: Layout, parent?: Layout): void {
       columns.forEach((column, i) => {
         const text = column[row];
         if (text === undefined) return;
-        const at = gnista.currentColumn();
-        if (stops[i] > 0) gnista.insert(" ".repeat(Math.max(0, stops[i] - at)));
-        gnista.insert(text);
+        const at = e8.currentColumn();
+        if (stops[i] > 0) e8.insert(" ".repeat(Math.max(0, stops[i] - at)));
+        e8.insert(text);
       });
-      gnista.insert("\n");
+      e8.insert("\n");
     }
   } else {
     // Subgroups: each in turn, a blank line between.
     const subs = layout.children.filter((c): c is Layout => typeof c !== "string" && "group" in c);
     subs.forEach((sub, i) => {
       insertGroup(sub, layout);
-      if (i < subs.length - 1) gnista.insert("\n");
+      if (i < subs.length - 1) e8.insert("\n");
     });
   }
 }
@@ -430,51 +430,51 @@ function insertGroup(layout: Layout, parent?: Layout): void {
 /** Shows the menu, in a window along the bottom of the frame, as transient--show. */
 function show(): void {
   if (!active) return;
-  gnista.getBufferCreate(BUFFER);
-  gnista.withCurrentBuffer(BUFFER, () => {
-    gnista.letBind({ "inhibit-read-only": true }, () => {
-      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-      const groups = active!.layout.filter((l) => !(l.group.hide && truthy(gnista.withCurrentBuffer(active!.buffer, l.group.hide) as gnista.Value)));
+  e8.getBufferCreate(BUFFER);
+  e8.withCurrentBuffer(BUFFER, () => {
+    e8.letBind({ "inhibit-read-only": true }, () => {
+      e8.deleteRegion(e8.pointMin(), e8.pointMax());
+      const groups = active!.layout.filter((l) => !(l.group.hide && truthy(e8.withCurrentBuffer(active!.buffer, l.group.hide) as e8.Value)));
       groups.forEach((layout, i) => {
         insertGroup(layout);
-        if (i < groups.length - 1) gnista.insert("\n");
+        if (i < groups.length - 1) e8.insert("\n");
       });
-      gnista.gotoChar(gnista.pointMin());
+      e8.gotoChar(e8.pointMin());
     });
     for (const [name, value] of [
       ["mode-line-format", null],
       ["truncate-lines", true],
       ["cursor-type", null],
     ] as const) {
-      gnista.makeLocalVariable(name);
-      gnista.setVariable(name, value);
+      e8.makeLocalVariable(name);
+      e8.setVariable(name, value);
     }
-    gnista.setBufferModified(false);
+    e8.setBufferModified(false);
   });
-  const lines = gnista.withCurrentBuffer(BUFFER, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()).replace(/\n$/, "").split("\n").length);
-  const live = active.window !== 0 && gnista.windowList().includes(active.window);
-  if (live && gnista.windowSize(active.window)?.totalHeight !== lines) {
-    gnista.deleteWindow(active.window);
+  const lines = e8.withCurrentBuffer(BUFFER, () => e8.bufferSubstringNoProperties(e8.pointMin(), e8.pointMax()).replace(/\n$/, "").split("\n").length);
+  const live = active.window !== 0 && e8.windowList().includes(active.window);
+  if (live && e8.windowSize(active.window)?.totalHeight !== lines) {
+    e8.deleteWindow(active.window);
     active.window = 0;
   }
   if (!live || active.window === 0) {
-    const selected = gnista.selectedWindow();
-    active.window = gnista.splitRootWindow("below", -Math.max(1, lines));
-    gnista.setWindowBuffer(active.window, BUFFER);
-    gnista.setWindowDedicatedP(active.window, true);
-    gnista.selectWindow(selected);
+    const selected = e8.selectedWindow();
+    active.window = e8.splitRootWindow("below", -Math.max(1, lines));
+    e8.setWindowBuffer(active.window, BUFFER);
+    e8.setWindowDedicatedP(active.window, true);
+    e8.selectWindow(selected);
   }
 }
 
 /** Takes the menu's window away, as transient--delete-window. */
 function hide(): void {
-  if (active && active.window !== 0 && gnista.windowList().includes(active.window)) gnista.deleteWindow(active.window);
-  if (gnista.bufferLiveP(gnista.getBuffer(BUFFER))) gnista.call("kill-buffer", BUFFER);
+  if (active && active.window !== 0 && e8.windowList().includes(active.window)) e8.deleteWindow(active.window);
+  if (e8.bufferLiveP(e8.getBuffer(BUFFER))) e8.call("kill-buffer", BUFFER);
   if (active) active.window = 0;
 }
 
 /**
- * KEY in Gnista's notation, as kbd reads transient's: a word that is no one
+ * KEY in E8's notation, as kbd reads transient's: a word that is no one
  * key, such as "-a", is its characters one after another.
  */
 function kbdKeys(key: string): string {
@@ -488,31 +488,31 @@ function kbdKeys(key: string): string {
 
 /** Binds the active suffixes' keys, as transient--make-transient-map, and takes over the keyboard. */
 function bindKeys(): void {
-  const map = gnista.makeSparseKeymap();
+  const map = e8.makeSparseKeymap();
   for (const s of active!.suffixes) {
     if (s.kind === "information" || !s.key) continue;
     const keys = kbdKeys(s.key);
-    if (gnista.lookupKey(map, keys) === undefined) gnista.defineKey(map, keys, dispatchCommand(s));
+    if (e8.lookupKey(map, keys) === undefined) e8.defineKey(map, keys, dispatchCommand(s));
   }
   for (const [key, command] of [
     ["C-g", quitOne],
     ["C-q", quitAll],
     ["ESC ESC ESC", quitAll],
   ] as const) {
-    if (gnista.lookupKey(map, key) === undefined) gnista.defineKey(map, key, command);
+    if (e8.lookupKey(map, key) === undefined) e8.defineKey(map, key, command);
   }
-  gnista.setKeymapParent(MAP, null);
-  gnista.setKeymapParent(MAP, map);
-  gnista.setKeymapDefault(MAP, prefixes.get(active!.prefix)?.transientNonSuffix ? null : undefinedKey);
-  gnista.setOverridingMap(MAP);
+  e8.setKeymapParent(MAP, null);
+  e8.setKeymapParent(MAP, map);
+  e8.setKeymapDefault(MAP, prefixes.get(active!.prefix)?.transientNonSuffix ? null : undefinedKey);
+  e8.setOverridingMap(MAP);
 }
 
 /** The command a suffix's key runs in the menu: one for each key, as transient's infix commands are one for each argument. */
-const dispatchers = new Map<string, gnista.DefinedCommand>();
-function dispatchCommand(s: Suffix): gnista.DefinedCommand {
+const dispatchers = new Map<string, e8.DefinedCommand>();
+function dispatchCommand(s: Suffix): e8.DefinedCommand {
   const name = `transient--dispatch:${s.key}`;
   if (!dispatchers.has(name)) {
-    dispatchers.set(name, gnista.defineCommand({
+    dispatchers.set(name, e8.defineCommand({
       name,
       doc: "Run the suffix of the menu showing that this key is.",
       run: () => {
@@ -543,7 +543,7 @@ function currentArgs(): string[] {
 let lastArgs: { prefix: string; args: string[] } | undefined;
 export function transientArgs(prefix: string | string[]): string[] {
   const names = Array.isArray(prefix) ? prefix : [prefix];
-  const current = gnista.variable("transient-current-command");
+  const current = e8.variable("transient-current-command");
   if (typeof current === "string" && names.includes(current) && lastArgs?.prefix === current) return lastArgs.args;
   return initialValue(names[0]);
 }
@@ -560,9 +560,9 @@ export function transientArgValue(arg: string, args: string[]): string | boolean
 function callSuffix(command: string): void {
   const prefix = active!.prefix;
   lastArgs = { prefix, args: currentArgs() };
-  gnista.setOverridingMap(null);
-  gnista.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => {
-    gnista.callInteractively(command as gnista.CommandName);
+  e8.setOverridingMap(null);
+  e8.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => {
+    e8.callInteractively(command as e8.CommandName);
   });
 }
 
@@ -581,7 +581,7 @@ function runSuffix(s: Suffix): void {
     stack.push({ prefix: active!.prefix, values, returnHere: kind === "recurse" });
     const buffer = active!.buffer;
     hide();
-    gnista.setOverridingMap(null);
+    e8.setOverridingMap(null);
     setup(s.command, buffer);
     return;
   }
@@ -603,11 +603,11 @@ function runSuffix(s: Suffix): void {
   exit(false);
   lastArgs = { prefix, args };
   try {
-    gnista.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => gnista.callInteractively(s.command as gnista.CommandName));
+    e8.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => e8.callInteractively(s.command as e8.CommandName));
   } finally {
     if (parent && !active) {
       values = parent.values;
-      setup(parent.prefix, gnista.currentBuffer(), true);
+      setup(parent.prefix, e8.currentBuffer(), true);
     } else if (!active) {
       stack.length = 0;
     }
@@ -617,10 +617,10 @@ function runSuffix(s: Suffix): void {
 /** Shows the menu again and binds its keys, its suffixes' predicates and descriptions worked out afresh. */
 function refresh(): void {
   if (!active) return;
-  const buffer = gnista.bufferLiveP(active.buffer) ? active.buffer : gnista.currentBuffer();
+  const buffer = e8.bufferLiveP(active.buffer) ? active.buffer : e8.currentBuffer();
   active.buffer = buffer;
   const defs = prefixes.get(active.prefix)!;
-  gnista.withCurrentBuffer(buffer, () => {
+  e8.withCurrentBuffer(buffer, () => {
     active!.layout = defs.groups.map((g) => makeLayout(active!.prefix, g)).filter((l): l is Layout => l !== undefined);
   });
   active.suffixes = flatten(active.layout);
@@ -648,35 +648,35 @@ function readInfix(s: Suffix): void {
     return;
   }
   const prompt = s.options.prompt ?? `${s.argument}`;
-  gnista.setOverridingMap(null);
+  e8.setOverridingMap(null);
   try {
     const value = s.options.reader
       ? s.options.reader(prompt, undefined)
       : s.options.choices
-        ? gnista.completingRead(prompt, s.options.choices, { requireMatch: true })
-        : gnista.readString(prompt);
+        ? e8.completingRead(prompt, s.options.choices, { requireMatch: true })
+        : e8.readString(prompt);
     values.set(s.command, value === "" ? undefined : value);
   } finally {
-    gnista.setOverridingMap(MAP);
+    e8.setOverridingMap(MAP);
   }
 }
 
 function invalid(message: string): void {
-  gnista.ding();
-  gnista.message(`${message}: \`${gnista.thisSingleCommandKeys()}' (Use \`C-g' to abort, \`?' for help)`);
+  e8.ding();
+  e8.message(`${message}: \`${e8.thisSingleCommandKeys()}' (Use \`C-g' to abort, \`?' for help)`);
 }
 
 /** Sets a prefix's menu up and shows it, as transient-setup. */
-function setup(prefix: string, buffer: gnista.Buffer, keepValues = false): void {
+function setup(prefix: string, buffer: e8.Buffer, keepValues = false): void {
   const defs = prefixes.get(prefix);
-  if (!defs) gnista.signal("error", `Not a transient prefix: ${prefix}`);
+  if (!defs) e8.signal("error", `Not a transient prefix: ${prefix}`);
   active = { prefix, layout: [], suffixes: [], buffer, window: 0 };
-  gnista.withCurrentBuffer(buffer, () => {
+  e8.withCurrentBuffer(buffer, () => {
     active!.layout = defs.groups.map((g) => makeLayout(prefix, g)).filter((l): l is Layout => l !== undefined);
   });
   active.suffixes = flatten(active.layout);
-  if (!keepValues) values = initValues(active.suffixes, gnista.withCurrentBuffer(buffer, () => initialValue(prefix)));
-  gnista.setVariable("transient-current-prefix", prefix);
+  if (!keepValues) values = initValues(active.suffixes, e8.withCurrentBuffer(buffer, () => initialValue(prefix)));
+  e8.setVariable("transient-current-prefix", prefix);
   show();
   bindKeys();
 }
@@ -684,19 +684,19 @@ function setup(prefix: string, buffer: gnista.Buffer, keepValues = false): void 
 /** Leaves the menu, and with ALL every menu it was entered from. */
 function exit(all: boolean): void {
   hide();
-  gnista.setOverridingMap(null);
+  e8.setOverridingMap(null);
   active = undefined;
   if (all) stack.length = 0;
-  gnista.setVariable("transient-current-prefix", null);
+  e8.setVariable("transient-current-prefix", null);
 }
 
-const quitOne = gnista.defineCommand({
+const quitOne = e8.defineCommand({
   name: "transient-quit-one",
   doc: "Exit the current transient, returning to the outer one, if any.",
   run: () => {
     // Also from a suffix that runs it once the menu has gone, as casual's Back does.
     const parent = stack.pop();
-    const buffer = active?.buffer ?? gnista.currentBuffer();
+    const buffer = active?.buffer ?? e8.currentBuffer();
     exit(false);
     if (parent) {
       values = parent.values;
@@ -705,13 +705,13 @@ const quitOne = gnista.defineCommand({
   },
 });
 
-const quitAll = gnista.defineCommand({
+const quitAll = e8.defineCommand({
   name: "transient-quit-all",
   doc: "Exit all transients without saving the transient stack.",
   run: () => exit(true),
 });
 
-const undefinedKey = gnista.defineCommand({
+const undefinedKey = e8.defineCommand({
   name: "transient-undefined",
   doc: "Warn the user that the pressed key is not bound to any suffix.",
   run: () => invalid("Unbound suffix"),
@@ -726,14 +726,14 @@ export function transientStackP(): boolean {
  * Defines a transient prefix command NAME, as transient-define-prefix: run,
  * it shows its groups below and takes the keys they show.
  */
-export function transientDefinePrefix(name: string, definition: PrefixDefinition): gnista.DefinedCommand {
+export function transientDefinePrefix(name: string, definition: PrefixDefinition): e8.DefinedCommand {
   prefixes.set(name, definition);
-  return gnista.defineCommand({
+  return e8.defineCommand({
     name,
     doc: definition.doc ?? "A transient menu.",
     run: () => {
       if (active) exit(true);
-      setup(name, gnista.currentBuffer());
+      setup(name, e8.currentBuffer());
     },
   });
 }
@@ -745,10 +745,10 @@ export function transientDefinePrefix(name: string, definition: PrefixDefinition
 export function transientDefineSuffix(
   name: string,
   definition: SuffixOptions & { key?: string; description?: Description; doc?: string; run: () => unknown },
-): gnista.DefinedCommand {
+): e8.DefinedCommand {
   definedSuffixes.set(name, definition);
-  return gnista.defineCommand({ name, doc: definition.doc ?? "A transient suffix.", run: () => void definition.run() });
+  return e8.defineCommand({ name, doc: definition.doc ?? "A transient suffix.", run: () => void definition.run() });
 }
 
 /** The suffix spec for transient-quit-one and transient-quit-all, for a layout to name. */
-transientDefineSuffix("transient-quit-one-suffix", { key: "C-g", description: "Quit", run: () => gnista.call(quitOne) });
+transientDefineSuffix("transient-quit-one-suffix", { key: "C-g", description: "Quit", run: () => e8.call(quitOne) });

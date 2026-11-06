@@ -1,5 +1,5 @@
-// The same workloads for QuickJS and V8: pieces of Gnista's org.ts, with
-// lineText(i) and lineCount() from the host, as Gnista's primitives are.
+// The same workloads for QuickJS and V8: pieces of E8's org.ts, with
+// lineText(i) and lineCount() from the host, as E8's primitives are.
 
 function charCount(s) {
   return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;

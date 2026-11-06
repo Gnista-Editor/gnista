@@ -9,11 +9,11 @@
 //
 // Commit messages are written in a COMMIT_EDITMSG buffer, C-c C-c to
 // commit and C-c C-k to give up, as git-commit.el's are; Magit has git run
-// Emacs as its editor for that, where Gnista writes the message to a file
+// Emacs as its editor for that, where E8 writes the message to a file
 // for git commit -F.
 //
 // Copyright (C) 2008-2025 The Magit Project Contributors
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -27,10 +27,10 @@ import { withEditorEnv, withEditorFilter } from "with-editor";
 
 // Faces.
 
-const faces: [string, string, gnista.FaceAttributes, gnista.FaceAttributes?, gnista.FaceAttributes?][] = [
+const faces: [string, string, e8.FaceAttributes, e8.FaceAttributes?, e8.FaceAttributes?][] = [
   ["magit-branch-local", "Face for local branches.", {}, { foreground: "SkyBlue4" }, { foreground: "LightSkyBlue1" }],
   ["magit-branch-remote", "Face for remote branch head labels.", {}, { foreground: "DarkOliveGreen4" }, { foreground: "DarkSeaGreen2" }],
-  ["magit-branch-current", "Face for the current branch.", { inherit: "magit-branch-local", box: true } as gnista.FaceAttributes],
+  ["magit-branch-current", "Face for the current branch.", { inherit: "magit-branch-local", box: true } as e8.FaceAttributes],
   ["magit-hash", "Face for the commit object name in the log output.", {}, { foreground: "grey60" }, { foreground: "grey40" }],
   ["magit-tag", "Face for tag labels shown in log buffer.", {}, { foreground: "Goldenrod4" }, { foreground: "LightGoldenrod2" }],
   ["magit-head", "Face for the symbolic ref HEAD.", { inherit: "magit-branch-local" }],
@@ -43,29 +43,29 @@ const faces: [string, string, gnista.FaceAttributes, gnista.FaceAttributes?, gni
   ["magit-diff-added", "Face for lines in a diff that have been added.", { extend: true }, { background: "#ddffdd", foreground: "#22aa22" }, { background: "#335533", foreground: "#ddffdd" }],
   ["magit-diff-removed", "Face for lines in a diff that have been removed.", { extend: true }, { background: "#ffdddd", foreground: "#aa2222" }, { background: "#553333", foreground: "#ffdddd" }],
   ["magit-diff-context", "Face for lines in a diff that are unchanged.", { extend: true }, { foreground: "grey50" }, { foreground: "grey70" }],
-  ["magit-process-ok", "Face for zero exit-status.", { inherit: "magit-section-heading", foreground: "green" } as gnista.FaceAttributes],
-  ["magit-process-ng", "Face for non-zero exit-status.", { inherit: "magit-section-heading", foreground: "red" } as gnista.FaceAttributes],
+  ["magit-process-ok", "Face for zero exit-status.", { inherit: "magit-section-heading", foreground: "green" } as e8.FaceAttributes],
+  ["magit-process-ng", "Face for non-zero exit-status.", { inherit: "magit-section-heading", foreground: "red" } as e8.FaceAttributes],
 ];
-for (const [name, doc, attributes, light, dark] of faces) gnista.defineFace({ name, doc, attributes, light, dark });
+for (const [name, doc, attributes, light, dark] of faces) e8.defineFace({ name, doc, attributes, light, dark });
 
-gnista.defineVariable({ name: "magit-git-executable", doc: "The Git executable used by Magit.", value: "git" });
-gnista.defineVariable({ name: "magit-log-section-commit-count", doc: "How many recent commits the status buffer shows.", value: 10 });
-gnista.defineVariable({ name: "magit-save-repository-buffers", doc: "Whether to save the repository's modified file buffers before running git, as Magit asks.", value: true });
+e8.defineVariable({ name: "magit-git-executable", doc: "The Git executable used by Magit.", value: "git" });
+e8.defineVariable({ name: "magit-log-section-commit-count", doc: "How many recent commits the status buffer shows.", value: 10 });
+e8.defineVariable({ name: "magit-save-repository-buffers", doc: "Whether to save the repository's modified file buffers before running git, as Magit asks.", value: true });
 
 // Running git.
 
 /** The repository's top directory, with a slash, for DIR or the current buffer's directory, as magit-toplevel. */
-export function toplevel(dir = String(gnista.variable("default-directory") ?? ".")): string | undefined {
-  const r = gnista.callProcess([git(), "rev-parse", "--show-toplevel"], { directory: gnista.expandFileName(dir) });
-  return r.exit === 0 ? gnista.fileNameAsDirectory(r.output.trim()) : undefined;
+export function toplevel(dir = String(e8.variable("default-directory") ?? ".")): string | undefined {
+  const r = e8.callProcess([git(), "rev-parse", "--show-toplevel"], { directory: e8.expandFileName(dir) });
+  return r.exit === 0 ? e8.fileNameAsDirectory(r.output.trim()) : undefined;
 }
 
-const git = (): string => String(gnista.variable("magit-git-executable") ?? "git");
+const git = (): string => String(e8.variable("magit-git-executable") ?? "git");
 
 /** The repository the current buffer belongs to, as Magit's buffers keep it in default-directory. */
 function repo(): string {
   const top = toplevel();
-  if (!top) gnista.userError(`Not inside a Git repository: ${gnista.abbreviateFileName(String(gnista.variable("default-directory")))}`);
+  if (!top) e8.userError(`Not inside a Git repository: ${e8.abbreviateFileName(String(e8.variable("default-directory")))}`);
   return top!;
 }
 
@@ -74,7 +74,7 @@ const processLog: { args: string[]; exit: number; output: string; dir: string }[
 
 /** Runs git with ARGS in the repository and gives its output, as magit-git-string and magit-git-lines. */
 export function gitOutput(args: string[], input?: string, dir = repo()): { exit: number; output: string } {
-  return gnista.callProcess([git(), "--no-pager", "--literal-pathspecs", "-c", "core.preloadindex=true", "-c", "log.showSignature=false", "-c", "color.ui=false", "-c", "color.diff=false", ...args], { directory: dir, input });
+  return e8.callProcess([git(), "--no-pager", "--literal-pathspecs", "-c", "core.preloadindex=true", "-c", "log.showSignature=false", "-c", "color.ui=false", "-c", "color.diff=false", ...args], { directory: dir, input });
 }
 
 const gitString = (args: string[]): string | undefined => {
@@ -95,7 +95,7 @@ export function runGit(args: string[], input?: string): boolean {
   refreshAll();
   if (r.exit !== 0) {
     const line = r.output.split("\n").find((l) => l.trim() !== "") ?? `git exited with code ${r.exit}`;
-    gnista.message(`${line.replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process: ${gnista.fileNameNondirectory(dir.replace(/\/$/, ""))} for details]`);
+    e8.message(`${line.replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process: ${e8.fileNameNondirectory(dir.replace(/\/$/, ""))} for details]`);
     return false;
   }
   return true;
@@ -107,47 +107,47 @@ export function runGitAsync(args: string[], what: string, editor = false, env: {
   const dir = repo();
   const entry = { args, exit: -1, output: "", dir };
   processLog.push(entry);
-  gnista.message(`Running git ${args.join(" ")}`);
+  e8.message(`Running git ${args.join(" ")}`);
   const collect = (_p: string, output: string) => {
     entry.output += output;
   };
-  gnista.makeProcess({
+  e8.makeProcess({
     name: "magit-git",
     command: [git(), "--no-pager", "-c", "color.ui=false", ...args],
     directory: dir,
-    // With an editor, git asks Gnista to edit its messages and lists, as magit-run-git-with-editor.
+    // With an editor, git asks E8 to edit its messages and lists, as magit-run-git-with-editor.
     env: { GIT_TERMINAL_PROMPT: "0", ...(editor ? withEditorEnv() : {}), ...env },
     connectionType: "pipe",
     filter: editor ? withEditorFilter(collect) : collect,
     sentinel: (_p, event) => {
       entry.exit = event.startsWith("finished") ? 0 : Number(/code (\d+)/.exec(event)?.[1] ?? 1);
-      gnista.withCurrentBuffer(gnista.currentBuffer(), () => refreshAll(dir));
-      if (entry.exit === 0) gnista.message(`${what}...done`);
-      else gnista.message(`${(entry.output.split("\n").find((l) => l.trim()) ?? what).replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process for details]`);
+      e8.withCurrentBuffer(e8.currentBuffer(), () => refreshAll(dir));
+      if (entry.exit === 0) e8.message(`${what}...done`);
+      else e8.message(`${(entry.output.split("\n").find((l) => l.trim()) ?? what).replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process for details]`);
     },
   });
 }
 
 /** Saves the repository's modified file buffers first, as magit-save-repository-buffers. */
 function saveRepositoryBuffers(): void {
-  if (!truthy(gnista.variable("magit-save-repository-buffers"))) return;
+  if (!truthy(e8.variable("magit-save-repository-buffers"))) return;
   const top = toplevel();
   if (!top) return;
-  for (const b of gnista.bufferList()) {
-    gnista.withCurrentBuffer(b, () => {
-      const f = gnista.bufferFileName();
-      if (f && gnista.bufferModified() && gnista.expandFileName(f).startsWith(top)) gnista.call("save-buffer");
+  for (const b of e8.bufferList()) {
+    e8.withCurrentBuffer(b, () => {
+      const f = e8.bufferFileName();
+      if (f && e8.bufferModified() && e8.expandFileName(f).startsWith(top)) e8.call("save-buffer");
     });
   }
 }
 
 // Inserting the status buffer.
 
-const face = (text: string, f: string): gnista.PropertizedString => gnista.propertize(text, { face: f });
+const face = (text: string, f: string): e8.PropertizedString => e8.propertize(text, { face: f });
 
 /** A ref as Magit shows it in a log line, from %D's decorations, as magit-format-ref-labels. */
-function refLabels(decorations: string): gnista.PropertizedString | string {
-  const parts: gnista.PropertizedString[] = [];
+function refLabels(decorations: string): e8.PropertizedString | string {
+  const parts: e8.PropertizedString[] = [];
   for (const d of decorations.split(", ").filter((x) => x !== "")) {
     if (d.startsWith("HEAD -> ")) parts.push(face(d.slice(8), "magit-branch-current"));
     else if (d === "HEAD") parts.push(face("@", "magit-head"));
@@ -156,7 +156,7 @@ function refLabels(decorations: string): gnista.PropertizedString | string {
     else if (d.includes("/")) parts.push(face(d, "magit-branch-remote"));
     else parts.push(face(d, "magit-branch-local"));
   }
-  return parts.length === 0 ? "" : gnista.concat(...parts.flatMap((p, i) => (i === 0 ? [p] : [" ", p])), " ");
+  return parts.length === 0 ? "" : e8.concat(...parts.flatMap((p, i) => (i === 0 ? [p] : [" ", p])), " ");
 }
 
 /** Inserts commits as a section's lines, hash, refs and subject, as magit-insert-log does in the status buffer. */
@@ -182,23 +182,23 @@ function insertHeaders(): void {
   const subject = gitString(["log", "-1", "--format=%s"]);
   const label = (s: string) => s.padEnd(10);
   const headLabel = branch ? face(branch, "magit-branch-local") : face(gitString(["rev-parse", "--short", "HEAD"]) ?? "", "magit-hash");
-  gnista.insert(gnista.concat(label("Head:"), headLabel, subject !== undefined ? ` ${subject}` : " nothing committed (yet)", "\n"));
+  e8.insert(e8.concat(label("Head:"), headLabel, subject !== undefined ? ` ${subject}` : " nothing committed (yet)", "\n"));
   const upstream = upstreamOf(branch);
   if (upstream) {
     const usubject = gitString(["log", "-1", "--format=%s", upstream]);
     const kind = gitString(["config", `branch.${branch}.rebase`]) === "true" ? "Rebase:" : "Merge:";
-    gnista.insert(gnista.concat(label(kind), face(upstream, "magit-branch-remote"), usubject !== undefined ? ` ${usubject}` : "", "\n"));
+    e8.insert(e8.concat(label(kind), face(upstream, "magit-branch-remote"), usubject !== undefined ? ` ${usubject}` : "", "\n"));
   }
   const pushRemote = branch ? (gitString(["config", `branch.${branch}.pushRemote`]) ?? gitString(["config", "remote.pushDefault"])) : undefined;
   if (pushRemote && branch && `${pushRemote}/${branch}` !== upstream) {
     const target = `${pushRemote}/${branch}`;
     const psubject = gitString(["log", "-1", "--format=%s", target]);
-    gnista.insert(gnista.concat(label("Push:"), face(target, "magit-branch-remote"), psubject !== undefined ? ` ${psubject}` : "", "\n"));
+    e8.insert(e8.concat(label("Push:"), face(target, "magit-branch-remote"), psubject !== undefined ? ` ${psubject}` : "", "\n"));
   }
   const tag = gitString(["describe", "--tags", "--abbrev=0"]);
   if (tag) {
     const count = gitString(["rev-list", "--count", `${tag}..HEAD`]);
-    gnista.insert(gnista.concat(label("Tag:"), face(tag, "magit-tag"), count && count !== "0" ? ` (${count})` : "", "\n"));
+    e8.insert(e8.concat(label("Tag:"), face(tag, "magit-tag"), count && count !== "0" ? ` (${count})` : "", "\n"));
   }
 }
 
@@ -258,7 +258,7 @@ function insertFiles(diffs: FileDiff[], kind: "unstaged" | "staged" | "commit"):
           insertHeading(face(h.heading, "magit-diff-hunk-heading"), "\n");
           for (const l of h.lines) {
             const f = l.startsWith("+") ? "magit-diff-added" : l.startsWith("-") ? "magit-diff-removed" : "magit-diff-context";
-            gnista.insert(face(`${l}\n`, f));
+            e8.insert(face(`${l}\n`, f));
           }
         });
       }
@@ -273,14 +273,14 @@ const hasCommits = (): boolean => gitOutput(["rev-parse", "--verify", "-q", "HEA
 function insertStatus(): void {
   insertRoot("status", () => {
     insertHeaders();
-    gnista.insert("\n");
+    e8.insert("\n");
     const untracked = gitLines(["ls-files", "--others", "--exclude-standard", "--directory", "--no-empty-directory"]);
     // Each section ends with the blank line after it, which hides with it, as Magit inserts it.
     if (untracked.length > 0) {
       insertSection("untracked", undefined, true, () => {
         insertHeading(face("Untracked files", "magit-section-heading"), ` (${untracked.length})`, "\n");
         for (const f of untracked) insertSection("file", { file: f, kind: "untracked" }, false, () => insertHeading(face(f, "magit-filename"), "\n"));
-        gnista.insert("\n");
+        e8.insert("\n");
       });
     }
     const unstaged = parseDiff(gitOutput(["diff", "--no-ext-diff", "--no-prefix", "-p"]).output);
@@ -288,7 +288,7 @@ function insertStatus(): void {
       insertSection("unstaged", undefined, false, () => {
         insertHeading(face("Unstaged changes", "magit-section-heading"), ` (${unstaged.length})`, "\n");
         insertFiles(unstaged, "unstaged");
-        gnista.insert("\n");
+        e8.insert("\n");
       });
     }
     const staged = parseDiff(gitOutput(["diff", "--cached", "--no-ext-diff", "--no-prefix", "-p"]).output);
@@ -296,7 +296,7 @@ function insertStatus(): void {
       insertSection("staged", undefined, false, () => {
         insertHeading(face("Staged changes", "magit-section-heading"), ` (${staged.length})`, "\n");
         insertFiles(staged, "staged");
-        gnista.insert("\n");
+        e8.insert("\n");
       });
     }
     const stashes = gitLines(["stash", "list", "--format=%gd%x00%gs"]);
@@ -307,7 +307,7 @@ function insertStatus(): void {
           const [ref, subject] = s.split("\0");
           insertSection("stash", ref, false, () => insertHeading(face(ref, "magit-hash"), ` ${subject}`, "\n"));
         }
-        gnista.insert("\n");
+        e8.insert("\n");
       });
     }
     const branch = currentBranch();
@@ -317,13 +317,13 @@ function insertStatus(): void {
         const n = gitLines(["rev-list", `${upstream}..HEAD`]).length;
         insertHeading(face("Unmerged into ", "magit-section-heading"), face(upstream, "magit-branch-remote"), ` (${n})`, "\n");
         insertCommits([`${upstream}..HEAD`]);
-        gnista.insert("\n");
+        e8.insert("\n");
       });
     } else if (!upstream && hasCommits()) {
       insertSection("recent", undefined, true, () => {
         insertHeading(face("Recent commits", "magit-section-heading"), "\n");
-        insertCommits([`-${Number(gnista.variable("magit-log-section-commit-count") ?? 10)}`]);
-        gnista.insert("\n");
+        insertCommits([`-${Number(e8.variable("magit-log-section-commit-count") ?? 10)}`]);
+        e8.insert("\n");
       });
     }
     if (upstream && gitLines(["rev-list", `HEAD..${upstream}`]).length > 0) {
@@ -331,7 +331,7 @@ function insertStatus(): void {
         const n = gitLines(["rev-list", `HEAD..${upstream}`]).length;
         insertHeading(face("Unpulled from ", "magit-section-heading"), face(upstream, "magit-branch-remote"), ` (${n})`, "\n");
         insertCommits([`HEAD..${upstream}`]);
-        gnista.insert("\n");
+        e8.insert("\n");
       });
     }
   });
@@ -343,35 +343,35 @@ function insertStatus(): void {
 const buffers = new PerBuffer<{ kind: string; refresh: () => void }>();
 
 /** Makes or shows a Magit buffer for the repository, as magit-setup-buffer: NAME, its mode, and what refreshes it. */
-function setupBuffer(name: string, mode: gnista.DefinedCommand, kind: string, refresh: () => void, select = true): string {
+function setupBuffer(name: string, mode: e8.DefinedCommand, kind: string, refresh: () => void, select = true): string {
   const dir = repo();
-  const existed = gnista.bufferLiveP(gnista.getBuffer(name));
-  gnista.getBufferCreate(name);
-  gnista.withCurrentBuffer(name, () => {
+  const existed = e8.bufferLiveP(e8.getBuffer(name));
+  e8.getBufferCreate(name);
+  e8.withCurrentBuffer(name, () => {
     if (!existed) {
-      gnista.call(mode);
-      gnista.makeLocalVariable("default-directory");
-      gnista.setVariable("default-directory", dir);
+      e8.call(mode);
+      e8.makeLocalVariable("default-directory");
+      e8.setVariable("default-directory", dir);
     }
-    buffers.set(gnista.currentBuffer(), { kind, refresh });
+    buffers.set(e8.currentBuffer(), { kind, refresh });
     refreshBuffer();
   });
-  if (select) gnista.call("switch-to-buffer", name);
+  if (select) e8.call("switch-to-buffer", name);
   return name;
 }
 
 /** Makes the current Magit buffer again, keeping point on the same section, as magit-refresh-buffer. */
 function refreshBuffer(): void {
-  const entry = buffers.get(gnista.currentBuffer());
+  const entry = buffers.get(e8.currentBuffer());
   if (!entry) return;
   const at = currentSection();
-  const line = gnista.lineOf(gnista.point());
+  const line = e8.lineOf(e8.point());
   const id = at ? sectionPath(at) : undefined;
-  gnista.letBind({ "inhibit-read-only": true }, () => entry.refresh());
+  e8.letBind({ "inhibit-read-only": true }, () => entry.refresh());
   const again = id ? (sections()?.all ?? []).find((s) => sectionPath(s) === id) : undefined;
-  if (again) gnista.gotoChar(again.start);
-  else gnista.gotoChar(gnista.lineStart(Math.min(line, gnista.lineCount() - 1)));
-  gnista.setBufferModified(false);
+  if (again) e8.gotoChar(again.start);
+  else e8.gotoChar(e8.lineStart(Math.min(line, e8.lineCount() - 1)));
+  e8.setBufferModified(false);
 }
 
 const sectionPath = (s: Section): string => {
@@ -385,59 +385,59 @@ const sectionPath = (s: Section): string => {
 
 /** Refreshes every Magit buffer of the repository, as magit-refresh does after a command. */
 function refreshAll(dir = toplevel()): void {
-  for (const b of gnista.bufferList()) {
-    const buf = gnista.getBuffer(b);
+  for (const b of e8.bufferList()) {
+    const buf = e8.getBuffer(b);
     if (!buf || !buffers.get(buf)) continue;
-    gnista.withCurrentBuffer(b, () => {
+    e8.withCurrentBuffer(b, () => {
       if (toplevel() === dir) refreshBuffer();
     });
   }
 }
 
-const repoName = (dir: string): string => gnista.fileNameNondirectory(dir.replace(/\/$/, ""));
+const repoName = (dir: string): string => e8.fileNameNondirectory(dir.replace(/\/$/, ""));
 
 // Modes.
 
 const modeBindings: { [keys: string]: string } = {};
 
-export const magitMode = gnista.defineMajorMode({
+export const magitMode = e8.defineMajorMode({
   name: "magit-mode",
   modeName: "Magit",
   parent: magitSectionMode,
   doc: "Parent major mode of Magit's buffers.",
 });
 
-export const magitStatusMode = gnista.defineMajorMode({ name: "magit-status-mode", modeName: "Magit", parent: magitMode, doc: "Mode for looking at Git status: the files changed, staged and untracked, and the commits." });
-export const magitLogMode = gnista.defineMajorMode({ name: "magit-log-mode", modeName: "Magit Log", parent: magitMode, doc: "Mode for looking at Git log." });
-export const magitRevisionMode = gnista.defineMajorMode({ name: "magit-revision-mode", modeName: "Magit Rev", parent: magitMode, doc: "Mode for looking at a Git commit." });
-export const magitDiffMode = gnista.defineMajorMode({ name: "magit-diff-mode", modeName: "Magit Diff", parent: magitMode, doc: "Mode for looking at a Git diff." });
-export const magitProcessMode = gnista.defineMajorMode({ name: "magit-process-mode", modeName: "Magit Process", parent: magitMode, doc: "Mode for looking at Git process output." });
+export const magitStatusMode = e8.defineMajorMode({ name: "magit-status-mode", modeName: "Magit", parent: magitMode, doc: "Mode for looking at Git status: the files changed, staged and untracked, and the commits." });
+export const magitLogMode = e8.defineMajorMode({ name: "magit-log-mode", modeName: "Magit Log", parent: magitMode, doc: "Mode for looking at Git log." });
+export const magitRevisionMode = e8.defineMajorMode({ name: "magit-revision-mode", modeName: "Magit Rev", parent: magitMode, doc: "Mode for looking at a Git commit." });
+export const magitDiffMode = e8.defineMajorMode({ name: "magit-diff-mode", modeName: "Magit Diff", parent: magitMode, doc: "Mode for looking at a Git diff." });
+export const magitProcessMode = e8.defineMajorMode({ name: "magit-process-mode", modeName: "Magit Process", parent: magitMode, doc: "Mode for looking at Git process output." });
 void modeBindings;
 
 /** Shows the status of the repository, as magit-status. */
-export const magitStatus = gnista.defineCommand({
+export const magitStatus = e8.defineCommand({
   name: "magit-status",
   doc: "Show the status of the current Git repository in a buffer: the branch, the changes and the commits not pushed.",
   run: () => {
     const dir = toplevel();
     if (!dir) {
-      const answer = gnista.readFileName("Initialize Git repository: ", { dir: String(gnista.variable("default-directory")) });
-      if (!gnista.yOrNP(`Create repository in ${answer}? `)) gnista.userError("Abort");
-      gnista.callProcess([git(), "init", gnista.expandFileName(answer)]);
-      gnista.letBind({ "default-directory": gnista.fileNameAsDirectory(gnista.expandFileName(answer)) }, () => gnista.call(magitStatus));
+      const answer = e8.readFileName("Initialize Git repository: ", { dir: String(e8.variable("default-directory")) });
+      if (!e8.yOrNP(`Create repository in ${answer}? `)) e8.userError("Abort");
+      e8.callProcess([git(), "init", e8.expandFileName(answer)]);
+      e8.letBind({ "default-directory": e8.fileNameAsDirectory(e8.expandFileName(answer)) }, () => e8.call(magitStatus));
       return;
     }
-    gnista.letBind({ "default-directory": dir }, () => {
+    e8.letBind({ "default-directory": dir }, () => {
       setupBuffer(`magit: ${repoName(dir)}`, magitStatusMode, "status", insertStatus);
     });
     // Point starts on the first section after the headers, as Magit puts it.
     const first = sections()?.root.children[0];
-    if (first) gnista.gotoChar(first.start);
+    if (first) e8.gotoChar(first.start);
   },
 });
 
-const refreshCommand = gnista.defineCommand({ name: "magit-refresh", doc: "Refresh the current buffer.", run: () => refreshBuffer() });
-const refreshAllCommand = gnista.defineCommand({ name: "magit-refresh-all", doc: "Refresh all buffers belonging to the current repository.", run: () => refreshAll() });
+const refreshCommand = e8.defineCommand({ name: "magit-refresh", doc: "Refresh the current buffer.", run: () => refreshBuffer() });
+const refreshAllCommand = e8.defineCommand({ name: "magit-refresh-all", doc: "Refresh all buffers belonging to the current repository.", run: () => refreshAll() });
 
 // Applying: staging, unstaging and discarding.
 
@@ -489,47 +489,47 @@ function regionPatch(v: FileValue, from: number, to: number, reverse: boolean): 
 
 /** The lines of the hunk at point the active region covers, as indices of its lines, or undefined without a region in a hunk. */
 function regionLines(s: Section): [number, number] | undefined {
-  const mark = gnista.mark();
-  if (s.type !== "hunk" || !gnista.regionActive() || mark === undefined) return undefined;
-  const [a, b] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
-  const first = gnista.lineOf(s.content);
-  const from = Math.max(0, gnista.lineOf(a) - first);
+  const mark = e8.mark();
+  if (s.type !== "hunk" || !e8.regionActive() || mark === undefined) return undefined;
+  const [a, b] = [Math.min(mark, e8.point()), Math.max(mark, e8.point())];
+  const first = e8.lineOf(s.content);
+  const from = Math.max(0, e8.lineOf(a) - first);
   // A region ending at the start of a line leaves that line out.
-  const end = b > a && b === gnista.lineBeginningPosition(b) ? b - 1 : b;
-  const to = gnista.lineOf(end) - first;
+  const end = b > a && b === e8.lineBeginningPosition(b) ? b - 1 : b;
+  const to = e8.lineOf(end) - first;
   return to >= 0 ? [from, to] : undefined;
 }
 
-export const magitStage = gnista.defineCommand({
+export const magitStage = e8.defineCommand({
   name: "magit-stage",
   doc: "Add the change at point to the staging area: an untracked or changed file, or a hunk.",
   run: () => {
     const t = targets();
-    if (!t || t.values.length === 0) gnista.userError("Nothing to stage");
+    if (!t || t.values.length === 0) e8.userError("Nothing to stage");
     const lines = regionLines(t.section);
     for (const v of t.values) {
-      if (v.kind === "staged") gnista.userError("Already staged");
+      if (v.kind === "staged") e8.userError("Already staged");
       if (v.hunk && lines) {
         runGit(["apply", "--cached", "-p0", "--recount", "-"], regionPatch(v, lines[0], lines[1], false));
-        gnista.deactivateMark();
+        e8.deactivateMark();
       } else if (v.hunk) runGit(["apply", "--cached", "-p0", "--ignore-space-change", "-"], hunkPatch(v));
       else runGit(["add", "--", v.file]);
     }
   },
 });
 
-export const magitUnstage = gnista.defineCommand({
+export const magitUnstage = e8.defineCommand({
   name: "magit-unstage",
   doc: "Remove the change at point from the staging area: a staged file or hunk.",
   run: () => {
     const t = targets();
-    if (!t || t.values.length === 0) gnista.userError("Nothing to unstage");
+    if (!t || t.values.length === 0) e8.userError("Nothing to unstage");
     const lines = regionLines(t.section);
     for (const v of t.values) {
-      if (v.kind !== "staged") gnista.userError("Already unstaged");
+      if (v.kind !== "staged") e8.userError("Already unstaged");
       if (v.hunk && lines) {
         runGit(["apply", "--cached", "--reverse", "-p0", "--recount", "-"], regionPatch(v, lines[0], lines[1], true));
-        gnista.deactivateMark();
+        e8.deactivateMark();
       } else if (v.hunk) runGit(["apply", "--cached", "--reverse", "-p0", "-"], hunkPatch(v));
       else if (hasCommits()) runGit(["reset", "-q", "--", v.file]);
       else runGit(["rm", "--cached", "-q", "--", v.file]);
@@ -537,32 +537,32 @@ export const magitUnstage = gnista.defineCommand({
   },
 });
 
-const stageModified = gnista.defineCommand({
+const stageModified = e8.defineCommand({
   name: "magit-stage-modified",
   doc: "Stage all changes to files tracked in the repository; with a prefix argument, untracked files too.",
   params: [{ name: "all", kind: "prefix" }],
-  run: (all: gnista.Value) => void runGit(["add", truthy(all) ? "--all" : "-u", "."]),
+  run: (all: e8.Value) => void runGit(["add", truthy(all) ? "--all" : "-u", "."]),
 });
 
-const unstageAll = gnista.defineCommand({
+const unstageAll = e8.defineCommand({
   name: "magit-unstage-all",
   doc: "Remove all changes from the staging area.",
   run: () => void runGit(hasCommits() ? ["reset", "-q", "HEAD", "--"] : ["rm", "--cached", "-r", "-q", "."]),
 });
 
-export const magitDiscard = gnista.defineCommand({
+export const magitDiscard = e8.defineCommand({
   name: "magit-discard",
   doc: "Remove the change at point from the working tree, or the index for a staged one: an untracked file is deleted.",
   run: () => {
     const t = targets();
-    if (!t || t.values.length === 0) gnista.userError("Nothing to discard");
+    if (!t || t.values.length === 0) e8.userError("Nothing to discard");
     const what = t.values.length === 1 ? (t.values[0].hunk ? "hunk" : t.values[0].file) : `${t.values.length} files`;
     const kind = t.values[0].kind;
     const verb = kind === "untracked" ? "Delete" : "Discard";
-    if (!gnista.yOrNP(`${verb} ${what}? `)) gnista.userError("Abort");
+    if (!e8.yOrNP(`${verb} ${what}? `)) e8.userError("Abort");
     for (const v of t.values) {
       if (v.kind === "untracked") {
-        gnista.deleteFile(gnista.expandFileName(v.file, repo()));
+        e8.deleteFile(e8.expandFileName(v.file, repo()));
         refreshAll();
       } else if (v.hunk) {
         runGit(v.kind === "staged" ? ["apply", "--cached", "--reverse", "-p0", "-"] : ["apply", "--reverse", "-p0", "-"], hunkPatch(v));
@@ -577,12 +577,12 @@ export const magitDiscard = gnista.defineCommand({
 });
 
 /** Visits the file at point, at the line of the hunk line point is on, as magit-diff-visit-file. */
-export const magitVisitThing = gnista.defineCommand({
+export const magitVisitThing = e8.defineCommand({
   name: "magit-visit-thing",
   doc: "Visit the thing at point: a file at the line point is on in its diff, a commit, a stash.",
   run: () => {
     const s = currentSection();
-    if (!s) gnista.userError("There is no thing at point that could be visited");
+    if (!s) e8.userError("There is no thing at point that could be visited");
     if (s.type === "commit") {
       showCommit(String(s.value));
       return;
@@ -592,27 +592,27 @@ export const magitVisitThing = gnista.defineCommand({
       return;
     }
     const v = s.value as FileValue | undefined;
-    if (!v?.file) gnista.userError("There is no thing at point that could be visited");
+    if (!v?.file) e8.userError("There is no thing at point that could be visited");
     let line = 1;
     if (v.hunk) {
       const m = /^@@ -\d+(?:,\d+)? \+(\d+)/.exec(v.hunk.heading);
       line = Number(m?.[1] ?? 1);
-      const here = gnista.lineOf(gnista.point());
-      const first = gnista.lineOf(s.content);
+      const here = e8.lineOf(e8.point());
+      const first = e8.lineOf(s.content);
       for (let i = 0; i < here - first && i < v.hunk.lines.length; i++) if (!v.hunk.lines[i].startsWith("-")) line++;
     }
     const dir = repo();
-    gnista.call("find-file", gnista.expandFileName(v.file, dir));
-    gnista.gotoChar(gnista.lineStart(Math.max(0, Math.min(line - 1, gnista.lineCount() - 1))));
+    e8.call("find-file", e8.expandFileName(v.file, dir));
+    e8.gotoChar(e8.lineStart(Math.max(0, Math.min(line - 1, e8.lineCount() - 1))));
   },
 });
 
 // Committing, after magit-commit.el and git-commit.el.
 
-gnista.defineVariable({ name: "git-commit-summary-max-length", doc: "Column beyond which characters in the summary line are highlighted.", value: 68 });
-gnista.defineFace({ name: "git-commit-summary", doc: "Face used for the summary in commit messages.", attributes: { inherit: "font-lock-type-face" } });
-gnista.defineFace({ name: "git-commit-comment-heading", doc: "Face used for headings in commit message comments.", attributes: { inherit: "git-commit-keyword" } });
-gnista.defineFace({ name: "git-commit-keyword", doc: "Face used for keywords in commit messages.", attributes: { inherit: "font-lock-string-face" } });
+e8.defineVariable({ name: "git-commit-summary-max-length", doc: "Column beyond which characters in the summary line are highlighted.", value: 68 });
+e8.defineFace({ name: "git-commit-summary", doc: "Face used for the summary in commit messages.", attributes: { inherit: "font-lock-type-face" } });
+e8.defineFace({ name: "git-commit-comment-heading", doc: "Face used for headings in commit message comments.", attributes: { inherit: "git-commit-keyword" } });
+e8.defineFace({ name: "git-commit-keyword", doc: "Face used for keywords in commit messages.", attributes: { inherit: "font-lock-string-face" } });
 
 /** The diff a commit makes, shown beside its message, as magit-commit-diff; the buffer, to take away when done. */
 let commitDiff: string | undefined;
@@ -627,90 +627,90 @@ function editCommit(args: string[], amend = false): void {
 
 /** Shows what the commit makes beside its message, as magit-commit-diff does when COMMIT_EDITMSG is visited. */
 function showCommitDiff(): void {
-  if (!/\/COMMIT_EDITMSG$/.test(gnista.bufferFileName() ?? "")) return;
-  const window = gnista.selectedWindow();
+  if (!/\/COMMIT_EDITMSG$/.test(e8.bufferFileName() ?? "")) return;
+  const window = e8.selectedWindow();
   const staged = amending ? gitOutput(["diff", "--no-prefix", "-p", "HEAD^", "--cached"]) : gitOutput(["diff", "--cached", "--no-prefix", "-p"]);
   if (!staged.output.trim()) return;
   commitDiff = setupBuffer(`magit-diff: ${repoName(repo())}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(staged.output), "commit")), false);
-  gnista.call("display-buffer", commitDiff);
-  gnista.selectWindow(window);
+  e8.call("display-buffer", commitDiff);
+  e8.selectWindow(window);
 }
 
 /** Takes the commit's diff away once the message is done with. */
 function hideCommitDiff(): void {
-  if (!commitDiff || !gnista.bufferLiveP(gnista.getBuffer(commitDiff))) return;
-  const w = gnista.windowList().find((x) => gnista.windowBuffer(x) === commitDiff);
-  if (w !== undefined && gnista.windowList().length > 1) gnista.deleteWindow(w);
-  gnista.call("kill-buffer", commitDiff);
+  if (!commitDiff || !e8.bufferLiveP(e8.getBuffer(commitDiff))) return;
+  const w = e8.windowList().find((x) => e8.windowBuffer(x) === commitDiff);
+  if (w !== undefined && e8.windowList().length > 1) e8.deleteWindow(w);
+  e8.call("kill-buffer", commitDiff);
   commitDiff = undefined;
 }
 
-gnista.addHook("with-editor-filter-visit-hook", showCommitDiff);
-gnista.addHook("with-editor-post-finish-hook", hideCommitDiff);
-gnista.addHook("with-editor-post-cancel-hook", hideCommitDiff);
-gnista.setDefault("with-editor-file-modes", [
-  ...((gnista.variable("with-editor-file-modes") as string[][] | null) ?? []),
+e8.addHook("with-editor-filter-visit-hook", showCommitDiff);
+e8.addHook("with-editor-post-finish-hook", hideCommitDiff);
+e8.addHook("with-editor-post-cancel-hook", hideCommitDiff);
+e8.setDefault("with-editor-file-modes", [
+  ...((e8.variable("with-editor-file-modes") as string[][] | null) ?? []),
   ["/\\(?:COMMIT\\|MERGE\\|TAG\\)_EDITMSG\\'", "git-commit-mode"],
   ["/git-rebase-todo\\'", "git-rebase-mode"],
 ]);
 
 /** Highlights the summary line and comments, as git-commit-mode's font-lock keywords. */
 function fontifyCommit(start: number, end: number): void {
-  gnista.withSilentModifications(() => {
-    for (let line = gnista.lineOf(start); line <= gnista.lineOf(Math.max(start, end - 1)); line++) {
-      const ls = gnista.lineStart(line);
-      const le = gnista.lineEnd(line);
-      const text = gnista.lineText(line);
-      if (text.startsWith("#")) gnista.putTextProperty(ls, le, "face", "font-lock-comment-face");
+  e8.withSilentModifications(() => {
+    for (let line = e8.lineOf(start); line <= e8.lineOf(Math.max(start, end - 1)); line++) {
+      const ls = e8.lineStart(line);
+      const le = e8.lineEnd(line);
+      const text = e8.lineText(line);
+      if (text.startsWith("#")) e8.putTextProperty(ls, le, "face", "font-lock-comment-face");
       else if (line === 0) {
-        const max = Number(gnista.variable("git-commit-summary-max-length") ?? 68);
-        gnista.putTextProperty(ls, Math.min(le, ls + max), "face", "git-commit-summary");
-        if (le > ls + max) gnista.putTextProperty(ls + max, le, "face", "font-lock-warning-face");
+        const max = Number(e8.variable("git-commit-summary-max-length") ?? 68);
+        e8.putTextProperty(ls, Math.min(le, ls + max), "face", "git-commit-summary");
+        if (le > ls + max) e8.putTextProperty(ls + max, le, "face", "font-lock-warning-face");
       }
     }
   });
 }
 
-export const gitCommitMode = gnista.defineMajorMode({
+export const gitCommitMode = e8.defineMajorMode({
   name: "git-commit-mode",
   modeName: "Git-Commit",
   parent: "text-mode",
   doc: "Major mode for editing git commit messages: C-c C-c commits, C-c C-k cancels.",
   setup: () => {
-    gnista.makeLocalVariable("fill-column");
-    gnista.setVariable("fill-column", 72);
-    gnista.addHook("jit-lock-functions", fontifyCommit, { local: true });
+    e8.makeLocalVariable("fill-column");
+    e8.setVariable("fill-column", 72);
+    e8.addHook("jit-lock-functions", fontifyCommit, { local: true });
   },
 });
 
 const commitArgs = (): string[] => transientArgs("magit-commit");
 
-const commitCreate = gnista.defineCommand({
+const commitCreate = e8.defineCommand({
   name: "magit-commit-create",
   doc: "Create a new commit on HEAD, writing its message in a buffer.",
   run: () => {
     const args = commitArgs();
     if (!args.includes("--all") && !args.includes("--allow-empty") && gitOutput(["diff", "--cached", "--quiet"]).exit === 0) {
-      if (gitOutput(["diff", "--quiet"]).exit !== 0 && gnista.yOrNP("Nothing staged.  Commit all uncommitted changes? ")) args.push("--all");
-      else gnista.userError("Nothing staged");
+      if (gitOutput(["diff", "--quiet"]).exit !== 0 && e8.yOrNP("Nothing staged.  Commit all uncommitted changes? ")) args.push("--all");
+      else e8.userError("Nothing staged");
     }
     editCommit(args);
   },
 });
 
-const commitAmend = gnista.defineCommand({
+const commitAmend = e8.defineCommand({
   name: "magit-commit-amend",
   doc: "Amend the last commit, with the staged changes and an edited message.",
   run: () => editCommit(["--amend", ...commitArgs()], true),
 });
 
-const commitExtend = gnista.defineCommand({
+const commitExtend = e8.defineCommand({
   name: "magit-commit-extend",
   doc: "Amend the last commit with the staged changes, keeping its message.",
   run: () => void runGit(["commit", "--amend", "--no-edit", ...commitArgs()]),
 });
 
-const commitReword = gnista.defineCommand({
+const commitReword = e8.defineCommand({
   name: "magit-commit-reword",
   doc: "Reword the last commit, ignoring the staged changes.",
   run: () => editCommit(["--amend", "--only", ...commitArgs()], true),
@@ -724,13 +724,13 @@ const remoteBranches = (): string[] => gitLines(["for-each-ref", "--format=%(ref
 
 /** Reads a branch or commit, as magit-read-branch-or-commit. */
 function readBranch(prompt: string, choices = [...localBranches(), ...remoteBranches()], def?: string): string {
-  const answer = gnista.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, choices, { default: def, history: "magit-revision-history" });
-  if (answer === "") gnista.userError("Nothing selected");
+  const answer = e8.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, choices, { default: def, history: "magit-revision-history" });
+  if (answer === "") e8.userError("Nothing selected");
   return answer;
 }
-gnista.defineVariable({ name: "magit-revision-history", doc: "Branches and commits Magit read.", value: [] });
+e8.defineVariable({ name: "magit-revision-history", doc: "Branches and commits Magit read.", value: [] });
 
-const branchCheckout = gnista.defineCommand({
+const branchCheckout = e8.defineCommand({
   name: "magit-checkout",
   doc: "Check out a branch or commit.",
   run: () => {
@@ -741,44 +741,44 @@ const branchCheckout = gnista.defineCommand({
   },
 });
 
-const branchCreateCheckout = gnista.defineCommand({
+const branchCreateCheckout = e8.defineCommand({
   name: "magit-branch-and-checkout",
   doc: "Create a branch starting at a commit and check it out.",
   run: () => {
     const start = readBranch("Create and checkout branch starting at", [...localBranches(), ...remoteBranches()], currentBranch());
-    const name = gnista.readString("Name for new branch: ");
-    if (name === "") gnista.userError("No name given");
+    const name = e8.readString("Name for new branch: ");
+    if (name === "") e8.userError("No name given");
     runGit(["checkout", "-b", name, start]);
   },
 });
 
-const branchCreate = gnista.defineCommand({
+const branchCreate = e8.defineCommand({
   name: "magit-branch-create",
   doc: "Create a branch starting at a commit, without checking it out.",
   run: () => {
     const start = readBranch("Create branch starting at", [...localBranches(), ...remoteBranches()], currentBranch());
-    const name = gnista.readString("Name for new branch: ");
-    if (name === "") gnista.userError("No name given");
+    const name = e8.readString("Name for new branch: ");
+    if (name === "") e8.userError("No name given");
     runGit(["branch", name, start]);
   },
 });
 
-const branchDelete = gnista.defineCommand({
+const branchDelete = e8.defineCommand({
   name: "magit-branch-delete",
   doc: "Delete a branch; one not merged is deleted only if confirmed.",
   run: () => {
     const name = readBranch("Delete branch", localBranches().filter((b) => b !== currentBranch()));
-    if (!runGit(["branch", "-d", name]) && gnista.yOrNP(`Delete unmerged branch ${name}? `)) runGit(["branch", "-D", name]);
+    if (!runGit(["branch", "-d", name]) && e8.yOrNP(`Delete unmerged branch ${name}? `)) runGit(["branch", "-D", name]);
   },
 });
 
-const branchRename = gnista.defineCommand({
+const branchRename = e8.defineCommand({
   name: "magit-branch-rename",
   doc: "Rename a branch.",
   run: () => {
     const old = readBranch("Rename branch", localBranches(), currentBranch());
-    const name = gnista.readString(`Rename branch '${old}' to: `);
-    if (name === "") gnista.userError("No name given");
+    const name = e8.readString(`Rename branch '${old}' to: `);
+    if (name === "") e8.userError("No name given");
     runGit(["branch", "-m", old, name]);
   },
 });
@@ -791,7 +791,7 @@ const remotes = (): string[] => gitLines(["remote"]);
 /** The upstream of the current branch, asking for one to set if there is none, as magit-push-current-to-upstream does. */
 function ensureUpstream(verb: string): [string, string, boolean] {
   const branch = currentBranch();
-  if (!branch) gnista.userError("No branch is checked out");
+  if (!branch) e8.userError("No branch is checked out");
   const upstream = upstreamOf(branch);
   if (upstream) {
     const [remote, ...rest] = upstream.split("/");
@@ -804,7 +804,7 @@ function ensureUpstream(verb: string): [string, string, boolean] {
 
 const pushArgs = (): string[] => transientArgs("magit-push");
 
-const pushUpstream = gnista.defineCommand({
+const pushUpstream = e8.defineCommand({
   name: "magit-push-current-to-upstream",
   doc: "Push the current branch to its upstream, setting one first if there is none.",
   run: () => {
@@ -814,20 +814,20 @@ const pushUpstream = gnista.defineCommand({
   },
 });
 
-const pushPushRemote = gnista.defineCommand({
+const pushPushRemote = e8.defineCommand({
   name: "magit-push-current-to-pushremote",
   doc: "Push the current branch to its push remote, by default the upstream's remote.",
   run: () => {
     const branch = currentBranch();
-    if (!branch) gnista.userError("No branch is checked out");
+    if (!branch) e8.userError("No branch is checked out");
     const remote = gitString(["config", `branch.${branch}.pushRemote`]) ?? gitString(["config", "remote.pushDefault"]) ?? upstreamOf(branch)?.split("/")[0] ?? remotes()[0];
-    if (!remote) gnista.userError("No remote to push to");
+    if (!remote) e8.userError("No remote to push to");
     runGitAsync(["push", "-v", ...pushArgs(), remote, `${branch}:refs/heads/${branch}`], `Pushing to ${remote}/${branch}`);
   },
 });
 
 
-const pullUpstream = gnista.defineCommand({
+const pullUpstream = e8.defineCommand({
   name: "magit-pull-from-upstream",
   doc: "Pull from the upstream of the current branch, setting one first if there is none.",
   run: () => {
@@ -838,13 +838,13 @@ const pullUpstream = gnista.defineCommand({
 });
 
 
-const fetchAll = gnista.defineCommand({ name: "magit-fetch-all", doc: "Fetch from all remotes.", run: () => runGitAsync(["fetch", "--all", ...transientArgs("magit-fetch")], "Fetching all remotes") });
-const fetchUpstream = gnista.defineCommand({
+const fetchAll = e8.defineCommand({ name: "magit-fetch-all", doc: "Fetch from all remotes.", run: () => runGitAsync(["fetch", "--all", ...transientArgs("magit-fetch")], "Fetching all remotes") });
+const fetchUpstream = e8.defineCommand({
   name: "magit-fetch-from-upstream",
   doc: "Fetch from the remote of the current branch's upstream.",
   run: () => {
     const remote = upstreamOf(currentBranch())?.split("/")[0] ?? remotes()[0];
-    if (!remote) gnista.userError("No remote to fetch from");
+    if (!remote) e8.userError("No remote to fetch from");
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
   },
 });
@@ -852,14 +852,14 @@ const fetchUpstream = gnista.defineCommand({
 
 // Merging, resetting and stashing.
 
-const mergeCommand = gnista.defineCommand({
+const mergeCommand = e8.defineCommand({
   name: "magit-merge-plain",
   doc: "Merge a branch into the current one.",
   run: () => void runGit(["merge", ...transientArgs("magit-merge"), readBranch("Merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()])]),
 });
 
 const resetCommand = (mode: string, doc: string) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name: `magit-reset-${mode}`,
     doc,
     run: () => {
@@ -874,26 +874,26 @@ function stashAt(prompt: string): string {
   const s = currentSection();
   if (s?.type === "stash") return String(s.value);
   const list = gitLines(["stash", "list", "--format=%gd"]);
-  if (list.length === 0) gnista.userError("No stashes");
-  return gnista.completingRead(`${prompt} (default ${list[0]}): `, list, { default: list[0], requireMatch: true });
+  if (list.length === 0) e8.userError("No stashes");
+  return e8.completingRead(`${prompt} (default ${list[0]}): `, list, { default: list[0], requireMatch: true });
 }
 
-const stashBoth = gnista.defineCommand({
+const stashBoth = e8.defineCommand({
   name: "magit-stash-both",
   doc: "Stash the changes in the index and the working tree, with a message.",
   run: () => {
-    const msg = gnista.readString(`Stash message (default: On ${currentBranch() ?? "HEAD"}: ...): `);
+    const msg = e8.readString(`Stash message (default: On ${currentBranch() ?? "HEAD"}: ...): `);
     runGit(["stash", "push", ...transientArgs("magit-stash"), ...(msg ? ["-m", msg] : [])]);
   },
 });
-const stashApply = gnista.defineCommand({ name: "magit-stash-apply", doc: "Apply a stash to the working tree.", run: () => void runGit(["stash", "apply", stashAt("Apply stash")]) });
-const stashPop = gnista.defineCommand({ name: "magit-stash-pop", doc: "Apply a stash and remove it.", run: () => void runGit(["stash", "pop", stashAt("Pop stash")]) });
-const stashDrop = gnista.defineCommand({
+const stashApply = e8.defineCommand({ name: "magit-stash-apply", doc: "Apply a stash to the working tree.", run: () => void runGit(["stash", "apply", stashAt("Apply stash")]) });
+const stashPop = e8.defineCommand({ name: "magit-stash-pop", doc: "Apply a stash and remove it.", run: () => void runGit(["stash", "pop", stashAt("Pop stash")]) });
+const stashDrop = e8.defineCommand({
   name: "magit-stash-drop",
   doc: "Remove a stash.",
   run: () => {
     const s = stashAt("Drop stash");
-    if (gnista.yOrNP(`Drop ${s}? `)) runGit(["stash", "drop", s]);
+    if (e8.yOrNP(`Drop ${s}? `)) runGit(["stash", "drop", s]);
   },
 });
 
@@ -912,29 +912,29 @@ function insertLog(args: string[]): void {
   });
 }
 
-const logCurrent = gnista.defineCommand({
+const logCurrent = e8.defineCommand({
   name: "magit-log-current",
   doc: "Show the log of the current branch.",
   run: () => {
     const dir = repo();
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, "HEAD"]));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
 
-const logAll = gnista.defineCommand({
+const logAll = e8.defineCommand({
   name: "magit-log-all",
   doc: "Show the log of all references and HEAD.",
   run: () => {
     const dir = repo();
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, "--all"]));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
 
-const logOther = gnista.defineCommand({
+const logOther = e8.defineCommand({
   name: "magit-log-other",
   doc: "Show the log of a branch or commit read.",
   run: () => {
@@ -942,7 +942,7 @@ const logOther = gnista.defineCommand({
     const rev = readBranch("Log rev,s", [...localBranches(), ...remoteBranches()], currentBranch());
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, rev]));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
 
@@ -957,15 +957,15 @@ export function showCommit(rev: string): void {
       const [hash, ...rest] = meta.split("\n");
       insertSection("headers", hash, false, () => {
         insertHeading(face(hash, "magit-hash"), "\n");
-        gnista.insert(`${rest.join("\n").replace(/\n+$/, "")}\n\n`);
+        e8.insert(`${rest.join("\n").replace(/\n+$/, "")}\n\n`);
       });
       insertFiles(parseDiff(diff), "commit");
     });
   });
-  gnista.gotoChar(0);
+  e8.gotoChar(0);
 }
 
-const diffDwim = gnista.defineCommand({
+const diffDwim = e8.defineCommand({
   name: "magit-diff-dwim",
   doc: "Show the changes in the working tree, unstaged and staged, or those of the commit at point.",
   run: () => {
@@ -979,31 +979,31 @@ const diffDwim = gnista.defineCommand({
     setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () =>
       insertRoot("diff", () => insertFiles(parseDiff(gitOutput(staged ? ["diff", "--cached", "--no-prefix", "-p"] : ["diff", "--no-prefix", "-p"]).output), "commit")),
     );
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
-const diffStaged = gnista.defineCommand({
+const diffStaged = e8.defineCommand({
   name: "magit-diff-staged",
   doc: "Show the changes between the index and HEAD.",
   run: () => {
     const dir = repo();
     setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(gitOutput(["diff", "--cached", "--no-prefix", "-p"]).output), "commit")));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
-const diffUnstaged = gnista.defineCommand({
+const diffUnstaged = e8.defineCommand({
   name: "magit-diff-unstaged",
   doc: "Show the changes between the working tree and the index.",
   run: () => {
     const dir = repo();
     setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(gitOutput(["diff", "--no-prefix", "-p"]).output), "commit")));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
 
 // The process buffer.
 
-const processBuffer = gnista.defineCommand({
+const processBuffer = e8.defineCommand({
   name: "magit-process-buffer",
   doc: "Show the git commands Magit ran and their output.",
   run: () => {
@@ -1013,7 +1013,7 @@ const processBuffer = gnista.defineCommand({
         for (const p of processLog.filter((x) => x.dir === dir)) {
           insertSection("process", p.args.join(" "), true, () => {
             insertHeading(face(`${p.exit < 0 ? "run" : String(p.exit).padStart(3)} `, p.exit === 0 ? "magit-process-ok" : "magit-process-ng"), face(`git ${p.args.join(" ")}`, "magit-section-heading"), "\n");
-            if (p.output) gnista.insert(p.output.endsWith("\n") ? p.output : `${p.output}\n`);
+            if (p.output) e8.insert(p.output.endsWith("\n") ? p.output : `${p.output}\n`);
           });
         }
       }),
@@ -1021,7 +1021,7 @@ const processBuffer = gnista.defineCommand({
     const last = sections()?.root.children.at(-1);
     if (last) {
       show(last);
-      gnista.gotoChar(last.start);
+      e8.gotoChar(last.start);
     }
   },
 });
@@ -1033,7 +1033,7 @@ const processBuffer = gnista.defineCommand({
 
 /** A command that runs git with the arguments ARGS gives, as Magit's many small commands do. */
 const gitCommand = (name: string, doc: string, args: () => string[] | undefined) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     run: () => {
@@ -1042,23 +1042,23 @@ const gitCommand = (name: string, doc: string, args: () => string[] | undefined)
     },
   });
 
-/** A command Gnista's Magit does not have yet, which says so. */
+/** A command E8's Magit does not have yet, which says so. */
 const notYet = (name: string, what: string) =>
-  gnista.defineCommand({ name, doc: `${what}: not in Gnista's Magit yet.`, run: () => gnista.userError(`${what} is not in Gnista's Magit yet`) });
+  e8.defineCommand({ name, doc: `${what}: not in E8's Magit yet.`, run: () => e8.userError(`${what} is not in E8's Magit yet`) });
 
 /** The commit at point, or one read from the log, as magit-read-branch-or-commit. */
 function readCommit(prompt: string): string {
   const s = currentSection();
   const def = s?.type === "commit" ? String(s.value) : undefined;
   const log = gitLines(["log", "--format=%h %s", "-n100"]);
-  const answer = gnista.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, log, { default: def, history: "magit-revision-history" });
-  if (answer === "") gnista.userError("Nothing selected");
+  const answer = e8.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, log, { default: def, history: "magit-revision-history" });
+  if (answer === "") e8.userError("Nothing selected");
   return answer.split(" ")[0];
 }
 
 /** A commit fixing up or squashing into a commit read, then rebasing them together if INSTANT, as magit-commit-fixup and its kin. */
 function fixupCommand(name: string, doc: string, option: (rev: string) => string, edit: boolean, instant = false) {
-  return gnista.defineCommand({
+  return e8.defineCommand({
     name,
     doc,
     run: () => {
@@ -1119,17 +1119,17 @@ const pushRemoteOf = (branch?: string): string | undefined =>
 /** Reads a remote, setting it as the branch's push remote, as magit-push-current-to-pushremote with no push remote does. */
 function ensurePushRemote(): string {
   const branch = currentBranch();
-  if (!branch) gnista.userError("No branch is checked out");
+  if (!branch) e8.userError("No branch is checked out");
   const remote = pushRemoteOf(branch);
   if (remote) return remote;
   const all = remotes();
-  if (all.length === 0) gnista.userError("No remote to push to");
-  const chosen = gnista.completingRead(`Set push-remote of ${branch} and push there: `, all, { requireMatch: true, default: all[0] });
+  if (all.length === 0) e8.userError("No remote to push to");
+  const chosen = e8.completingRead(`Set push-remote of ${branch} and push there: `, all, { requireMatch: true, default: all[0] });
   gitOutput(["config", `branch.${branch}.pushRemote`, chosen]);
   return chosen;
 }
 
-const pushPushRemoteSetting = gnista.defineCommand({
+const pushPushRemoteSetting = e8.defineCommand({
   name: "magit-push-current-to-pushremote",
   doc: "Push the current branch to its push remote, setting one first if there is none.",
   run: () => {
@@ -1139,7 +1139,7 @@ const pushPushRemoteSetting = gnista.defineCommand({
   },
 });
 
-const pushElsewhere = gnista.defineCommand({
+const pushElsewhere = e8.defineCommand({
   name: "magit-push-current",
   doc: "Push the current branch to a branch read.",
   run: () => {
@@ -1150,7 +1150,7 @@ const pushElsewhere = gnista.defineCommand({
   },
 });
 
-const pushOther = gnista.defineCommand({
+const pushOther = e8.defineCommand({
   name: "magit-push-other",
   doc: "Push a branch or commit to a remote branch, both read.",
   run: () => {
@@ -1161,48 +1161,48 @@ const pushOther = gnista.defineCommand({
   },
 });
 
-const pushRefspecs = gnista.defineCommand({
+const pushRefspecs = e8.defineCommand({
   name: "magit-push-refspecs",
   doc: "Push refspecs read to a remote read.",
   run: () => {
-    const remote = gnista.completingRead("Push to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
-    const specs = gnista.readString(`Push refspec,s to ${remote}: `);
+    const remote = e8.completingRead("Push to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const specs = e8.readString(`Push refspec,s to ${remote}: `);
     runGitAsync(["push", "-v", ...pushArgs(), remote, ...specs.split(/[ ,]+/).filter(Boolean)], `Pushing to ${remote}`);
   },
 });
 
-const pushMatching = gnista.defineCommand({
+const pushMatching = e8.defineCommand({
   name: "magit-push-matching",
   doc: "Push all branches that have a branch of the same name on a remote.",
   run: () => {
-    const remote = gnista.completingRead("Push matching branches to: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const remote = e8.completingRead("Push matching branches to: ", remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["push", "-v", ...pushArgs(), remote, ":"], `Pushing to ${remote}`);
   },
 });
 
-const pushTag = gnista.defineCommand({
+const pushTag = e8.defineCommand({
   name: "magit-push-tag",
   doc: "Push a tag to a remote.",
   run: () => {
-    const tag = gnista.completingRead("Push tag: ", gitLines(["tag"]), { requireMatch: true });
-    const remote = gnista.completingRead(`Push ${tag} to remote: `, remotes(), { requireMatch: true, default: remotes()[0] });
+    const tag = e8.completingRead("Push tag: ", gitLines(["tag"]), { requireMatch: true });
+    const remote = e8.completingRead(`Push ${tag} to remote: `, remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["push", ...pushArgs(), remote, tag], `Pushing ${tag}`);
   },
 });
 
-const pushTags = gnista.defineCommand({
+const pushTags = e8.defineCommand({
   name: "magit-push-tags",
   doc: "Push all tags to a remote.",
   run: () => {
-    const remote = gnista.completingRead("Push tags to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const remote = e8.completingRead("Push tags to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["push", ...pushArgs(), remote, "--tags"], `Pushing tags to ${remote}`);
   },
 });
 
-const setVariables = gnista.defineCommand({
+const setVariables = e8.defineCommand({
   name: "magit-branch-configure",
   doc: "Configure the current branch's upstream, push remote and rebasing.",
-  run: () => gnista.call(branchMenu),
+  run: () => e8.call(branchMenu),
 });
 
 const pushMenu = transientDefinePrefix("magit-push", {
@@ -1240,7 +1240,7 @@ const pushMenu = transientDefinePrefix("magit-push", {
 
 // Pull and fetch.
 
-const pullPushRemote = gnista.defineCommand({
+const pullPushRemote = e8.defineCommand({
   name: "magit-pull-from-pushremote",
   doc: "Pull from the push remote of the current branch, setting one first if there is none.",
   run: () => {
@@ -1249,7 +1249,7 @@ const pullPushRemote = gnista.defineCommand({
   },
 });
 
-const pullElsewhere = gnista.defineCommand({
+const pullElsewhere = e8.defineCommand({
   name: "magit-pull-branch",
   doc: "Pull a branch read into the current one.",
   run: () => {
@@ -1261,9 +1261,9 @@ const pullElsewhere = gnista.defineCommand({
 
 /** A git config variable a suffix cycles through CHOICES, shown as Magit shows one: name [a|b|default:x]. */
 let configVariables = 0;
-function configVariable(key: string, variable: () => string, choices: () => string[], fallback?: string): [string, () => gnista.PropertizedString, gnista.DefinedCommand] {
+function configVariable(key: string, variable: () => string, choices: () => string[], fallback?: string): [string, () => e8.PropertizedString, e8.DefinedCommand] {
   // Named without asking git which variable it is: that waits for the menu.
-  const command = gnista.defineCommand({
+  const command = e8.defineCommand({
     name: `magit:config-variable:${key}:${configVariables++}`,
     doc: "Cycle a git variable through its values.",
     run: () => {
@@ -1281,7 +1281,7 @@ function configVariable(key: string, variable: () => string, choices: () => stri
     const now = gitString(["config", name]);
     const parts = choices().flatMap((c, i) => [...(i > 0 ? [face("|", "transient-delimiter")] : []), face(c, c === now ? "transient-value" : "transient-inactive-value")]);
     const def = fallback !== undefined ? [face("|", "transient-delimiter"), face(`default:${fallback}`, now === undefined ? "transient-value" : "transient-inactive-value")] : [];
-    return gnista.concat(face(name, "transient-argument"), " ", face("[", "transient-delimiter"), ...parts, ...def, face("]", "transient-delimiter"));
+    return e8.concat(face(name, "transient-argument"), " ", face("[", "transient-delimiter"), ...parts, ...def, face("]", "transient-delimiter"));
   };
   return [key, describe, command];
 }
@@ -1305,7 +1305,7 @@ const pullMenu = transientDefinePrefix("magit-pull", {
   ],
 });
 
-const fetchPushRemote = gnista.defineCommand({
+const fetchPushRemote = e8.defineCommand({
   name: "magit-fetch-from-pushremote",
   doc: "Fetch from the push remote of the current branch, setting one first if there is none.",
   run: () => {
@@ -1313,29 +1313,29 @@ const fetchPushRemote = gnista.defineCommand({
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
   },
 });
-const fetchElsewhere = gnista.defineCommand({
+const fetchElsewhere = e8.defineCommand({
   name: "magit-fetch-other",
   doc: "Fetch from a remote read.",
   run: () => {
-    const remote = gnista.completingRead("Fetch remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const remote = e8.completingRead("Fetch remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
   },
 });
-const fetchBranch = gnista.defineCommand({
+const fetchBranch = e8.defineCommand({
   name: "magit-fetch-branch",
   doc: "Fetch a branch from a remote.",
   run: () => {
-    const remote = gnista.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
-    const branch = gnista.readString(`Fetch branch from ${remote}: `);
+    const remote = e8.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const branch = e8.readString(`Fetch branch from ${remote}: `);
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote, branch], `Fetching ${remote} ${branch}`);
   },
 });
-const fetchRefspec = gnista.defineCommand({
+const fetchRefspec = e8.defineCommand({
   name: "magit-fetch-refspec",
   doc: "Fetch a refspec read from a remote read.",
   run: () => {
-    const remote = gnista.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
-    const spec = gnista.readString(`Fetch using refspec from ${remote}: `);
+    const remote = e8.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const spec = e8.readString(`Fetch using refspec from ${remote}: `);
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote, spec], `Fetching ${remote}`);
   },
 });
@@ -1364,7 +1364,7 @@ const fetchMenu = transientDefinePrefix("magit-fetch", {
 /** Whether a rebase is going on, stopped for something, as magit-rebase-in-progress-p. */
 function rebaseInProgress(): boolean {
   const gitDir = gitString(["rev-parse", "--absolute-git-dir"]);
-  return gitDir !== undefined && (gnista.fileExists(`${gitDir}/rebase-merge`) || gnista.fileExists(`${gitDir}/rebase-apply`));
+  return gitDir !== undefined && (e8.fileExists(`${gitDir}/rebase-merge`) || e8.fileExists(`${gitDir}/rebase-apply`));
 }
 
 const rebaseArgs = (): string[] => transientArgs("magit-rebase");
@@ -1372,17 +1372,17 @@ const rebaseArgs = (): string[] => transientArgs("magit-rebase");
 /** The commit to rebase from, its parent or --root for the first, as magit-rebase-interactive-1 works it out. */
 const ontoParent = (rev: string): string => (gitOutput(["rev-parse", "--verify", "-q", `${rev}^`]).exit === 0 ? `${rev}^` : "--root");
 
-/** Rebases interactively from REV, with the todo list edited by SEQUENCE, a shell command, or in Gnista if none. */
+/** Rebases interactively from REV, with the todo list edited by SEQUENCE, a shell command, or in E8 if none. */
 function rebaseInteractive(rev: string, what: string, sequence?: string): void {
   const args = ["rebase", "-i", ...rebaseArgs().filter((a) => a !== "--interactive"), ontoParent(rev)];
-  // A sequence editor of its own wins over Gnista's, which still edits the messages.
+  // A sequence editor of its own wins over E8's, which still edits the messages.
   runGitAsync(args, what, true, sequence ? { GIT_SEQUENCE_EDITOR: sequence } : {});
 }
 
 /** A sequence editor that changes the first line's action, as magit-rebase-edit-commit and its kin have git do. */
 const firstLineTo = (action: string): string => `perl -i -p -e 's/^pick/${action}/ if $. == 1'`;
 
-const rebaseOntoUpstream = gnista.defineCommand({
+const rebaseOntoUpstream = e8.defineCommand({
   name: "magit-rebase-onto-upstream",
   doc: "Rebase the current branch onto its upstream, setting one first if there is none.",
   run: () => {
@@ -1391,7 +1391,7 @@ const rebaseOntoUpstream = gnista.defineCommand({
     runGitAsync(["rebase", ...rebaseArgs(), `${remote}/${target}`], "Rebasing", true);
   },
 });
-const rebaseOntoPushRemote = gnista.defineCommand({
+const rebaseOntoPushRemote = e8.defineCommand({
   name: "magit-rebase-onto-pushremote",
   doc: "Rebase the current branch onto its push remote's branch, setting one first if there is none.",
   run: () => {
@@ -1399,17 +1399,17 @@ const rebaseOntoPushRemote = gnista.defineCommand({
     runGitAsync(["rebase", ...rebaseArgs(), `${remote}/${branchOrHead()}`], "Rebasing", true);
   },
 });
-const rebaseElsewhere = gnista.defineCommand({
+const rebaseElsewhere = e8.defineCommand({
   name: "magit-rebase-branch",
   doc: "Rebase the current branch onto a branch read.",
   run: () => runGitAsync(["rebase", ...rebaseArgs(), readBranch(`Rebase ${branchOrHead()} onto`, [...localBranches(), ...remoteBranches()])], "Rebasing", true),
 });
-const rebaseInteractively = gnista.defineCommand({
+const rebaseInteractively = e8.defineCommand({
   name: "magit-rebase-interactive",
   doc: "Rebase the commits from one read interactively, editing the todo list in git-rebase-mode.",
   run: () => rebaseInteractive(readCommit("Interactively rebase from"), "Rebasing"),
 });
-const rebaseSubset = gnista.defineCommand({
+const rebaseSubset = e8.defineCommand({
   name: "magit-rebase-subset",
   doc: "Rebase the commits from one read onto a new base read.",
   run: () => {
@@ -1418,25 +1418,25 @@ const rebaseSubset = gnista.defineCommand({
     runGitAsync(["rebase", ...rebaseArgs(), "--onto", onto, ontoParent(start)], "Rebasing", true);
   },
 });
-const rebaseEditCommit = gnista.defineCommand({
+const rebaseEditCommit = e8.defineCommand({
   name: "magit-rebase-edit-commit",
   doc: "Stop at a commit read, to change it, then go on with r r.",
   run: () => rebaseInteractive(readCommit("Edit commit"), "Rebasing", firstLineTo("edit")),
 });
-const rebaseRewordCommit = gnista.defineCommand({
+const rebaseRewordCommit = e8.defineCommand({
   name: "magit-rebase-reword-commit",
   doc: "Write a commit's message again.",
   run: () => rebaseInteractive(readCommit("Reword commit"), "Rebasing", firstLineTo("reword")),
 });
-const rebaseRemoveCommit = gnista.defineCommand({
+const rebaseRemoveCommit = e8.defineCommand({
   name: "magit-rebase-remove-commit",
   doc: "Take a commit out of the history.",
   run: () => {
     const rev = readCommit("Remove commit");
-    if (gnista.yOrNP(`Remove ${rev}? `)) rebaseInteractive(rev, "Rebasing", firstLineTo("drop"));
+    if (e8.yOrNP(`Remove ${rev}? `)) rebaseInteractive(rev, "Rebasing", firstLineTo("drop"));
   },
 });
-const rebaseAutosquash = gnista.defineCommand({
+const rebaseAutosquash = e8.defineCommand({
   name: "magit-rebase-autosquash",
   doc: "Squash the fixup and squash commits into the commits they name.",
   run: () => {
@@ -1445,14 +1445,14 @@ const rebaseAutosquash = gnista.defineCommand({
     runGitAsync(["rebase", "-i", "--autosquash", "--autostash", "--keep-empty", ...(base ? [base] : ["--root"])], "Autosquashing", true, { GIT_SEQUENCE_EDITOR: ":" });
   },
 });
-const rebaseContinue = gnista.defineCommand({ name: "magit-rebase-continue", doc: "Go on with the rebase.", run: () => runGitAsync(["rebase", "--continue"], "Rebasing", true) });
-const rebaseSkip = gnista.defineCommand({ name: "magit-rebase-skip", doc: "Skip the commit the rebase stopped at.", run: () => runGitAsync(["rebase", "--skip"], "Rebasing", true) });
-const rebaseEditTodo = gnista.defineCommand({ name: "magit-rebase-edit", doc: "Edit the rest of the rebase's todo list.", run: () => runGitAsync(["rebase", "--edit-todo"], "Editing", true) });
-const rebaseAbort = gnista.defineCommand({
+const rebaseContinue = e8.defineCommand({ name: "magit-rebase-continue", doc: "Go on with the rebase.", run: () => runGitAsync(["rebase", "--continue"], "Rebasing", true) });
+const rebaseSkip = e8.defineCommand({ name: "magit-rebase-skip", doc: "Skip the commit the rebase stopped at.", run: () => runGitAsync(["rebase", "--skip"], "Rebasing", true) });
+const rebaseEditTodo = e8.defineCommand({ name: "magit-rebase-edit", doc: "Edit the rest of the rebase's todo list.", run: () => runGitAsync(["rebase", "--edit-todo"], "Editing", true) });
+const rebaseAbort = e8.defineCommand({
   name: "magit-rebase-abort",
   doc: "Abort the rebase, going back to where it started.",
   run: () => {
-    if (gnista.yOrNP("Abort this rebase? ")) runGit(["rebase", "--abort"]);
+    if (e8.yOrNP("Abort this rebase? ")) runGit(["rebase", "--abort"]);
   },
 });
 
@@ -1505,59 +1505,59 @@ const TODO_LINE = /^(pick|p|reword|r|edit|e|squash|s|fixup|f|drop|d|exec|x|break
 
 /** Gives the todo line at point ACTION, and goes to the next, as git-rebase-set-action. */
 function setAction(action: string): void {
-  const line = gnista.lineOf(gnista.point());
-  const text = gnista.lineText(line);
+  const line = e8.lineOf(e8.point());
+  const text = e8.lineText(line);
   const m = TODO_LINE.exec(text);
   if (!m || ["exec", "x", "break", "b", "label", "l", "reset", "t", "merge", "m", "update-ref", "u"].includes(m[1])) {
     forwardLine(1);
     return;
   }
-  gnista.letBind({ "inhibit-read-only": true }, () => {
-    const start = gnista.lineStart(line);
-    gnista.deleteRegion(start, start + m[1].length);
-    gnista.gotoChar(start);
-    gnista.insert(action);
+  e8.letBind({ "inhibit-read-only": true }, () => {
+    const start = e8.lineStart(line);
+    e8.deleteRegion(start, start + m[1].length);
+    e8.gotoChar(start);
+    e8.insert(action);
   });
   forwardLine(1);
 }
 
 /** Moves the todo line at point by N lines, as git-rebase-move-line-down. */
 function moveLine(n: number): void {
-  const line = gnista.lineOf(gnista.point());
+  const line = e8.lineOf(e8.point());
   const target = line + n;
-  if (target < 0 || !TODO_LINE.test(gnista.lineText(line)) || !TODO_LINE.test(gnista.lineText(target))) return;
-  gnista.letBind({ "inhibit-read-only": true }, () => {
-    const [a, b] = [gnista.lineText(line), gnista.lineText(target)];
+  if (target < 0 || !TODO_LINE.test(e8.lineText(line)) || !TODO_LINE.test(e8.lineText(target))) return;
+  e8.letBind({ "inhibit-read-only": true }, () => {
+    const [a, b] = [e8.lineText(line), e8.lineText(target)];
     for (const [l, t] of [[line, b], [target, a]] as const) {
-      gnista.deleteRegion(gnista.lineStart(l), gnista.lineEnd(l));
-      gnista.gotoChar(gnista.lineStart(l));
-      gnista.insert(t);
+      e8.deleteRegion(e8.lineStart(l), e8.lineEnd(l));
+      e8.gotoChar(e8.lineStart(l));
+      e8.insert(t);
     }
   });
-  gnista.gotoChar(gnista.lineStart(target));
+  e8.gotoChar(e8.lineStart(target));
 }
 
-const todoCommand = (name: string, action: string, doc: string) => gnista.defineCommand({ name, doc, run: () => setAction(action) });
+const todoCommand = (name: string, action: string, doc: string) => e8.defineCommand({ name, doc, run: () => setAction(action) });
 
 /** Highlights the todo list's actions, hashes and comments, as git-rebase-mode's font-lock keywords. */
 function fontifyTodo(start: number, end: number): void {
-  gnista.withSilentModifications(() => {
-    for (let line = gnista.lineOf(start); line <= gnista.lineOf(Math.max(start, end - 1)); line++) {
-      const ls = gnista.lineStart(line);
-      const text = gnista.lineText(line);
+  e8.withSilentModifications(() => {
+    for (let line = e8.lineOf(start); line <= e8.lineOf(Math.max(start, end - 1)); line++) {
+      const ls = e8.lineStart(line);
+      const text = e8.lineText(line);
       if (text.startsWith("#")) {
-        gnista.putTextProperty(ls, gnista.lineEnd(line), "face", "font-lock-comment-face");
+        e8.putTextProperty(ls, e8.lineEnd(line), "face", "font-lock-comment-face");
         continue;
       }
       const m = /^(\S+)(\s+)([0-9a-f]{4,40})?/.exec(text);
       if (!m || !TODO_LINE.test(text)) continue;
-      gnista.putTextProperty(ls, ls + m[1].length, "face", "font-lock-keyword-face");
-      if (m[3]) gnista.putTextProperty(ls + m[1].length + m[2].length, ls + m[1].length + m[2].length + m[3].length, "face", "magit-hash");
+      e8.putTextProperty(ls, ls + m[1].length, "face", "font-lock-keyword-face");
+      if (m[3]) e8.putTextProperty(ls + m[1].length + m[2].length, ls + m[1].length + m[2].length + m[3].length, "face", "magit-hash");
     }
   });
 }
 
-export const gitRebaseMode = gnista.defineMajorMode({
+export const gitRebaseMode = e8.defineMajorMode({
   name: "git-rebase-mode",
   modeName: "Git Rebase",
   parent: "text-mode",
@@ -1573,49 +1573,49 @@ export const gitRebaseMode = gnista.defineMajorMode({
     d: todoCommand("git-rebase-drop", "drop", "Leave the commit out."),
     k: todoCommand("git-rebase-kill-line", "drop", "Leave the commit out."),
     "C-k": todoCommand("git-rebase-kill-line-k", "drop", "Leave the commit out."),
-    p: gnista.defineCommand({ name: "git-rebase-backward-line", doc: "Go to the line before.", run: () => void forwardLine(-1) }),
-    n: gnista.defineCommand({ name: "git-rebase-forward-line", doc: "Go to the next line.", run: () => void forwardLine(1) }),
-    "M-p": gnista.defineCommand({ name: "git-rebase-move-line-up", doc: "Move the line up.", run: () => moveLine(-1) }),
-    "M-n": gnista.defineCommand({ name: "git-rebase-move-line-down", doc: "Move the line down.", run: () => moveLine(1) }),
-    "M-<up>": "git-rebase-move-line-up" as gnista.CommandName,
-    "M-<down>": "git-rebase-move-line-down" as gnista.CommandName,
-    x: gnista.defineCommand({
+    p: e8.defineCommand({ name: "git-rebase-backward-line", doc: "Go to the line before.", run: () => void forwardLine(-1) }),
+    n: e8.defineCommand({ name: "git-rebase-forward-line", doc: "Go to the next line.", run: () => void forwardLine(1) }),
+    "M-p": e8.defineCommand({ name: "git-rebase-move-line-up", doc: "Move the line up.", run: () => moveLine(-1) }),
+    "M-n": e8.defineCommand({ name: "git-rebase-move-line-down", doc: "Move the line down.", run: () => moveLine(1) }),
+    "M-<up>": "git-rebase-move-line-up" as e8.CommandName,
+    "M-<down>": "git-rebase-move-line-down" as e8.CommandName,
+    x: e8.defineCommand({
       name: "git-rebase-exec",
       doc: "Add a shell command to run at this point of the rebase.",
       run: () => {
-        const cmd = gnista.readString("Execute: ");
+        const cmd = e8.readString("Execute: ");
         if (cmd === "") return;
-        gnista.gotoChar(gnista.lineStart(gnista.lineOf(gnista.point())));
-        gnista.insert(`exec ${cmd}\n`);
+        e8.gotoChar(e8.lineStart(e8.lineOf(e8.point())));
+        e8.insert(`exec ${cmd}\n`);
       },
     }),
-    b: gnista.defineCommand({
+    b: e8.defineCommand({
       name: "git-rebase-break",
       doc: "Stop the rebase at this point.",
       run: () => {
-        gnista.gotoChar(gnista.lineStart(gnista.lineOf(gnista.point())));
-        gnista.insert("break\n");
+        e8.gotoChar(e8.lineStart(e8.lineOf(e8.point())));
+        e8.insert("break\n");
       },
     }),
-    RET: gnista.defineCommand({
+    RET: e8.defineCommand({
       name: "git-rebase-show-commit",
       doc: "Show the commit of the line at point.",
       run: () => {
-        const m = /^\S+\s+([0-9a-f]{4,40})/.exec(gnista.lineText(gnista.lineOf(gnista.point())));
+        const m = /^\S+\s+([0-9a-f]{4,40})/.exec(e8.lineText(e8.lineOf(e8.point())));
         if (m) showCommit(m[1]);
       },
     }),
   },
   setup: () => {
-    gnista.addHook("jit-lock-functions", fontifyTodo, { local: true });
+    e8.addHook("jit-lock-functions", fontifyTodo, { local: true });
   },
 });
 
 // Branch.
 
 /** A branch variable read and set, shown as Magit shows it: branch.main.description unset. */
-function branchVariable(key: string, name: () => string, read: () => string | undefined): [string, () => gnista.PropertizedString, gnista.DefinedCommand] {
-  const command = gnista.defineCommand({
+function branchVariable(key: string, name: () => string, read: () => string | undefined): [string, () => e8.PropertizedString, e8.DefinedCommand] {
+  const command = e8.defineCommand({
     name: `magit:branch-variable:${key}`,
     doc: "Set a variable of the current branch.",
     run: () => {
@@ -1627,23 +1627,23 @@ function branchVariable(key: string, name: () => string, read: () => string | un
   });
   const describe = () => {
     const now = gitString(["config", name()]);
-    return gnista.concat(face(name(), "transient-argument"), " ", now === undefined ? face("unset", "transient-inactive-value") : face(now, "transient-value"));
+    return e8.concat(face(name(), "transient-argument"), " ", now === undefined ? face("unset", "transient-inactive-value") : face(now, "transient-value"));
   };
   return [key, describe, command];
 }
 
-const branchLocal = gnista.defineCommand({
+const branchLocal = e8.defineCommand({
   name: "magit-branch-checkout",
   doc: "Check out a local branch, or create one from a remote branch.",
   run: () => runGit(["checkout", readBranch("Checkout branch", localBranches().filter((b) => b !== currentBranch()))]) as unknown as void,
 });
 
-const branchSpinoff = gnista.defineCommand({
+const branchSpinoff = e8.defineCommand({
   name: "magit-branch-spinoff",
   doc: "Create a branch from the current one and check it out, taking the current one back to its upstream.",
   run: () => {
-    const name = gnista.readString("Spin off branch: ");
-    if (name === "") gnista.userError("No name given");
+    const name = e8.readString("Spin off branch: ");
+    if (name === "") e8.userError("No name given");
     const from = currentBranch();
     const upstream = upstreamOf(from);
     if (!runGit(["checkout", "-b", name])) return;
@@ -1651,12 +1651,12 @@ const branchSpinoff = gnista.defineCommand({
   },
 });
 
-const branchSpinout = gnista.defineCommand({
+const branchSpinout = e8.defineCommand({
   name: "magit-branch-spinout",
   doc: "Create a branch from the current one, taking the current one back to its upstream, without checking the new one out.",
   run: () => {
-    const name = gnista.readString("Spin out branch: ");
-    if (name === "") gnista.userError("No name given");
+    const name = e8.readString("Spin out branch: ");
+    if (name === "") e8.userError("No name given");
     const from = currentBranch();
     const upstream = upstreamOf(from);
     if (!runGit(["branch", name])) return;
@@ -1664,7 +1664,7 @@ const branchSpinout = gnista.defineCommand({
   },
 });
 
-const branchReset = gnista.defineCommand({
+const branchReset = e8.defineCommand({
   name: "magit-branch-reset",
   doc: "Reset a branch to a commit read.",
   run: () => {
@@ -1686,14 +1686,14 @@ const branchMenu = transientDefinePrefix("magit-branch", {
     {
       description: () => `Configure ${branchOrHead()}`,
       items: [
-        branchVariable("d", () => `branch.${branchOrHead()}.description`, () => gnista.readString("Description: ")),
+        branchVariable("d", () => `branch.${branchOrHead()}.description`, () => e8.readString("Description: ")),
         branchVariable("u", () => `branch.${branchOrHead()}.merge`, () => {
           const up = readBranch("Upstream", remoteBranches());
           const [remote, ...rest] = up.split("/");
           gitOutput(["config", `branch.${branchOrHead()}.remote`, remote]);
           return `refs/heads/${rest.join("/")}`;
         }),
-        [" ", { info: () => gnista.concat(face(`branch.${branchOrHead()}.remote`, "transient-argument"), " ", ((r) => (r === undefined ? face("unset", "transient-inactive-value") : face(r, "transient-value")))(gitString(["config", `branch.${branchOrHead()}.remote`]))) }],
+        [" ", { info: () => e8.concat(face(`branch.${branchOrHead()}.remote`, "transient-argument"), " ", ((r) => (r === undefined ? face("unset", "transient-inactive-value") : face(r, "transient-value")))(gitString(["config", `branch.${branchOrHead()}.remote`]))) }],
         configVariable("r", () => `branch.${branchOrHead()}.rebase`, () => ["true", "false"], "false"),
         configVariable("p", () => `branch.${branchOrHead()}.pushRemote`, () => remotes()),
       ],
@@ -1717,7 +1717,7 @@ const branchMenu = transientDefinePrefix("magit-branch", {
 
 // Log.
 
-const logRelated = gnista.defineCommand({
+const logRelated = e8.defineCommand({
   name: "magit-log-related",
   doc: "Show the log of the current branch, its upstream and its push target.",
   run: () => {
@@ -1726,25 +1726,25 @@ const logRelated = gnista.defineCommand({
     const revs = ["HEAD", ...[upstreamOf(branch)].filter((r): r is string => r !== undefined)];
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, ...revs]));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
 
 const logBranches = (name: string, doc: string, refs: string[]) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     run: () => {
       const dir = repo();
       const args = logArgs();
       setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, ...refs]));
-      gnista.gotoChar(0);
+      e8.gotoChar(0);
     },
   });
 
 /** Shows a reflog, as magit-reflog-current. */
 const reflog = (name: string, doc: string, ref: () => string) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     run: () => {
@@ -1758,18 +1758,18 @@ const reflog = (name: string, doc: string, ref: () => string) =>
           }
         }),
       );
-      gnista.gotoChar(0);
+      e8.gotoChar(0);
     },
   });
 
-const shortlog = gnista.defineCommand({
+const shortlog = e8.defineCommand({
   name: "magit-shortlog",
   doc: "Show the commits by author, as git shortlog.",
   run: () => {
     const dir = repo();
     const out = gitOutput(["shortlog", "HEAD"]).output;
-    setupBuffer(`magit-shortlog: ${repoName(dir)}`, magitLogMode, "shortlog", () => insertRoot("shortlog", () => gnista.insert(out)));
-    gnista.gotoChar(0);
+    setupBuffer(`magit-shortlog: ${repoName(dir)}`, magitLogMode, "shortlog", () => insertRoot("shortlog", () => e8.insert(out)));
+    e8.gotoChar(0);
   },
 });
 
@@ -1846,7 +1846,7 @@ const logMenu = transientDefinePrefix("magit-log", {
 // Merge.
 
 const mergeWith = (name: string, doc: string, extra: string[]) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     run: () => {
@@ -1855,7 +1855,7 @@ const mergeWith = (name: string, doc: string, extra: string[]) =>
     },
   });
 const mergePlain = mergeWith("magit-merge-plain", "Merge a branch into the current one.", ["--no-edit"]);
-const mergeEdit = gnista.defineCommand({
+const mergeEdit = e8.defineCommand({
   name: "magit-merge-editmsg",
   doc: "Merge a branch into the current one, writing the merge commit's message.",
   run: () => {
@@ -1865,7 +1865,7 @@ const mergeEdit = gnista.defineCommand({
 });
 const mergeNocommit = mergeWith("magit-merge-nocommit", "Merge a branch into the current one, without committing.", ["--no-commit", "--no-ff"]);
 const mergeSquash = mergeWith("magit-merge-squash", "Squash the changes of a branch into the index, without committing.", ["--squash"]);
-const mergeAbsorb = gnista.defineCommand({
+const mergeAbsorb = e8.defineCommand({
   name: "magit-merge-absorb",
   doc: "Merge a branch into the current one and delete it.",
   run: () => {
@@ -1873,17 +1873,17 @@ const mergeAbsorb = gnista.defineCommand({
     if (runGit(["merge", "--no-edit", ...transientArgs("magit-merge"), branch])) runGit(["branch", "-D", branch]);
   },
 });
-const mergeDissolve = gnista.defineCommand({
+const mergeDissolve = e8.defineCommand({
   name: "magit-merge-into",
   doc: "Merge the current branch into another and delete the current one.",
   run: () => {
     const from = currentBranch();
-    if (!from) gnista.userError("No branch is checked out");
+    if (!from) e8.userError("No branch is checked out");
     const into = readBranch(`Merge ${from} into`, localBranches().filter((b) => b !== from), upstreamOf(from)?.replace(/^[^/]+\//, ""));
     if (runGit(["checkout", into]) && runGit(["merge", "--no-edit", ...transientArgs("magit-merge"), from])) runGit(["branch", "-D", from]);
   },
 });
-const mergePreview = gnista.defineCommand({
+const mergePreview = e8.defineCommand({
   name: "magit-merge-preview",
   doc: "Show the changes merging a branch would make.",
   run: () => {
@@ -1892,7 +1892,7 @@ const mergePreview = gnista.defineCommand({
     const base = gitString(["merge-base", "HEAD", branch]) ?? "HEAD";
     const out = gitOutput(["diff", "--no-prefix", "-p", base, branch]).output;
     setupBuffer(`magit-merge-preview: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(out), "commit")));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
 
@@ -1912,12 +1912,12 @@ const mergeMenu = transientDefinePrefix("magit-merge", {
 
 // Reset.
 
-const resetFile = gnista.defineCommand({
+const resetFile = e8.defineCommand({
   name: "magit-file-checkout",
   doc: "Reset a file in the index and the working tree to a commit.",
   run: () => {
     const rev = readBranch("Checkout from revision", [...localBranches(), ...remoteBranches()], "HEAD");
-    const file = gnista.completingRead(`Checkout file from ${rev}: `, gitLines(["ls-files"]), { requireMatch: true });
+    const file = e8.completingRead(`Checkout file from ${rev}: `, gitLines(["ls-files"]), { requireMatch: true });
     runGit(["checkout", rev, "--", file]);
   },
 });
@@ -1951,17 +1951,17 @@ const diffBuffer = (args: string[]) => {
   const dir = repo();
   const out = gitOutput(["diff", "--no-prefix", "-p", ...diffArgs(), ...args]).output;
   setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(out), "commit")));
-  gnista.gotoChar(0);
+  e8.gotoChar(0);
 };
-const diffRange = gnista.defineCommand({ name: "magit-diff-range", doc: "Show the differences between two commits, as A..B read.", run: () => diffBuffer([gnista.readString("Diff for range: ", { default: "HEAD~..HEAD" }) || "HEAD~..HEAD"]) });
-const diffPaths = gnista.defineCommand({
+const diffRange = e8.defineCommand({ name: "magit-diff-range", doc: "Show the differences between two commits, as A..B read.", run: () => diffBuffer([e8.readString("Diff for range: ", { default: "HEAD~..HEAD" }) || "HEAD~..HEAD"]) });
+const diffPaths = e8.defineCommand({
   name: "magit-diff-paths",
   doc: "Show the changes between two files.",
-  run: () => diffBuffer(["--no-index", gnista.readFileName("First file: "), gnista.readFileName("Second file: ")]),
+  run: () => diffBuffer(["--no-index", e8.readFileName("First file: "), e8.readFileName("Second file: ")]),
 });
-const diffWorktree = gnista.defineCommand({ name: "magit-diff-working-tree", doc: "Show the changes between the working tree and HEAD.", run: () => diffBuffer(["HEAD"]) });
-const showCommitCommand = gnista.defineCommand({ name: "magit-show-commit", doc: "Show a commit read, or the one at point.", run: () => showCommit(readCommit("Show commit")) });
-const showStash = gnista.defineCommand({ name: "magit-stash-show", doc: "Show a stash.", run: () => showCommit(stashAt("Show stash")) });
+const diffWorktree = e8.defineCommand({ name: "magit-diff-working-tree", doc: "Show the changes between the working tree and HEAD.", run: () => diffBuffer(["HEAD"]) });
+const showCommitCommand = e8.defineCommand({ name: "magit-show-commit", doc: "Show a commit read, or the one at point.", run: () => showCommit(readCommit("Show commit")) });
+const showStash = e8.defineCommand({ name: "magit-stash-show", doc: "Show a stash.", run: () => showCommit(stashAt("Show stash")) });
 
 const diffMenu = transientDefinePrefix("magit-diff", {
   doc: "Show changes between different versions.",
@@ -2005,26 +2005,26 @@ const stashIndex = gitCommand("magit-stash-index", "Stash the changes in the ind
 const stashWorktree = gitCommand("magit-stash-worktree", "Stash the changes in the working tree only, keeping the index.", () => ["stash", "push", "--keep-index", ...transientArgs("magit-stash")]);
 const stashKeepIndex = gitCommand("magit-stash-keep-index", "Stash the changes in the index and the working tree, keeping the index.", () => ["stash", "push", "--keep-index", ...transientArgs("magit-stash")]);
 const snapshot = (name: string, doc: string, extra: string[]) =>
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc,
     run: () => {
       const r = gitOutput(["stash", "create", ...extra]);
       const hash = r.output.trim();
-      if (hash === "") gnista.userError("No local changes to save");
+      if (hash === "") e8.userError("No local changes to save");
       runGit(["stash", "store", "-m", `Snapshot of ${branchOrHead()}`, hash]);
     },
   });
-const stashToWip = gnista.defineCommand({
+const stashToWip = e8.defineCommand({
   name: "magit-wip-commit",
   doc: "Commit the working tree's changes to a work-in-progress ref, refs/wip/wtree/refs/heads/BRANCH.",
   run: () => {
     const hash = gitOutput(["stash", "create"]).output.trim();
-    if (hash === "") gnista.userError("No local changes to save");
+    if (hash === "") e8.userError("No local changes to save");
     runGit(["update-ref", `refs/wip/wtree/refs/heads/${branchOrHead()}`, hash]);
   },
 });
-const stashList = gnista.defineCommand({
+const stashList = e8.defineCommand({
   name: "magit-stash-list",
   doc: "List the stashes.",
   run: () => {
@@ -2037,36 +2037,36 @@ const stashList = gnista.defineCommand({
         }
       }),
     );
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
-const stashBranch = gnista.defineCommand({
+const stashBranch = e8.defineCommand({
   name: "magit-stash-branch",
   doc: "Create a branch from a stash's commit, apply the stash to it and drop the stash.",
   run: () => {
     const s = stashAt("Branch from stash");
-    const name = gnista.readString("Branch name: ");
+    const name = e8.readString("Branch name: ");
     runGit(["stash", "branch", name, s]);
   },
 });
-const stashBranchHere = gnista.defineCommand({
+const stashBranchHere = e8.defineCommand({
   name: "magit-stash-branch-here",
   doc: "Create a branch at HEAD, check it out, apply a stash to it and drop the stash.",
   run: () => {
     const s = stashAt("Branch from stash");
-    const name = gnista.readString("Branch name: ");
+    const name = e8.readString("Branch name: ");
     if (runGit(["checkout", "-b", name]) && runGit(["stash", "apply", s])) runGit(["stash", "drop", s]);
   },
 });
-const stashFormatPatch = gnista.defineCommand({
+const stashFormatPatch = e8.defineCommand({
   name: "magit-stash-format-patch",
   doc: "Write a stash as a patch file.",
   run: () => {
     const s = stashAt("Format patch from stash");
     const out = gitOutput(["stash", "show", "-p", s]).output;
-    const file = gnista.expandFileName(`${s.replace(/[@{}]/g, "")}.patch`, repo());
-    gnista.writeTextFile(file, out);
-    gnista.message(`Wrote ${file}`);
+    const file = e8.expandFileName(`${s.replace(/[@{}]/g, "")}.patch`, repo());
+    e8.writeTextFile(file, out);
+    e8.message(`Wrote ${file}`);
   },
 });
 
@@ -2096,68 +2096,68 @@ const stashMenu = transientDefinePrefix("magit-stash", {
 
 // The other menus and commands the dispatch menu names.
 
-const cherryPick = gnista.defineCommand({
+const cherryPick = e8.defineCommand({
   name: "magit-cherry-pick",
   doc: "Apply the commit at point, or one read, to the current branch, as git cherry-pick.",
   run: () => runGit(["cherry-pick", readCommit("Cherry-pick")]) as unknown as void,
 });
-const revertCommit = gnista.defineCommand({
+const revertCommit = e8.defineCommand({
   name: "magit-revert-and-commit",
   doc: "Revert the commit at point, or one read, committing the reversion.",
   run: () => runGit(["revert", "--no-edit", readCommit("Revert commit")]) as unknown as void,
 });
-const tagCreate = gnista.defineCommand({
+const tagCreate = e8.defineCommand({
   name: "magit-tag-create",
   doc: "Create a tag at the commit at point, or one read.",
   run: () => {
-    const name = gnista.readString("Tag name: ");
-    if (name === "") gnista.userError("No name given");
+    const name = e8.readString("Tag name: ");
+    if (name === "") e8.userError("No name given");
     runGit(["tag", name, readCommit(`Place ${name} on`)]);
   },
 });
-const gitignore = gnista.defineCommand({
+const gitignore = e8.defineCommand({
   name: "magit-gitignore-in-topdir",
   doc: "Add a file or pattern to the .gitignore at the top of the repository.",
   run: () => {
     const s = currentSection();
     const def = s?.type === "file" ? (s.value as FileValue).file : undefined;
-    const pattern = gnista.readString(def ? `File or pattern to ignore (default ${def}): ` : "File or pattern to ignore: ", { default: def });
-    if (pattern === "") gnista.userError("Nothing to ignore");
+    const pattern = e8.readString(def ? `File or pattern to ignore (default ${def}): ` : "File or pattern to ignore: ", { default: def });
+    if (pattern === "") e8.userError("Nothing to ignore");
     const file = `${repo()}.gitignore`;
-    const old = gnista.fileExists(file) ? gnista.readTextFile(file) : "";
-    gnista.writeTextFile(file, `${old}${old && !old.endsWith("\n") ? "\n" : ""}${pattern}\n`);
+    const old = e8.fileExists(file) ? e8.readTextFile(file) : "";
+    e8.writeTextFile(file, `${old}${old && !old.endsWith("\n") ? "\n" : ""}${pattern}\n`);
     refreshAll();
   },
 });
-const gitInit = gnista.defineCommand({
+const gitInit = e8.defineCommand({
   name: "magit-init",
   doc: "Create a Git repository in a directory read.",
   run: () => {
-    const dir = gnista.readFileName("Create repository in: ", { dir: String(gnista.variable("default-directory")) });
-    gnista.callProcess([git(), "init", gnista.expandFileName(dir)]);
-    gnista.letBind({ "default-directory": gnista.fileNameAsDirectory(gnista.expandFileName(dir)) }, () => gnista.call(magitStatus));
+    const dir = e8.readFileName("Create repository in: ", { dir: String(e8.variable("default-directory")) });
+    e8.callProcess([git(), "init", e8.expandFileName(dir)]);
+    e8.letBind({ "default-directory": e8.fileNameAsDirectory(e8.expandFileName(dir)) }, () => e8.call(magitStatus));
   },
 });
-const gitClone = gnista.defineCommand({
+const gitClone = e8.defineCommand({
   name: "magit-clone",
   doc: "Clone a repository from a URL read into a directory read.",
   run: () => {
-    const url = gnista.readString("Clone repository: ");
-    const dir = gnista.readFileName("Clone to: ", { dir: String(gnista.variable("default-directory")), initial: url.replace(/\.git$/, "").replace(/.*[/:]/, "") });
-    const r = gnista.callProcess([git(), "clone", url, gnista.expandFileName(dir)]);
-    if (r.exit !== 0) gnista.userError(r.output.trim());
-    gnista.letBind({ "default-directory": gnista.fileNameAsDirectory(gnista.expandFileName(dir)) }, () => gnista.call(magitStatus));
+    const url = e8.readString("Clone repository: ");
+    const dir = e8.readFileName("Clone to: ", { dir: String(e8.variable("default-directory")), initial: url.replace(/\.git$/, "").replace(/.*[/:]/, "") });
+    const r = e8.callProcess([git(), "clone", url, e8.expandFileName(dir)]);
+    if (r.exit !== 0) e8.userError(r.output.trim());
+    e8.letBind({ "default-directory": e8.fileNameAsDirectory(e8.expandFileName(dir)) }, () => e8.call(magitStatus));
   },
 });
-const gitRun = gnista.defineCommand({
+const gitRun = e8.defineCommand({
   name: "magit-git-command",
   doc: "Run git with arguments read, as ! ! does.",
   run: () => {
-    const args = gnista.readString("Run git: ");
+    const args = e8.readString("Run git: ");
     runGit(args.split(/\s+/).filter(Boolean));
   },
 });
-const showRefs = gnista.defineCommand({
+const showRefs = e8.defineCommand({
   name: "magit-show-refs",
   doc: "List the branches and tags, with their commits.",
   run: () => {
@@ -2177,69 +2177,69 @@ const showRefs = gnista.defineCommand({
               const [name, hash, subject] = r.split("\0");
               insertSection("commit", hash, false, () => insertHeading("  ", face(name.padEnd(20), pattern === "refs/remotes" ? "magit-branch-remote" : pattern === "refs/tags" ? "magit-tag" : "magit-branch-local"), " ", face(hash, "magit-hash"), " ", subject, "\n"));
             }
-            gnista.insert("\n");
+            e8.insert("\n");
           });
         }
       }),
     );
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
-const cherries = gnista.defineCommand({
+const cherries = e8.defineCommand({
   name: "magit-cherry",
   doc: "Show the commits of the current branch not in its upstream, as git cherry.",
   run: () => {
     const dir = repo();
     const up = upstreamOf(currentBranch()) ?? readBranch("Cherry upstream", remoteBranches());
     setupBuffer(`magit-cherry: ${repoName(dir)}`, magitLogMode, "cherry", () => insertRoot("cherry", () => insertCommits([`${up}..HEAD`])));
-    gnista.gotoChar(0);
+    e8.gotoChar(0);
   },
 });
-const remoteAdd = gnista.defineCommand({
+const remoteAdd = e8.defineCommand({
   name: "magit-remote-add",
   doc: "Add a remote, by a name and URL read.",
   run: () => {
-    const name = gnista.readString("Remote name: ");
-    const url = gnista.readString("Remote url: ");
+    const name = e8.readString("Remote name: ");
+    const url = e8.readString("Remote url: ");
     runGit(["remote", "add", name, url]);
   },
 });
-const formatPatches = gnista.defineCommand({
+const formatPatches = e8.defineCommand({
   name: "magit-format-patch",
   doc: "Write the commit at point, or one read, as a patch file.",
   run: () => runGit(["format-patch", "-1", readCommit("Format patch for")]) as unknown as void,
 });
-const jumpToSection = gnista.defineCommand({
+const jumpToSection = e8.defineCommand({
   name: "magit-status-jump",
   doc: "Jump to a section of the status buffer, chosen by its heading.",
   run: () => {
     const top = sections()?.root.children ?? [];
-    const names = top.map((s) => gnista.bufferSubstringNoProperties(s.start, gnista.lineEndPosition(s.start)));
-    const chosen = gnista.completingRead("Jump to section: ", names, { requireMatch: true });
+    const names = top.map((s) => e8.bufferSubstringNoProperties(s.start, e8.lineEndPosition(s.start)));
+    const chosen = e8.completingRead("Jump to section: ", names, { requireMatch: true });
     const s = top[names.indexOf(chosen)];
-    if (s) gnista.gotoChar(s.start);
+    if (s) e8.gotoChar(s.start);
   },
 });
-const displayRepositoryBuffer = gnista.defineCommand({
+const displayRepositoryBuffer = e8.defineCommand({
   name: "magit-display-repository-buffer",
   doc: "Show one of the repository's Magit buffers.",
   run: () => {
-    const names = gnista.bufferList().filter((b) => /^magit[-a-z]*: /.test(b));
-    gnista.call("switch-to-buffer", gnista.completingRead("Display buffer: ", names, { requireMatch: true }));
+    const names = e8.bufferList().filter((b) => /^magit[-a-z]*: /.test(b));
+    e8.call("switch-to-buffer", e8.completingRead("Display buffer: ", names, { requireMatch: true }));
   },
 });
-const sectionInfo = gnista.defineCommand({
+const sectionInfo = e8.defineCommand({
   name: "magit-describe-section",
   doc: "Say what the section at point is.",
   run: () => {
     const s = currentSection();
-    if (!s) gnista.userError("No section at point");
+    if (!s) e8.userError("No section at point");
     const chain: string[] = [];
     for (let x: Section | undefined = s; x && x.parent; x = x.parent) chain.push(x.type);
-    gnista.message(`(${chain.join(" ")}) [${s.start}-${s.end}]`);
+    e8.message(`(${chain.join(" ")}) [${s.start}-${s.end}]`);
   },
 });
-const help = gnista.defineCommand({ name: "magit-info", doc: "Show what Magit's keys do.", run: () => gnista.call("describe-mode") });
+const help = e8.defineCommand({ name: "magit-info", doc: "Show what Magit's keys do.", run: () => e8.call("describe-mode") });
 
 const dispatch = transientDefinePrefix("magit-dispatch", {
   doc: "Invoke a Magit command from a list of available commands.",
@@ -2324,7 +2324,7 @@ const dispatch = transientDefinePrefix("magit-dispatch", {
   ],
 });
 
-const bindings: [string, gnista.DefinedCommand | string][] = [
+const bindings: [string, e8.DefinedCommand | string][] = [
   ["s", magitStage],
   ["S", stageModified],
   ["u", magitUnstage],
@@ -2349,9 +2349,9 @@ const bindings: [string, gnista.DefinedCommand | string][] = [
   ["?", dispatch],
   ["q", "quit-window"],
 ];
-for (const [key, command] of bindings) gnista.defineKey("magit-mode-map", key, command as gnista.DefinedCommand);
+for (const [key, command] of bindings) e8.defineKey("magit-mode-map", key, command as e8.DefinedCommand);
 
-gnista.bindKey("C-x g", magitStatus);
-gnista.bindKey("C-x M-g", dispatch);
+e8.bindKey("C-x g", magitStatus);
+e8.bindKey("C-x M-g", dispatch);
 
 void sectionAt;

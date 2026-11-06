@@ -16,13 +16,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "point": 120,
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 118,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -30,7 +30,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -38,7 +38,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 120,
+          "point": 118,
           "width": 80,
           "height": 15,
           "selected": true
@@ -59,12 +59,12 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  gnista-agenda:TODO [#A] Plain todo\n  gnista-agenda:TODO Write report\n  gnista-agenda:TODO Call Ann                                            :work:\n  gnista-agenda:TODO Late task\n",
-      "visible": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  gnista-agenda:TODO [#A] Plain todo\n  gnista-agenda:TODO Write report\n  gnista-agenda:TODO Call Ann                                            :work:\n  gnista-agenda:TODO Late task\n",
+      "text": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  e8-agenda:  TODO [#A] Plain todo\n  e8-agenda:  TODO Write report\n  e8-agenda:  TODO Call Ann                                              :work:\n  e8-agenda:  TODO Late task\n",
+      "visible": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  e8-agenda:  TODO [#A] Plain todo\n  e8-agenda:  TODO Write report\n  e8-agenda:  TODO Call Ann                                              :work:\n  e8-agenda:  TODO Late task\n",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -73,7 +73,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -102,13 +102,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "point": 190,
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 186,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -116,7 +116,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -124,7 +124,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 190,
+          "point": 186,
           "width": 80,
           "height": 15,
           "selected": true
@@ -145,13 +145,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  DONE Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  DONE Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "point": 190,
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  DONE Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  DONE Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 186,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -159,7 +159,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -167,7 +167,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 190,
+          "point": 186,
           "width": 80,
           "height": 15,
           "selected": true
@@ -188,7 +188,7 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -202,7 +202,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -231,13 +231,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "point": 120,
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 118,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -245,7 +245,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -253,7 +253,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 120,
+          "point": 118,
           "width": 80,
           "height": 15,
           "selected": true
@@ -274,7 +274,7 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -288,14 +288,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 31,
           "width": 80,
           "height": 15,
@@ -317,7 +317,7 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -331,7 +331,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 7,
           "width": 80,
           "height": 9,
@@ -339,7 +339,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 190,
+          "point": 186,
           "width": 80,
           "height": 15,
           "selected": false
@@ -360,7 +360,7 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -374,7 +374,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -396,13 +396,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "point": 147,
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 145,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -410,7 +410,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -418,7 +418,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 147,
+          "point": 145,
           "width": 80,
           "height": 15,
           "selected": true
@@ -439,13 +439,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  gnista-agenda:TODO [#A] Plain todo\n  gnista-agenda:DONE Write report\n  gnista-agenda:TODO Call Ann                                            :work:\n  gnista-agenda:TODO Late task\n",
-      "visible": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  gnista-agenda:TODO [#A] Plain todo\n  gnista-agenda:DONE Write report\n  gnista-agenda:TODO Call Ann                                            :work:\n  gnista-agenda:TODO Late task\n",
-      "point": 143,
+      "text": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  e8-agenda:  TODO [#A] Plain todo\n  e8-agenda:  DONE Write report\n  e8-agenda:  TODO Call Ann                                              :work:\n  e8-agenda:  TODO Late task\n",
+      "visible": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  e8-agenda:  TODO [#A] Plain todo\n  e8-agenda:  DONE Write report\n  e8-agenda:  TODO Call Ann                                              :work:\n  e8-agenda:  TODO Late task\n",
+      "point": 141,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -453,7 +453,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -461,7 +461,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 143,
+          "point": 141,
           "width": 80,
           "height": 12,
           "selected": true
@@ -482,13 +482,13 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  gnista-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda:Sched. 8x:  TODO Late task\n  gnista-agenda:Scheduled:  TODO Write report\n  gnista-agenda:In   2 d.:  TODO Call Ann                                :work:\nThursday   29 October 2026\n  gnista-agenda:Meeting \nFriday     30 October 2026\n  gnista-agenda:Deadline:   TODO Call Ann                                :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "point": 93,
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  e8-agenda:  Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda:  Sched. 8x:  TODO Late task\n  e8-agenda:  Scheduled:  TODO Write report\n  e8-agenda:  In   2 d.:  TODO Call Ann                                  :work:\nThursday   29 October 2026\n  e8-agenda:  Meeting \nFriday     30 October 2026\n  e8-agenda:  Deadline:   TODO Call Ann                                  :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 91,
       "mark": null,
       "mark_active": false,
       "kill_ring": [],
@@ -496,7 +496,7 @@
       "error": "Command not allowed in this line",
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -504,7 +504,7 @@
         },
         {
           "buffer": "*Org Agenda*",
-          "point": 93,
+          "point": 91,
           "width": 80,
           "height": 15,
           "selected": true
@@ -525,7 +525,7 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -539,7 +539,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -560,7 +560,7 @@
           "org-agenda-list"
         ],
         "platform": null,
-        "visit": "gnista-agenda-2.org",
+        "visit": "e8-agenda-2.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -586,12 +586,12 @@
           "org-agenda-list"
         ],
         "platform": null,
-        "visit": "gnista-agenda-3.org",
+        "visit": "e8-agenda-3.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
-      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda-3:Scheduled:  TODO [#A] High\n  gnista-agenda-3:Scheduled:  TODO Mid\n  gnista-agenda-3:Scheduled:  TODO [#C] Low\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n",
-      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  gnista-agenda-3:Scheduled:  TODO [#A] High\n  gnista-agenda-3:Scheduled:  TODO Mid\n  gnista-agenda-3:Scheduled:  TODO [#C] Low\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda-3:Scheduled:  TODO [#A] High\n  e8-agenda-3:Scheduled:  TODO Mid\n  e8-agenda-3:Scheduled:  TODO [#C] Low\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  e8-agenda-3:Scheduled:  TODO [#A] High\n  e8-agenda-3:Scheduled:  TODO Mid\n  e8-agenda-3:Scheduled:  TODO [#C] Low\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n",
       "point": 77,
       "mark": null,
       "mark_active": false,
@@ -613,7 +613,7 @@
         ],
         "platform": null,
         "windows": true,
-        "visit": "gnista-agenda.org",
+        "visit": "e8-agenda.org",
         "today": "2026-10-28",
         "agenda_files": true
       },
@@ -627,14 +627,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 43,
           "width": 80,
           "height": 12,

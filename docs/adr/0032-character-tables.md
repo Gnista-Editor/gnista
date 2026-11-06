@@ -4,7 +4,7 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-[ADR 0027](0027-emacs-regexps.md) gave the core Emacs's standard tables as generated data: each character's general category, script, standard syntax entry, case and categories. Lisp uses more than that. It changes case with `upcase`, `capitalize` and the commands on `M-u`, `M-l`, `M-c`, `C-x C-u` and `C-x C-l`, none of which Gnista had. And it treats char-tables as values (casefiddle.c, casetab.c, category.c, chartab.c: none of 42 primitives, [docs/plan.md](../plan.md)'s fifth gap):
+[ADR 0027](0027-emacs-regexps.md) gave the core Emacs's standard tables as generated data: each character's general category, script, standard syntax entry, case and categories. Lisp uses more than that. It changes case with `upcase`, `capitalize` and the commands on `M-u`, `M-l`, `M-c`, `C-x C-u` and `C-x C-l`, none of which E8 had. And it treats char-tables as values (casefiddle.c, casetab.c, category.c, chartab.c: none of 42 primitives, [docs/plan.md](../plan.md)'s fifth gap):
 - language environments and modes make case tables of their own, such as Turkish's, where I and ı are a pair;
 - packages define categories and put characters in them for `\cX` in their regexps;
 - and `char-width-table`, display tables and `char-script-table` are char-tables too.
@@ -26,7 +26,7 @@ Option 2.
 - In strings and buffers, characters Unicode cases into several do so, ß to SS. A capital sigma ending a word becomes final sigma, and title case is Unicode's. `unicode.el` writes these tables from Emacs.
 - A change keeps text properties, undoes as one replacement, and leaves markers where they were, as replace_range_2 does.
 
-**Case tables** (`casetab.rs`) are char-tables of subtype `case-table`: lower cases, with upper cases in extra slot 0. Each buffer has one, the standard one unless it sets its own with `set-case-table`, and changing case and folding case in regexp searches follow it. `case-table.ts` ports case-table.el's `copy-case-table`, `set-case-syntax-pair`, `set-case-syntax-delims` and `set-case-syntax`; the prelude has `with-case-table`. Those functions change the standard syntax table, as in Emacs, which Gnista no longer refuses.
+**Case tables** (`casetab.rs`) are char-tables of subtype `case-table`: lower cases, with upper cases in extra slot 0. Each buffer has one, the standard one unless it sets its own with `set-case-table`, and changing case and folding case in regexp searches follow it. `case-table.ts` ports case-table.el's `copy-case-table`, `set-case-syntax-pair`, `set-case-syntax-delims` and `set-case-syntax`; the prelude has `with-case-table`. Those functions change the standard syntax table, as in Emacs, which E8 no longer refuses.
 
 **Category tables** (`category.rs`) are char-tables of subtype `category-table`, with each character's set written as its designators, `".Lalr"`, and the docstrings in extra slot 0. The functions are `define-category`, `category-docstring`, `get-unused-category`, `modify-category-entry`, `char-category-set`, which gives the mnemonics directly, and `make-`, `copy-`, `set-` and `standard-category-table`. `\cX` follows the buffer's table.
 
@@ -35,7 +35,7 @@ Option 2.
 ## Consequences
 
 The case commands work as in Emacs, checked by 18 cases against it, and packages can make and use case and category tables and char-tables of their own. What differs from Emacs:
-- Emacs's `downcase` of an ASCII-only string ignores the case table, as such strings are unibyte there. JavaScript strings make no such difference, so Gnista follows the table.
+- Emacs's `downcase` of an ASCII-only string ignores the case table, as such strings are unibyte there. JavaScript strings make no such difference, so E8 follows the table.
 - Literal searches fold case by the standard table, not a buffer's own.
 - Equivalence tables (extra slot 2) are not worked out.
 - `upcase-region` and `downcase-region` are not disabled for new users, as novice.el disables them.

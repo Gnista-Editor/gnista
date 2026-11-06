@@ -15,8 +15,8 @@ Status: accepted · 2026-10-31
 
 ## Options considered
 
-1. **Keep Gnista's undo history, groups of edits in the buffer, and let it hold the other kinds of entry: property changes and `apply` entries.** Make `buffer-undo-list` a variable the buffer answers, as Emacs's BVAR, whose value is the history in Emacs's form and whose setting replaces it. Binding it to t keeps the history aside, so a `let` gives it back unchanged, redo and marker adjustments included.
-2. **Store the list itself as Emacs does and write `undo` and `primitive-undo` in TypeScript, as simple.el does.** Closest to Emacs and to ADR 0005, but `undo-equiv-table` and `pending-undo-list` rest on the sharing of cons cells, which Gnista's values do not have, and undo, undo in a region, change groups and indirect buffers would all be rewritten at once.
+1. **Keep E8's undo history, groups of edits in the buffer, and let it hold the other kinds of entry: property changes and `apply` entries.** Make `buffer-undo-list` a variable the buffer answers, as Emacs's BVAR, whose value is the history in Emacs's form and whose setting replaces it. Binding it to t keeps the history aside, so a `let` gives it back unchanged, redo and marker adjustments included.
+2. **Store the list itself as Emacs does and write `undo` and `primitive-undo` in TypeScript, as simple.el does.** Closest to Emacs and to ADR 0005, but `undo-equiv-table` and `pending-undo-list` rest on the sharing of cons cells, which E8's values do not have, and undo, undo in a region, change groups and indirect buffers would all be rewritten at once.
 
 ## Decision
 
@@ -29,9 +29,9 @@ Option 1:
   - nil empties it.
   - Any other list, in the form reading gives, becomes the history, one step for each stretch between nils.
   - `letBind` binds it, as `let` does.
-- **Silent modifications.** `gnista.withSilentModifications(fn)` is Emacs's macro: property changes inside it are not recorded, leave the buffer as modified as it was, and do not deactivate the region, with `inhibit-read-only` and `inhibit-modification-hooks` bound. jit-lock runs `jit-lock-functions` silently, as `jit-lock-fontify-now` does. Comint's output and prompt marking, compile's faces and rust-ts-mode's syntax properties use it, as their Emacs code or its font-lock does. Tabulated lists set the list to t, as tabulated-list-mode does.
+- **Silent modifications.** `e8.withSilentModifications(fn)` is Emacs's macro: property changes inside it are not recorded, leave the buffer as modified as it was, and do not deactivate the region, with `inhibit-read-only` and `inhibit-modification-hooks` bound. jit-lock runs `jit-lock-functions` silently, as `jit-lock-fontify-now` does. Comint's output and prompt marking, compile's faces and rust-ts-mode's syntax properties use it, as their Emacs code or its font-lock does. Tabulated lists set the list to t, as tabulated-list-mode does.
 
-`tests/undo_list.rs` in gnista-core and gnista-script check property changes undone and redone, undo in a region, binding to t, setting a list, and `apply` entries. All 1924 Emacs cases still match.
+`tests/undo_list.rs` in e8-core and e8-script check property changes undone and redone, undo in a region, binding to t, setting a list, and `apply` entries. All 1924 Emacs cases still match.
 
 ## Consequences
 

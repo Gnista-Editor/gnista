@@ -4,13 +4,13 @@
 // The tables themselves are the core's, as casetab.c's.
 
 /** A copy of a case table, its upper cases copied too, as copy-case-table. */
-export function copyCaseTable(table: gnista.CharTable): gnista.CharTable {
-  const copy = gnista.copySequence(table);
-  const up = gnista.charTableExtraSlot(table, 0);
-  if (gnista.charTableP(up)) gnista.setCharTableExtraSlot(copy, 0, gnista.copySequence(up));
+export function copyCaseTable(table: e8.CharTable): e8.CharTable {
+  const copy = e8.copySequence(table);
+  const up = e8.charTableExtraSlot(table, 0);
+  if (e8.charTableP(up)) e8.setCharTableExtraSlot(copy, 0, e8.copySequence(up));
   // Worked out again from the lower and upper cases.
-  gnista.setCharTableExtraSlot(copy, 1, null);
-  gnista.setCharTableExtraSlot(copy, 2, null);
+  e8.setCharTableExtraSlot(copy, 1, null);
+  e8.setCharTableExtraSlot(copy, 2, null);
   return copy;
 }
 
@@ -19,61 +19,61 @@ export function copyCaseTable(table: gnista.CharTable): gnista.CharTable {
  * made from its lower cases if it has none: each character the table
  * lowers to another is that one's upper case.
  */
-export function caseTableUp(table: gnista.CharTable): gnista.CharTable {
-  const up = gnista.charTableExtraSlot(table, 0);
-  if (gnista.charTableP(up)) return up;
-  const made = gnista.makeCharTable("case-table", null);
-  gnista.mapCharTable((key, lower) => {
+export function caseTableUp(table: e8.CharTable): e8.CharTable {
+  const up = e8.charTableExtraSlot(table, 0);
+  if (e8.charTableP(up)) return up;
+  const made = e8.makeCharTable("case-table", null);
+  e8.mapCharTable((key, lower) => {
     if (typeof lower !== "number") return;
     const [from, to] = typeof key === "number" ? [key, key] : key;
-    for (let c = from; c <= to; c++) if (c !== lower) gnista.aset(made, lower, c);
+    for (let c = from; c <= to; c++) if (c !== lower) e8.aset(made, lower, c);
   }, table);
-  gnista.setCharTableExtraSlot(table, 0, made);
+  e8.setCharTableExtraSlot(table, 0, made);
   return made;
 }
 
-const code = (c: gnista.CharCode): number => (typeof c === "number" ? c : (c.codePointAt(0) ?? 0));
+const code = (c: e8.CharCode): number => (typeof c === "number" ? c : (c.codePointAt(0) ?? 0));
 
 /** Forgets what a case table worked out from its lower and upper cases, for it to be worked out again. */
-function changed(table: gnista.CharTable): void {
-  gnista.setCharTableExtraSlot(table, 1, null);
-  gnista.setCharTableExtraSlot(table, 2, null);
+function changed(table: e8.CharTable): void {
+  e8.setCharTableExtraSlot(table, 1, null);
+  e8.setCharTableExtraSlot(table, 2, null);
 }
 
 /**
  * Makes `uc` and `lc` a pair of upper and lower case in a case table, as
  * set-case-syntax-pair, and both word constituents in the standard syntax table.
  */
-export function setCaseSyntaxPair(uc: gnista.CharCode, lc: gnista.CharCode, table: gnista.CharTable): void {
+export function setCaseSyntaxPair(uc: e8.CharCode, lc: e8.CharCode, table: e8.CharTable): void {
   const [u, l] = [code(uc), code(lc)];
-  gnista.aset(table, u, l);
-  gnista.aset(table, l, l);
+  e8.aset(table, u, l);
+  e8.aset(table, l, l);
   const up = caseTableUp(table);
-  gnista.aset(up, u, u);
-  gnista.aset(up, l, u);
+  e8.aset(up, u, u);
+  e8.aset(up, l, u);
   changed(table);
-  gnista.modifySyntaxEntry(String.fromCodePoint(l), "w   ", "standard-syntax-table");
-  gnista.modifySyntaxEntry(String.fromCodePoint(u), "w   ", "standard-syntax-table");
+  e8.modifySyntaxEntry(String.fromCodePoint(l), "w   ", "standard-syntax-table");
+  e8.modifySyntaxEntry(String.fromCodePoint(u), "w   ", "standard-syntax-table");
 }
 
 /** Makes `l` and `r` delimiters without case that match each other, as set-case-syntax-delims. */
-export function setCaseSyntaxDelims(l: gnista.CharCode, r: gnista.CharCode, table: gnista.CharTable): void {
+export function setCaseSyntaxDelims(l: e8.CharCode, r: e8.CharCode, table: e8.CharTable): void {
   const [a, b] = [code(l), code(r)];
-  gnista.aset(table, a, a);
-  gnista.aset(table, b, b);
+  e8.aset(table, a, a);
+  e8.aset(table, b, b);
   const up = caseTableUp(table);
-  gnista.aset(up, a, a);
-  gnista.aset(up, b, b);
+  e8.aset(up, a, a);
+  e8.aset(up, b, b);
   changed(table);
-  gnista.modifySyntaxEntry(String.fromCodePoint(a), `(${String.fromCodePoint(b)}  `, "standard-syntax-table");
-  gnista.modifySyntaxEntry(String.fromCodePoint(b), `)${String.fromCodePoint(a)}  `, "standard-syntax-table");
+  e8.modifySyntaxEntry(String.fromCodePoint(a), `(${String.fromCodePoint(b)}  `, "standard-syntax-table");
+  e8.modifySyntaxEntry(String.fromCodePoint(b), `)${String.fromCodePoint(a)}  `, "standard-syntax-table");
 }
 
 /** Makes a character one without case, with a syntax, as set-case-syntax. */
-export function setCaseSyntax(c: gnista.CharCode, syntax: string, table: gnista.CharTable): void {
+export function setCaseSyntax(c: e8.CharCode, syntax: string, table: e8.CharTable): void {
   const n = code(c);
-  gnista.aset(table, n, n);
-  gnista.aset(caseTableUp(table), n, n);
+  e8.aset(table, n, n);
+  e8.aset(caseTableUp(table), n, n);
   changed(table);
-  gnista.modifySyntaxEntry(String.fromCodePoint(n), syntax, "standard-syntax-table");
+  e8.modifySyntaxEntry(String.fromCodePoint(n), syntax, "standard-syntax-table");
 }

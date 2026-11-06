@@ -4,11 +4,11 @@
 //   import { truthy, forwardLine } from "subr";
 
 /** Whether a value counts as true, as anything but nil does in Emacs: not null, undefined or false. */
-export const truthy = (v: gnista.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
+export const truthy = (v: e8.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 
 /** A variable's value as a number, or `fallback` if it is not one. */
 export function numberValue(name: string, fallback: number): number {
-  const v = gnista.variable(name);
+  const v = e8.variable(name);
   return typeof v === "number" ? v : fallback;
 }
 
@@ -46,47 +46,47 @@ export function charCount(s: string): number {
  * lines it fell short.
  */
 export function forwardLine(n: number): number {
-  const start = gnista.point();
-  const line = gnista.lineOf(start);
-  const first = gnista.lineOf(gnista.pointMin());
-  const last = gnista.lineOf(gnista.pointMax());
+  const start = e8.point();
+  const line = e8.lineOf(start);
+  const first = e8.lineOf(e8.pointMin());
+  const last = e8.lineOf(e8.pointMax());
   if (n <= 0) {
-    gnista.gotoChar(Math.max(gnista.pointMin(), gnista.lineStart(Math.max(first, line + n))));
+    e8.gotoChar(Math.max(e8.pointMin(), e8.lineStart(Math.max(first, line + n))));
     return Math.min(0, line + n - first);
   }
   if (line + n <= last) {
-    gnista.gotoChar(gnista.lineStart(line + n));
+    e8.gotoChar(e8.lineStart(line + n));
     return 0;
   }
-  gnista.gotoChar(gnista.pointMax());
+  e8.gotoChar(e8.pointMax());
   let shortfall = n - (last - line);
-  if (gnista.point() !== start && gnista.bufferText(gnista.point() - 1, gnista.point()) !== "\n") shortfall--;
+  if (e8.point() !== start && e8.bufferText(e8.point() - 1, e8.point()) !== "\n") shortfall--;
   return shortfall;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "delete-minibuffer-contents",
   doc: "Delete all the input in the minibuffer, leaving the prompt.",
   run: () => {
-    gnista.deleteRegion(gnista.minibufferPromptEnd(), gnista.pointMax());
+    e8.deleteRegion(e8.minibufferPromptEnd(), e8.pointMax());
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "undefined",
   doc: "Beep and say the keys typed do nothing here, as keys bound to this command, to hide a binding, do.",
   run: () => {
-    gnista.ding();
-    gnista.message(`${gnista.thisSingleCommandKeys()} is undefined`);
+    e8.ding();
+    e8.message(`${e8.thisSingleCommandKeys()} is undefined`);
   },
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "read-hide-char",
   doc: "The character read-passwd shows in place of each character of a password; * when nil.",
   value: null,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "read-passwd--hide-password",
   doc: "Whether the password being read is shown as read-hide-char rather than as typed.",
   value: true,
@@ -94,35 +94,35 @@ gnista.defineVariable({
 
 /** Shows each character of the input as read-hide-char, or as typed while visible, as read-passwd--hide-password. */
 function hidePassword(): void {
-  const hide = truthy(gnista.variable("read-passwd--hide-password"));
-  const shown = String(gnista.variable("read-hide-char") ?? "*");
-  const [beg, end] = [gnista.minibufferPromptEnd(), gnista.pointMax()];
+  const hide = truthy(e8.variable("read-passwd--hide-password"));
+  const shown = String(e8.variable("read-hide-char") ?? "*");
+  const [beg, end] = [e8.minibufferPromptEnd(), e8.pointMax()];
   if (beg === end) return;
-  // One string for the whole input: Gnista joins adjacent display strings
+  // One string for the whole input: E8 joins adjacent display strings
   // that are equal, where Emacs keeps each character's own string apart.
-  gnista.letBind({ "inhibit-read-only": true }, () => {
-    if (hide) gnista.putTextProperty(beg, end, "display", shown.repeat(end - beg));
-    else gnista.removeTextProperty(beg, end, "display");
-    gnista.putTextProperty(beg, end, "help-echo", "C-u: Clear password\nTAB: Toggle password visibility");
+  e8.letBind({ "inhibit-read-only": true }, () => {
+    if (hide) e8.putTextProperty(beg, end, "display", shown.repeat(end - beg));
+    else e8.removeTextProperty(beg, end, "display");
+    e8.putTextProperty(beg, end, "help-echo", "C-u: Clear password\nTAB: Toggle password visibility");
   });
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "read-passwd-toggle-visibility",
   doc: "Show the password being read as typed, or hide it again.",
   run: () => {
-    gnista.setVariable("read-passwd--hide-password", !truthy(gnista.variable("read-passwd--hide-password")));
+    e8.setVariable("read-passwd--hide-password", !truthy(e8.variable("read-passwd--hide-password")));
     hidePassword();
   },
 });
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "read-passwd-mode",
   doc: "Hide the password being read in the minibuffer: C-u clears it and TAB shows or hides it.",
   bindings: { "C-u": "delete-minibuffer-contents", TAB: "read-passwd-toggle-visibility" },
   onChange: (on) => {
-    gnista.setVariable("read-passwd--hide-password", false);
-    if (on) gnista.call("read-passwd-toggle-visibility");
+    e8.setVariable("read-passwd--hide-password", false);
+    if (on) e8.call("read-passwd-toggle-visibility");
   },
 });
 
@@ -138,23 +138,23 @@ export async function readPasswd(prompt: string, confirm = false, def?: string):
       const first = await readPasswd(prompt, false, def);
       const second = await readPasswd("Confirm password: ", false, def);
       if (first === second) return first;
-      gnista.message("Password not repeated accurately; please start over");
-      await gnista.sitFor(1);
+      e8.message("Password not repeated accurately; please start over");
+      await e8.sitFor(1);
     }
   }
   const setup = () => {
-    gnista.removeHook("minibuffer-setup-hook", setup);
-    for (const name of ["inhibit--record-char", "show-paren-mode"]) gnista.makeLocalVariable(name);
-    gnista.setVariable("inhibit--record-char", true);
-    gnista.setVariable("show-paren-mode", false);
-    gnista.call("read-passwd-mode");
-    gnista.addHook("post-command-hook", hidePassword, { local: true });
+    e8.removeHook("minibuffer-setup-hook", setup);
+    for (const name of ["inhibit--record-char", "show-paren-mode"]) e8.makeLocalVariable(name);
+    e8.setVariable("inhibit--record-char", true);
+    e8.setVariable("show-paren-mode", false);
+    e8.call("read-passwd-mode");
+    e8.addHook("post-command-hook", hidePassword, { local: true });
   };
-  gnista.addHook("minibuffer-setup-hook", setup);
+  e8.addHook("minibuffer-setup-hook", setup);
   try {
-    return await gnista.letBind({ "enable-recursive-minibuffers": true }, () => gnista.readString(prompt, { default: def, history: "t" }));
+    return await e8.letBind({ "enable-recursive-minibuffers": true }, () => e8.readString(prompt, { default: def, history: "t" }));
   } finally {
-    gnista.removeHook("minibuffer-setup-hook", setup);
+    e8.removeHook("minibuffer-setup-hook", setup);
   }
 }
 
@@ -164,9 +164,9 @@ export async function readPasswd(prompt: string, confirm = false, def?: string):
  * bidi-string-mark-left-to-right: with an invisible left-to-right mark
  * after it if it has a right-to-left character.
  */
-export function bidiStringMarkLeftToRight(str: string): string | gnista.PropertizedString {
-  if (typeof str !== "string") gnista.signal("wrong-type-argument", "Wrong type argument: stringp", [str]);
-  return gnista.stringMatch("\\cR", str) === undefined ? str : gnista.concat(str, gnista.propertize("\u200e", { invisible: true }));
+export function bidiStringMarkLeftToRight(str: string): string | e8.PropertizedString {
+  if (typeof str !== "string") e8.signal("wrong-type-argument", "Wrong type argument: stringp", [str]);
+  return e8.stringMatch("\\cR", str) === undefined ? str : e8.concat(str, e8.propertize("\u200e", { invisible: true }));
 }
 
 /**
@@ -180,33 +180,33 @@ export function bidiStringMarkLeftToRight(str: string): string | gnista.Properti
  * made later as their major modes start, as easy-mmode's
  * define-globalized-minor-mode does with a function that turns MODE on.
  */
-export function defineGlobalizedMinorMode(name: string, mode: gnista.CommandName, doc: string): gnista.DefinedCommand {
+export function defineGlobalizedMinorMode(name: string, mode: e8.CommandName, doc: string): e8.DefinedCommand {
   const turnOn = () => {
-    if (gnista.variable(name) === true && !gnista.bufferName().startsWith(" ") && gnista.variable(mode) !== true) gnista.callWithPrefix(1, mode);
+    if (e8.variable(name) === true && !e8.bufferName().startsWith(" ") && e8.variable(mode) !== true) e8.callWithPrefix(1, mode);
   };
-  return gnista.defineMinorMode({
+  return e8.defineMinorMode({
     name,
     global: true,
     doc,
     onChange: (enabled) => {
-      for (const b of gnista.bufferList()) {
+      for (const b of e8.bufferList()) {
         if (b.startsWith(" ")) continue;
-        gnista.withCurrentBuffer(b, () => {
+        e8.withCurrentBuffer(b, () => {
           if (enabled) turnOn();
-          else if (gnista.variable(mode) === true) gnista.callWithPrefix(-1, mode);
+          else if (e8.variable(mode) === true) e8.callWithPrefix(-1, mode);
         });
       }
-      if (enabled) gnista.addHook("after-change-major-mode-hook", turnOn);
-      else gnista.removeHook("after-change-major-mode-hook", turnOn);
+      if (enabled) e8.addHook("after-change-major-mode-hook", turnOn);
+      else e8.removeHook("after-change-major-mode-hook", turnOn);
     },
   });
 }
 
 /** Where a program is along PATH, as executable-find. */
 export function executableFind(program: string): string | undefined {
-  if (program.includes("/")) return gnista.fileExecutableP(gnista.expandFileName(program)) ? program : undefined;
-  for (const dir of (gnista.getenv("PATH") ?? "").split(":")) {
-    if (dir && gnista.fileExecutableP(`${dir}/${program}`)) return `${dir}/${program}`;
+  if (program.includes("/")) return e8.fileExecutableP(e8.expandFileName(program)) ? program : undefined;
+  for (const dir of (e8.getenv("PATH") ?? "").split(":")) {
+    if (dir && e8.fileExecutableP(`${dir}/${program}`)) return `${dir}/${program}`;
   }
   return undefined;
 }
@@ -218,26 +218,26 @@ export class PerBuffer<T> {
     perBufferValues.push(this.values);
   }
 
-  private static id(buffer: string | gnista.Buffer): number | undefined {
-    return typeof buffer === "string" ? gnista.getBuffer(buffer)?.id : buffer.id;
+  private static id(buffer: string | e8.Buffer): number | undefined {
+    return typeof buffer === "string" ? e8.getBuffer(buffer)?.id : buffer.id;
   }
 
-  get(buffer: string | gnista.Buffer): T | undefined {
+  get(buffer: string | e8.Buffer): T | undefined {
     const id = PerBuffer.id(buffer);
     return id === undefined ? undefined : this.values.get(id);
   }
 
-  has(buffer: string | gnista.Buffer): boolean {
+  has(buffer: string | e8.Buffer): boolean {
     const id = PerBuffer.id(buffer);
     return id !== undefined && this.values.has(id);
   }
 
-  set(buffer: string | gnista.Buffer, value: T): void {
+  set(buffer: string | e8.Buffer, value: T): void {
     const id = PerBuffer.id(buffer);
     if (id !== undefined) this.values.set(id, value);
   }
 
-  delete(buffer: string | gnista.Buffer): void {
+  delete(buffer: string | e8.Buffer): void {
     const id = PerBuffer.id(buffer);
     if (id !== undefined) this.values.delete(id);
   }
@@ -245,7 +245,7 @@ export class PerBuffer<T> {
 
 const perBufferValues: Map<number, unknown>[] = [];
 
-gnista.addHook("kill-buffer-hook", () => {
-  const id = gnista.currentBuffer().id;
+e8.addHook("kill-buffer-hook", () => {
+  const id = e8.currentBuffer().id;
   for (const values of perBufferValues) values.delete(id);
 });

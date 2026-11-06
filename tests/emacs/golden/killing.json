@@ -636,7 +636,7 @@
         "one"
       ],
       "modified": true,
-      "error": "Buffer is read-only: #<buffer *gnista-oracle*>",
+      "error": "Buffer is read-only: #<buffer *e8-oracle*>",
       "message": "Mark set"
     },
     {
@@ -685,7 +685,7 @@
         " beta"
       ],
       "modified": true,
-      "error": "Buffer is read-only: #<buffer *gnista-oracle*>",
+      "error": "Buffer is read-only: #<buffer *e8-oracle*>",
       "message": "Mark set"
     }
   ]

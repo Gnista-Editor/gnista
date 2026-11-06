@@ -1,13 +1,13 @@
 // Bookmarks, after Emacs's bookmark.el: C-x r m names the place in a file,
 // C-x r b goes back to it, even after the file changed around it, and
 // C-x r l lists them. They are saved in Emacs's own format, in the file
-// bookmark-default-file names, so Emacs and Gnista share them.
+// bookmark-default-file names, so Emacs and E8 share them.
 
 import { PerBuffer } from "subr";
 
-gnista.defineVariable({ name: "bookmark-search-size", doc: "How many characters of text on each side a bookmark keeps, to find its place again after edits.", value: 16 });
-gnista.defineVariable({ name: "bookmark-save-flag", doc: "When bookmarks are saved: t on quitting, a number after that many changes, nil never.", value: 1 });
-gnista.defineVariable({ name: "bookmark-default-file", doc: "The file bookmarks are saved in, or nil for bookmarks under user-emacs-directory.", value: null });
+e8.defineVariable({ name: "bookmark-search-size", doc: "How many characters of text on each side a bookmark keeps, to find its place again after edits.", value: 16 });
+e8.defineVariable({ name: "bookmark-save-flag", doc: "When bookmarks are saved: t on quitting, a number after that many changes, nil never.", value: 1 });
+e8.defineVariable({ name: "bookmark-default-file", doc: "The file bookmarks are saved in, or nil for bookmarks under user-emacs-directory.", value: null });
 
 /** A bookmark: its name and where it is, as bookmark.el's records hold them. */
 interface Bookmark {
@@ -25,10 +25,10 @@ let changes = 0;
 const current = new PerBuffer<string>();
 
 function bookmarkFile(): string | undefined {
-  const own = gnista.variable("bookmark-default-file");
-  if (typeof own === "string") return gnista.expandFileName(own);
-  const dir = gnista.variable("user-emacs-directory");
-  return typeof dir === "string" ? gnista.expandFileName("bookmarks", dir) : undefined;
+  const own = e8.variable("bookmark-default-file");
+  if (typeof own === "string") return e8.expandFileName(own);
+  const dir = e8.variable("user-emacs-directory");
+  return typeof dir === "string" ? e8.expandFileName("bookmarks", dir) : undefined;
 }
 
 // --- Emacs's bookmark file: a Lisp list, read and written ---------------------
@@ -135,7 +135,7 @@ function parse(text: string): Bookmark[] {
 function bookmarks(): Bookmark[] {
   if (alist !== undefined) return alist;
   const file = bookmarkFile();
-  alist = file !== undefined && gnista.fileReadableP(file) ? parse(gnista.readTextFile(file) ?? "") : [];
+  alist = file !== undefined && e8.fileReadableP(file) ? parse(e8.readTextFile(file) ?? "") : [];
   return alist;
 }
 
@@ -143,58 +143,58 @@ function bookmarks(): Bookmark[] {
 function save(): void {
   const file = bookmarkFile();
   if (file === undefined) return;
-  gnista.writeTextFile(file, writeText(bookmarks()));
+  e8.writeTextFile(file, writeText(bookmarks()));
   changes = 0;
-  gnista.message(`Saving bookmarks to file ${file}...done`);
+  e8.message(`Saving bookmarks to file ${file}...done`);
 }
 
 /** Notes a change, saving when bookmark-save-flag says, as bookmark-time-to-save-p. */
 function changed(): void {
   changes++;
-  const flag = gnista.variable("bookmark-save-flag");
+  const flag = e8.variable("bookmark-save-flag");
   if (typeof flag === "number" && changes >= flag) save();
 }
 
-gnista.addHook("kill-emacs-hook", () => {
-  if (changes > 0 && gnista.variable("bookmark-save-flag") === true) save();
+e8.addHook("kill-emacs-hook", () => {
+  if (changes > 0 && e8.variable("bookmark-save-flag") === true) save();
 });
 
 /** A bookmark by name, or an error, as bookmark-get-bookmark. */
 function find(name: string): Bookmark {
   const b = bookmarks().find((x) => x.name === name);
-  if (b === undefined) gnista.userError(`Invalid bookmark ${name}`);
+  if (b === undefined) e8.userError(`Invalid bookmark ${name}`);
   return b!;
 }
 
 /** Reads a bookmark's name with completion, as bookmark-completing-read. */
 async function readBookmark(prompt: string): Promise<string> {
   const names = bookmarks().map((b) => b.name);
-  if (names.length === 0) gnista.userError("No bookmarks exist");
-  const def = current.get(gnista.bufferName()) ?? names[0];
-  const answer = await gnista.completingRead(`${prompt} (default ${def}): `, names, { requireMatch: true, history: "bookmark-history", default: def });
+  if (names.length === 0) e8.userError("No bookmarks exist");
+  const def = current.get(e8.bufferName()) ?? names[0];
+  const answer = await e8.completingRead(`${prompt} (default ${def}): `, names, { requireMatch: true, history: "bookmark-history", default: def });
   return answer === "" ? def! : answer;
 }
 
-gnista.defineVariable({ name: "bookmark-history", doc: "Bookmark names answered at prompts, newest first.", value: [] });
+e8.defineVariable({ name: "bookmark-history", doc: "Bookmark names answered at prompts, newest first.", value: [] });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-set",
   doc:
     "Name the place point is at in this file, to go back to with C-x r b. The default name is the file's.\n\n" +
     "A bookmark of the same name is replaced; with a prefix argument, the new one goes in front of it instead.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: async (arg: gnista.PrefixArg) => {
-    const file = gnista.bufferFileName();
-    const def = current.get(gnista.bufferName()) ?? (file !== undefined ? file.replace(/.*\//, "") : gnista.bufferName());
-    const answer = await gnista.readString(`Set bookmark (default ${def}): `, { history: "bookmark-history" });
+  run: async (arg: e8.PrefixArg) => {
+    const file = e8.bufferFileName();
+    const def = current.get(e8.bufferName()) ?? (file !== undefined ? file.replace(/.*\//, "") : e8.bufferName());
+    const answer = await e8.readString(`Set bookmark (default ${def}): `, { history: "bookmark-history" });
     const name = answer === "" ? def : answer;
-    const size = Number(gnista.variable("bookmark-search-size") ?? 16);
-    const p = gnista.point();
+    const size = Number(e8.variable("bookmark-search-size") ?? 16);
+    const p = e8.point();
     const b: Bookmark = {
       name,
-      filename: file === undefined ? undefined : gnista.abbreviateFileName(file),
-      front: gnista.pointMax() - p >= size ? gnista.bufferSubstringNoProperties(p, p + size) : undefined,
-      rear: p - gnista.pointMin() >= size ? gnista.bufferSubstringNoProperties(p - size, p) : undefined,
+      filename: file === undefined ? undefined : e8.abbreviateFileName(file),
+      front: e8.pointMax() - p >= size ? e8.bufferSubstringNoProperties(p, p + size) : undefined,
+      rear: p - e8.pointMin() >= size ? e8.bufferSubstringNoProperties(p - size, p) : undefined,
       position: p,
     };
     const list = bookmarks();
@@ -203,7 +203,7 @@ gnista.defineCommand({
       if (i >= 0) list.splice(i, 1);
     }
     list.unshift(b);
-    current.set(gnista.bufferName(), name);
+    current.set(e8.bufferName(), name);
     changed();
   },
 });
@@ -211,37 +211,37 @@ gnista.defineCommand({
 /** Goes to a bookmark's place: its file, at its context or else its position, as bookmark-default-handler. */
 export function jumpTo(name: string, how: "switch-to-buffer" | "switch-to-buffer-other-window"): void {
   const b = find(name);
-  if (b.filename === undefined || !gnista.fileReadableP(gnista.expandFileName(b.filename))) {
-    gnista.signal("bookmark-error-no-filename", `Bookmark ${name} has no file it can read`, [b.filename ?? null]);
+  if (b.filename === undefined || !e8.fileReadableP(e8.expandFileName(b.filename))) {
+    e8.signal("bookmark-error-no-filename", `Bookmark ${name} has no file it can read`, [b.filename ?? null]);
   }
-  const buffer = gnista.findFileNoselect(gnista.expandFileName(b.filename!));
-  gnista.call(how, buffer);
-  gnista.gotoChar(Math.min(b.position, gnista.pointMax()));
+  const buffer = e8.findFileNoselect(e8.expandFileName(b.filename!));
+  e8.call(how, buffer);
+  e8.gotoChar(Math.min(b.position, e8.pointMax()));
   // Its text first, then the text before it, so a change around it is followed.
   if (b.front !== undefined) {
-    const m = gnista.search(b.front, { bound: gnista.pointMax(), caseFold: false });
-    if (m !== undefined) gnista.gotoChar(m.start);
+    const m = e8.search(b.front, { bound: e8.pointMax(), caseFold: false });
+    if (m !== undefined) e8.gotoChar(m.start);
   }
   if (b.rear !== undefined) {
-    const m = gnista.search(b.rear, { backward: true, bound: gnista.pointMin(), caseFold: false });
-    if (m !== undefined) gnista.gotoChar(m.end);
+    const m = e8.search(b.rear, { backward: true, bound: e8.pointMin(), caseFold: false });
+    if (m !== undefined) e8.gotoChar(m.end);
   }
-  current.set(gnista.bufferName(), name);
+  current.set(e8.bufferName(), name);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-jump",
   doc: "Go to a bookmark's place, in its file.",
   run: async () => jumpTo(await readBookmark("Jump to bookmark"), "switch-to-buffer"),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-jump-other-window",
   doc: "Go to a bookmark's place, in its file, in another window.",
   run: async () => jumpTo(await readBookmark("Jump to bookmark (in another window)"), "switch-to-buffer-other-window"),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-delete",
   doc: "Forget a bookmark.",
   run: async () => {
@@ -252,30 +252,30 @@ gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-rename",
   doc: "Give a bookmark another name.",
   run: async () => {
     const old = await readBookmark("Old bookmark name");
-    const name = await gnista.readString(`Rename "${old}" to: `, { history: "bookmark-history" });
+    const name = await e8.readString(`Rename "${old}" to: `, { history: "bookmark-history" });
     find(old).name = name;
     changed();
   },
 });
 
-gnista.defineCommand({ name: "bookmark-save", doc: "Save the bookmarks to their file.", run: () => save() });
+e8.defineCommand({ name: "bookmark-save", doc: "Save the bookmarks to their file.", run: () => save() });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-insert",
   doc: "Insert the text of the file a bookmark is in, leaving the mark after it.",
   run: async () => {
     const b = find(await readBookmark("Insert bookmark contents"));
-    if (b.filename === undefined) gnista.userError("That bookmark has no file");
-    const text = gnista.readTextFile(gnista.expandFileName(b.filename!)) ?? "";
-    const p = gnista.point();
-    gnista.insert(text);
-    gnista.pushMark(gnista.point());
-    gnista.gotoChar(p);
+    if (b.filename === undefined) e8.userError("That bookmark has no file");
+    const text = e8.readTextFile(e8.expandFileName(b.filename!)) ?? "";
+    const p = e8.point();
+    e8.insert(text);
+    e8.pushMark(e8.point());
+    e8.gotoChar(p);
   },
 });
 
@@ -285,45 +285,45 @@ const BMENU = "*Bookmark List*";
 const deletions = new Set<string>();
 
 function bmenuRefresh(): void {
-  gnista.withCurrentBuffer(BMENU, () => {
-    const line = gnista.lineOf(gnista.point());
-    gnista.letBind({ "inhibit-read-only": true }, () => {
-      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-      gnista.insert(gnista.propertize(`  ${"Bookmark Name".padEnd(30)} File`, { face: "bold" }) + "\n");
+  e8.withCurrentBuffer(BMENU, () => {
+    const line = e8.lineOf(e8.point());
+    e8.letBind({ "inhibit-read-only": true }, () => {
+      e8.deleteRegion(e8.pointMin(), e8.pointMax());
+      e8.insert(e8.propertize(`  ${"Bookmark Name".padEnd(30)} File`, { face: "bold" }) + "\n");
       for (const b of [...bookmarks()].sort((x, y) => (x.name < y.name ? -1 : x.name > y.name ? 1 : 0))) {
-        const start = gnista.point();
-        gnista.insert(`${deletions.has(b.name) ? "D" : " "} ${b.name.padEnd(30)} ${b.filename ?? ""}`.trimEnd());
-        gnista.putTextProperty(start, gnista.point(), "bookmark-name-prop", b.name);
-        gnista.insert("\n");
+        const start = e8.point();
+        e8.insert(`${deletions.has(b.name) ? "D" : " "} ${b.name.padEnd(30)} ${b.filename ?? ""}`.trimEnd());
+        e8.putTextProperty(start, e8.point(), "bookmark-name-prop", b.name);
+        e8.insert("\n");
       }
     });
-    gnista.gotoChar(gnista.lineStart(Math.min(Math.max(1, line), Math.max(1, gnista.lineCount() - 2))));
-    gnista.setBufferModified(false);
+    e8.gotoChar(e8.lineStart(Math.min(Math.max(1, line), Math.max(1, e8.lineCount() - 2))));
+    e8.setBufferModified(false);
   });
 }
 
 function bmenuBookmark(): string {
-  const name = gnista.getTextProperty(gnista.lineBeginningPosition(), "bookmark-name-prop");
-  if (typeof name !== "string") gnista.userError("No bookmark on this line");
+  const name = e8.getTextProperty(e8.lineBeginningPosition(), "bookmark-name-prop");
+  if (typeof name !== "string") e8.userError("No bookmark on this line");
   return name as string;
 }
 
 const bmenuNext = (n: number) => {
-  const line = Math.max(1, Math.min(gnista.lineCount() - 2, gnista.lineOf(gnista.point()) + n));
-  gnista.gotoChar(gnista.lineStart(line));
+  const line = Math.max(1, Math.min(e8.lineCount() - 2, e8.lineOf(e8.point()) + n));
+  e8.gotoChar(e8.lineStart(line));
 };
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "bookmark-bmenu-list",
   doc: "List the bookmarks in *Bookmark List*: RET goes to one, d marks it to be deleted and x deletes those marked.",
   run: () => {
-    gnista.getBufferCreate(BMENU);
-    gnista.withCurrentBuffer(BMENU, () => {
-      if (gnista.variable("major-mode") !== "bookmark-bmenu-mode") gnista.call("bookmark-bmenu-mode");
+    e8.getBufferCreate(BMENU);
+    e8.withCurrentBuffer(BMENU, () => {
+      if (e8.variable("major-mode") !== "bookmark-bmenu-mode") e8.call("bookmark-bmenu-mode");
     });
     deletions.clear();
     bmenuRefresh();
-    gnista.call("switch-to-buffer", BMENU);
+    e8.call("switch-to-buffer", BMENU);
   },
 });
 
@@ -351,10 +351,10 @@ for (const [name, doc, run] of [
   ["bookmark-bmenu-previous-line", "Move to the bookmark before.", () => bmenuNext(-1)],
   ["bookmark-bmenu-revert", "List the bookmarks again.", () => bmenuRefresh()],
 ] as const) {
-  gnista.defineCommand({ name, doc, run });
+  e8.defineCommand({ name, doc, run });
 }
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "bookmark-bmenu-mode",
   modeName: "Bookmark Menu",
   doc: "The mode of *Bookmark List*: RET goes to a bookmark, o in another window, d marks it to be deleted, x deletes, g lists again, q quits.",
@@ -371,10 +371,10 @@ gnista.defineMajorMode({
     g: "bookmark-bmenu-revert",
     s: "bookmark-save",
     q: "quit-window",
-  } as Record<string, gnista.CommandName>,
+  } as Record<string, e8.CommandName>,
   setup: () => {
-    gnista.setVariable("truncate-lines", true);
-    gnista.setReadOnly(true);
+    e8.setVariable("truncate-lines", true);
+    e8.setReadOnly(true);
   },
 });
 
@@ -384,5 +384,5 @@ for (const [keys, command] of [
   ["C-x r l", "bookmark-bmenu-list"],
   ["C-x 4 r", "bookmark-jump-other-window"],
 ] as const) {
-  gnista.bindKey(keys, command);
+  e8.bindKey(keys, command);
 }

@@ -1,10 +1,10 @@
 // use-package, after Emacs's use-package.el with its :vc keyword: a
 // configuration names each package it uses, from its git repository, and
 // use-package installs it if it is missing, activates it and requires it.
-// init.ts calls it as gnista.usePackage, which loads this package:
+// init.ts calls it as e8.usePackage, which loads this package:
 //
-//   gnista.usePackage("Gnista-Editor/gnista-org-roam", { rev: "v0.3.1" });
-//   gnista.usePackage("vertico", { url: "https://codeberg.org/someone/gnista-vertico" });
+//   e8.usePackage("e8-editor/e8-org-roam", { rev: "v0.3.1" });
+//   e8.usePackage("vertico", { url: "https://codeberg.org/someone/e8-vertico" });
 //
 // `owner/name` is a GitHub repository; `url` names any other, the first
 // argument then being the package's name. Without `rev` the package is at
@@ -29,8 +29,8 @@ export function usePackage(source: string, options: UsePackageOptions = {}): str
     url: options.url,
     name: options.url === undefined ? undefined : source,
   });
-  if (options.require !== false) gnista.require(name);
+  if (options.require !== false) e8.require(name);
   return name;
 }
 
-gnista.defun("use-package", (source: string, options?: UsePackageOptions) => usePackage(source, options ?? {}));
+e8.defun("use-package", (source: string, options?: UsePackageOptions) => usePackage(source, options ?? {}));

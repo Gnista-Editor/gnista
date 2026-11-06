@@ -4,7 +4,7 @@ Status: accepted · 2026-10-31
 
 ## Context
 
-Gnista had grown the deep machinery of Emacs (regexps, syntax tables, processes, tree-sitter) faster than some of its plainest commands. A survey of the commands every Emacs user types found these missing:
+E8 had grown the deep machinery of Emacs (regexps, syntax tables, processes, tree-sitter) faster than some of its plainest commands. A survey of the commands every Emacs user types found these missing:
 - `M-m`, `M-\`, `M-SPC`, `M-^`, `C-x C-o`, `M-z`, `C-q`;
 - `M-g g`, `C-x =`, `M-=`;
 - `M-@`, `M-h`, `C-M-o`;
@@ -45,7 +45,7 @@ Port them from simple.el and paragraphs.el into `packages/simple.ts` and `packag
 
 **The command loop**, which two of these showed differing from Emacs:
 - **`last-command` across a prompt.** A command that reads arguments or answers sees, as `last-command`, the command before it. Before, it saw whatever ran while the answer was typed, such as `self-insert-command`. So `M-x kill-whole-line` twice joins the kills, as in Emacs.
-- **`setLastCommand`.** Scripts set `last-command` with `gnista.setLastCommand`, as `kill-whole-line` does to join its two kills.
+- **`setLastCommand`.** Scripts set `last-command` with `e8.setLastCommand`, as `kill-whole-line` does to join its two kills.
 
 **Lines** (sort.el and replace.el, added in a second batch):
 - `packages/sort.ts`: `sort-lines`, stably and the other way round with a prefix argument as sort-subr does, with `sort-fold-case`; `reverse-region` over the whole lines in the region; and `delete-duplicate-lines`, with C-u to keep the last of each, C-u C-u for adjacent lines only and C-u C-u C-u to keep blank ones.
@@ -69,7 +69,7 @@ Port them from simple.el and paragraphs.el into `packages/simple.ts` and `packag
 **A fifth batch**, partly in the core:
 - **The global mark ring.** `push-mark` keeps the mark of each buffer it was set in on a global ring (`global-mark-ring-max`, 16), as Emacs's does, and `pop-global-mark` (`C-x C-SPC`) goes back through it. `Editor::push_mark` does this, and the commands that set the mark use it.
 - **`undo-only`.** It passes over the undo on top and the change it undid, once, as Emacs's `undo-equiv-table` finds them. Two cases are known gaps where Emacs's undo list differs: an undo boundary after a failed command, and its position entries.
-- **`M-y` after anything but a yank** reads a kill from the minibuffer with completion and inserts it, as Emacs 28's `yank-from-kill-ring`, making it the one `C-y` inserts next (`yank-from-kill-ring-rotate`). Scripts read the kill ring with `gnista.killRing` and set its yank pointer with `gnista.setKillRingYankPointer`.
+- **`M-y` after anything but a yank** reads a kill from the minibuffer with completion and inserts it, as Emacs 28's `yank-from-kill-ring`, making it the one `C-y` inserts next (`yank-from-kill-ring-rotate`). Scripts read the kill ring with `e8.killRing` and set its yank pointer with `e8.setKillRingYankPointer`.
 - **`keyboard-escape-quit`** (`ESC ESC ESC`). ESC now counts as a key, not Meta for the next one, when the keys before it bind it, so `M-ESC ESC` can be bound.
 - **Small commands:** `duplicate-line`, `duplicate-dwim` and `copy-from-above-command` (`packages/misc.ts`, from misc.el), `raise-sexp` and `delete-pair` (lisp.el, without delete-pair's blink), and `upcase-dwim`, `downcase-dwim` and `capitalize-dwim`.
 - **`deactivate-mark`** in the core: a command that sets it to nil after its changes keeps the region active, as `duplicate-dwim` does.
@@ -79,7 +79,7 @@ Port them from simple.el and paragraphs.el into `packages/simple.ts` and `packag
 
 **Highlighting** (`packages/hi-lock.ts`, from hi-lock.el): `highlight-regexp` (`M-s h r`), `highlight-phrase` (`M-s h p`), `highlight-lines-matching-regexp` (`M-s h l`), `highlight-symbol-at-point` (`M-s h .`) and `unhighlight-regexp` (`M-s h u`), with `hi-lock-mode` and Emacs's `hi-` faces offered in its order. Matches get overlays, as Emacs gives them in a buffer without font-lock rules, so text typed later is not highlighted. `tests/hi_lock.rs` checks the faces.
 
-**Bookmarks** (`packages/bookmark.ts`, from bookmark.el): `bookmark-set` (`C-x r m`) names the place point is at in a file, keeping 16 characters of text on each side (`bookmark-search-size`). `bookmark-jump` (`C-x r b`, `C-x 4 r` for another window) goes back, finding the place by that text after edits around it. `bookmark-delete`, `bookmark-rename`, `bookmark-insert` and `bookmark-save` are there too, and `bookmark-bmenu-list` (`C-x r l`) lists them. They are saved after each change (`bookmark-save-flag` 1) in Emacs's own file format, to `bookmarks` in `user-emacs-directory` or `bookmark-default-file`, and read back from it, so Emacs and Gnista can share a file. Batch Emacs would save into the user's own bookmarks, so `tests/bookmark.rs` checks them instead of the Emacs comparison.
+**Bookmarks** (`packages/bookmark.ts`, from bookmark.el): `bookmark-set` (`C-x r m`) names the place point is at in a file, keeping 16 characters of text on each side (`bookmark-search-size`). `bookmark-jump` (`C-x r b`, `C-x 4 r` for another window) goes back, finding the place by that text after edits around it. `bookmark-delete`, `bookmark-rename`, `bookmark-insert` and `bookmark-save` are there too, and `bookmark-bmenu-list` (`C-x r l`) lists them. They are saved after each change (`bookmark-save-flag` 1) in Emacs's own file format, to `bookmarks` in `user-emacs-directory` or `bookmark-default-file`, and read back from it, so Emacs and E8 can share a file. Batch Emacs would save into the user's own bookmarks, so `tests/bookmark.rs` checks them instead of the Emacs comparison.
 
 **Whitespace** (`packages/whitespace.ts`, from whitespace.el): `whitespace-cleanup` takes away empty lines at the buffer's start and end and spaces at the ends of lines, and turns indentation and the spaces around tabs into tabs or spaces as `indent-tabs-mode` says, for the kinds `whitespace-style` names; with the region active, and in `whitespace-cleanup-region`, only there. `tabify` and `untabify` are functions packages share for it. Seven cases match Emacs (`whitespace.json`). The visual `whitespace-mode` is not here.
 
@@ -91,7 +91,7 @@ Port them from simple.el and paragraphs.el into `packages/simple.ts` and `packag
 
 **Dynamic abbreviations** (`packages/dabbrev.ts`, from dabbrev.el): `dabbrev-expand` on `M-/` expands the word before point to the nearest distinct word before it that starts the same way, then one after it, then one in other buffers (those in windows, then those of the same major mode, then the rest), saying which buffer. `M-/` again tries the next one, and after a space it copies the word that followed. Case follows `dabbrev-case-fold-search` and `dabbrev-case-replace`, as dabbrev--substitute-expansion works it out. Thirteen cases match Emacs (`dabbrev.json`), and `tests/dabbrev.rs` checks other buffers.
 
-The Emacs comparison has 50 cases (`everyday.json`), 17 more for the second batch (`sort-and-lines.json`) and 12 for rectangles (`registers-and-rectangles.json`), all matching. Batch Emacs cannot answer a register's prompt, so `tests/registers.rs` types the keys instead. Gnista's own tests cover what batch Emacs cannot record: `C-q` with octal digits, and `C-S-DEL` as a key.
+The Emacs comparison has 50 cases (`everyday.json`), 17 more for the second batch (`sort-and-lines.json`) and 12 for rectangles (`registers-and-rectangles.json`), all matching. Batch Emacs cannot answer a register's prompt, so `tests/registers.rs` types the keys instead. E8's own tests cover what batch Emacs cannot record: `C-q` with octal digits, and `C-S-DEL` as a key.
 
 ## Consequences
 

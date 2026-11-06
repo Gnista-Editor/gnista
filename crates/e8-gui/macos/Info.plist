@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- E8.app's description for macOS. `make app` fills in the version. -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>E8</string>
+  <key>CFBundleDisplayName</key><string>E8</string>
+  <key>CFBundleIdentifier</key><string>se.nitwit.e8</string>
+  <key>CFBundleExecutable</key><string>e8-gui</string>
+  <key>CFBundleIconFile</key><string>E8</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>@VERSION@</string>
+  <key>CFBundleVersion</key><string>@VERSION@</string>
+  <key>LSMinimumSystemVersion</key><string>12.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>

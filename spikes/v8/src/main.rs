@@ -1,5 +1,5 @@
-//! A spike for Gnista's step 4: the same JavaScript on QuickJS (rquickjs, as
-//! Gnista embeds it) and on V8 (the v8 crate), with the same host functions,
+//! A spike for E8's step 4: the same JavaScript on QuickJS (rquickjs, as
+//! E8 embeds it) and on V8 (the v8 crate), with the same host functions,
 //! and whether V8 runs `finally` blocks when execution is terminated.
 
 use std::sync::OnceLock;

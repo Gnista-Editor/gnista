@@ -2,7 +2,7 @@
 // Lisp's faces, for .el files and Org's emacs-lisp and elisp blocks.
 //
 // Copyright (C) 1985-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -11,18 +11,18 @@
 
 import { fontifyElisp } from "lisp-mode";
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "emacs-lisp-mode",
   modeName: "ELisp",
   parent: "lisp-data-mode",
   doc:
     "The major mode for Emacs Lisp.\n\n" +
     "TAB indents as Emacs indents Lisp, C-M-q indents the list after point, and M-; comments. " +
-    "Gnista cannot run Emacs Lisp, so there is no evaluating or byte-compiling it.",
+    "E8 cannot run Emacs Lisp, so there is no evaluating or byte-compiling it.",
   setup: () => {
-    gnista.addHook("jit-lock-functions", fontifyElisp, { local: true });
+    e8.addHook("jit-lock-functions", fontifyElisp, { local: true });
   },
 });
 
-const alist = gnista.defaultValue("auto-mode-alist");
-gnista.setDefault("auto-mode-alist", [...(Array.isArray(alist) ? alist : []), ["\\.el\\'", "emacs-lisp-mode"]]);
+const alist = e8.defaultValue("auto-mode-alist");
+e8.setDefault("auto-mode-alist", [...(Array.isArray(alist) ? alist : []), ["\\.el\\'", "emacs-lisp-mode"]]);

@@ -14,7 +14,7 @@ These points override the brief where they conflict with it:
 2. **No sandbox for now.** Extensions run in-process with full trust, as Emacs packages do.
 3. **AI starts as tool calls.** The first AI feature is an agent that can call registered commands as tools. Self extension, review branches and MCP come later, if at all.
 4. **Org mode is a package, not core.** As in Emacs, the Rust core is the editor; org mode and other features are packages written in the extension language. The core provides generic, fast building blocks that such packages need (for example incremental parsing, text properties, folding, background indexing).
-5. **Two crates to start:** `gnista-core` (editor state and commands, no UI dependencies) and `gnista` (the terminal binary). Split further only when a crate gets too big.
+5. **Two crates to start:** `e8-core` (editor state and commands, no UI dependencies) and `e8` (the terminal binary). Split further only when a crate gets too big.
 
 ## Consequences
 

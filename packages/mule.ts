@@ -8,35 +8,35 @@
  * conversion, taken from `other`, as merge-coding-systems.
  */
 export function mergeCodingSystems(coding: string, other: string | undefined): string {
-  if (other === undefined || !gnista.codingSystemP(other)) return coding;
+  if (other === undefined || !e8.codingSystemP(other)) return coding;
   let merged = coding;
-  if (Array.isArray(gnista.codingSystemEolType(merged)) && !Array.isArray(gnista.codingSystemEolType(other))) {
-    merged = gnista.codingSystemChangeEolConversion(merged, gnista.codingSystemEolType(other) as number);
+  if (Array.isArray(e8.codingSystemEolType(merged)) && !Array.isArray(e8.codingSystemEolType(other))) {
+    merged = e8.codingSystemChangeEolConversion(merged, e8.codingSystemEolType(other) as number);
   }
-  if (gnista.codingSystemType(merged) === "undecided" && gnista.codingSystemType(other) !== "undecided") {
-    merged = gnista.codingSystemChangeTextConversion(merged, other);
+  if (e8.codingSystemType(merged) === "undecided" && e8.codingSystemType(other) !== "undecided") {
+    merged = e8.codingSystemChangeTextConversion(merged, other);
   }
   return merged;
 }
 
 /** The current buffer's coding system, if it has one. */
 function bufferCoding(): string | undefined {
-  const value = gnista.variable("buffer-file-coding-system");
+  const value = e8.variable("buffer-file-coding-system");
   return typeof value === "string" ? value : undefined;
 }
 
 /** Reads a coding system's name with completion, as read-coding-system; empty input gives undefined. */
 export async function readCodingSystem(prompt: string, { asTyped = false } = {}): Promise<string | undefined> {
-  const name = await gnista.completingRead(prompt, gnista.codingSystemList(), { history: "coding-system-history" });
+  const name = await e8.completingRead(prompt, e8.codingSystemList(), { history: "coding-system-history" });
   if (name === "") return undefined;
   // Checked either way; an alias stays as typed if asked, as a symbol read stays itself.
-  const coding = gnista.checkCodingSystem(name);
+  const coding = e8.checkCodingSystem(name);
   return asTyped ? name : coding;
 }
 
-gnista.defineVariable({ name: "coding-system-history", doc: "Coding systems answered in the minibuffer, newest first.", value: [] });
+e8.defineVariable({ name: "coding-system-history", doc: "Coding systems answered in the minibuffer, newest first.", value: [] });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "set-buffer-file-coding-system",
   doc:
     "Set how the buffer is written to its file: a coding system such as utf-8, iso-latin-1 or japanese-shift-jis, " +
@@ -45,9 +45,9 @@ gnista.defineCommand({
   params: [{ name: "coding", kind: "string", prompt: "Coding system for saved file (default nil): " }],
   run: (name: string) => {
     if (name === "") return;
-    const coding = gnista.checkCodingSystem(name) as string;
-    gnista.setVariable("buffer-file-coding-system", mergeCodingSystems(coding, bufferCoding()));
-    gnista.setBufferModified(true);
+    const coding = e8.checkCodingSystem(name) as string;
+    e8.setVariable("buffer-file-coding-system", mergeCodingSystems(coding, bufferCoding()));
+    e8.setBufferModified(true);
   },
 });
 
@@ -56,10 +56,10 @@ gnista.defineCommand({
  * through the questions it asks, as a let around a command keeps its binding.
  */
 function withCoding(variables: string[], coding: string, fn: () => void): void {
-  const old = variables.map((v) => [v, gnista.variable(v)] as const);
-  for (const v of variables) gnista.setVariable(v, coding);
+  const old = variables.map((v) => [v, e8.variable(v)] as const);
+  for (const v of variables) e8.setVariable(v, coding);
   const restore = () => {
-    for (const [v, value] of old) gnista.setVariable(v, value ?? null);
+    for (const [v, value] of old) e8.setVariable(v, value ?? null);
   };
   try {
     fn();
@@ -68,9 +68,9 @@ function withCoding(variables: string[], coding: string, fn: () => void): void {
   }
 }
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "default-file-name-coding-system",
-  doc: "How file names are encoded: always UTF-8, as on macOS, since Gnista keeps file names as Rust strings.",
+  doc: "How file names are encoded: always UTF-8, as on macOS, since E8 keeps file names as Rust strings.",
   value: "utf-8-unix",
 });
 
@@ -79,42 +79,42 @@ gnista.defineVariable({
  * the processes' line ends, as Emacs's set-default-coding-systems.
  */
 export function setDefaultCodingSystems(coding: string): void {
-  gnista.checkCodingSystem(coding);
-  gnista.setDefault("buffer-file-coding-system", coding);
-  const process = gnista.variable("default-process-coding-system");
+  e8.checkCodingSystem(coding);
+  e8.setDefault("buffer-file-coding-system", coding);
+  const process = e8.variable("default-process-coding-system");
   if (Array.isArray(process) && process.length === 2) {
-    gnista.setVariable(
+    e8.setVariable(
       "default-process-coding-system",
-      process.map((p) => gnista.codingSystemChangeTextConversion(String(p), coding)),
+      process.map((p) => e8.codingSystemChangeTextConversion(String(p), coding)),
     );
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "prefer-coding-system",
   doc:
     "Make a coding system the one files are read in when their bytes fit it, and the default for new files and processes.\n\n" +
     "Its line ends, if named, become the default too.",
   run: async () => {
     const coding = await readCodingSystem("Prefer coding system: ", { asTyped: true });
-    if (coding === undefined || !gnista.codingSystemP(coding)) throw new Error(`Invalid coding system \`${coding ?? "nil"}'`);
-    const type = gnista.codingSystemType(coding);
+    if (coding === undefined || !e8.codingSystemP(coding)) throw new Error(`Invalid coding system \`${coding ?? "nil"}'`);
+    const type = e8.codingSystemType(coding);
     if (type === "raw-text" || type === "undecided") throw new Error(`Can't prefer the coding system \`${coding}'`);
-    let base = String(gnista.codingSystemBase(coding));
-    const eol = gnista.codingSystemEolType(coding);
-    gnista.setCodingSystemPriority(base);
-    if (base !== coding) gnista.message(`Highest priority is set to ${base} (base of ${coding})`);
-    if (typeof eol === "number") base = gnista.codingSystemChangeEolConversion(base, eol);
+    let base = String(e8.codingSystemBase(coding));
+    const eol = e8.codingSystemEolType(coding);
+    e8.setCodingSystemPriority(base);
+    if (base !== coding) e8.message(`Highest priority is set to ${base} (base of ${coding})`);
+    if (typeof eol === "number") base = e8.codingSystemChangeEolConversion(base, eol);
     setDefaultCodingSystems(base);
-    if (base !== gnista.variable("default-file-name-coding-system")) {
-      gnista.message(
+    if (base !== e8.variable("default-file-name-coding-system")) {
+      e8.message(
         "The default value of `file-name-coding-system' was not changed because the specified coding system is not suitable for file names.",
       );
     }
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "revert-buffer-with-coding-system",
   doc:
     "Visit the buffer's file again, reading it in another coding system: for a file that was read wrongly.\n\n" +
@@ -124,14 +124,14 @@ gnista.defineCommand({
     const given = await readCodingSystem("Coding system for visited file (default nil): ");
     const coding = given !== undefined && arg === null ? mergeCodingSystems(given, bufferCoding()) : given;
     if (coding === undefined) {
-      gnista.call("revert-buffer");
+      e8.call("revert-buffer");
       return;
     }
-    withCoding(["coding-system-for-read"], coding, () => gnista.call("revert-buffer"));
+    withCoding(["coding-system-for-read"], coding, () => e8.call("revert-buffer"));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "universal-coding-system-argument",
   doc:
     "Read a coding system, then a key sequence, and run its command with files read and written in that coding system.\n\n" +
@@ -139,10 +139,10 @@ gnista.defineCommand({
   run: async () => {
     const coding = await readCodingSystem("Coding system for following command: ");
     if (coding === undefined) return;
-    const keys = await gnista.readKeySequence(`Command to execute with ${coding}:`);
-    const command = gnista.currentActiveMaps().map((map) => gnista.lookupKey(map, keys)).find((b) => typeof b === "string");
+    const keys = await e8.readKeySequence(`Command to execute with ${coding}:`);
+    const command = e8.currentActiveMaps().map((map) => e8.lookupKey(map, keys)).find((b) => typeof b === "string");
     if (typeof command !== "string") throw new Error(`${keys} is undefined`);
-    withCoding(["coding-system-for-read", "coding-system-for-write"], coding, () => gnista.callInteractively(command as gnista.CommandName));
+    withCoding(["coding-system-for-read", "coding-system-for-write"], coding, () => e8.callInteractively(command as e8.CommandName));
   },
 });
 
@@ -152,15 +152,15 @@ gnista.defineCommand({
  * makes it the buffer's.
  */
 export function selectSafeCodingSystem(): void {
-  const coding = (gnista.variable("coding-system-for-write") as string | null) ?? bufferCoding();
-  if (coding === undefined || gnista.unencodableCharPosition(0, gnista.bufferSize(), coding) === undefined) return;
-  const safe = gnista.findCodingSystemsRegion(0, gnista.bufferSize());
+  const coding = (e8.variable("coding-system-for-write") as string | null) ?? bufferCoding();
+  if (coding === undefined || e8.unencodableCharPosition(0, e8.bufferSize(), coding) === undefined) return;
+  const safe = e8.findCodingSystemsRegion(0, e8.bufferSize());
   const fallback = safe[0] ?? "utf-8";
-  const answer = gnista.completingRead(`Select coding system (default ${fallback}): `, gnista.codingSystemList(), { history: "coding-system-history" });
-  const chosen = gnista.checkCodingSystem(answer === "" ? fallback : answer) as string;
-  gnista.setVariable("buffer-file-coding-system", mergeCodingSystems(chosen, coding));
+  const answer = e8.completingRead(`Select coding system (default ${fallback}): `, e8.codingSystemList(), { history: "coding-system-history" });
+  const chosen = e8.checkCodingSystem(answer === "" ? fallback : answer) as string;
+  e8.setVariable("buffer-file-coding-system", mergeCodingSystems(chosen, coding));
 }
 
-gnista.bindKey("C-x RET f", "set-buffer-file-coding-system");
-gnista.bindKey("C-x RET r", "revert-buffer-with-coding-system");
-gnista.bindKey("C-x RET c", "universal-coding-system-argument");
+e8.bindKey("C-x RET f", "set-buffer-file-coding-system");
+e8.bindKey("C-x RET r", "revert-buffer-with-coding-system");
+e8.bindKey("C-x RET c", "universal-coding-system-argument");
