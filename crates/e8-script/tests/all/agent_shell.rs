@@ -568,6 +568,42 @@ fn live_claude_code_s_markdown_becomes_org() {
     assert!(!reply.contains("```") && !reply.contains("**") && !reply.contains("\n## ") && !reply.contains("\n* "), "{text}");
 }
 
+/// The real Claude Code's settings: its session starts with the buffer,
+/// and the model picked before the first request is the one that answers:
+/// `cargo test -- --ignored live`.
+#[test]
+#[ignore]
+fn live_claude_code_s_model_is_picked_before_the_first_request() {
+    let d = Driven::new(
+        r#"e8.setVariable("agent-shell-agents", [["claude", ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]]]);
+        e8.setVariable("agent-shell-default-agent", "claude");"#,
+    );
+    d.mx("agent-shell");
+    let start = std::time::Instant::now();
+    // The settings show ahead of the keys once the session is there.
+    while header(&d).starts_with(" Starting") || header(&d).starts_with(" C-c RET") {
+        assert!(start.elapsed() < std::time::Duration::from_secs(120), "{}", header(&d));
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    eprintln!("{}", header(&d));
+    d.eval(r#"e8.call("agent-shell-set-session-model", "haiku")"#);
+    while !header(&d).starts_with(" Haiku") {
+        assert!(start.elapsed() < std::time::Duration::from_secs(120), "{}", header(&d));
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    eprintln!("{}", header(&d));
+    d.type_text("Which Claude model are you? Answer with just its name, and use no tools.");
+    d.press("C-c RET");
+    while d.text().matches("* You\n").count() < 2 {
+        assert!(start.elapsed() < std::time::Duration::from_secs(180), "{}", d.text());
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    let text = d.text();
+    eprintln!("{text}");
+    let reply = &text[text.find("* Agent\n").unwrap()..];
+    assert!(reply.to_lowercase().contains("haiku"), "{text}");
+}
+
 /// The real Claude Code writing a file, answering yes if it asks: `cargo
 /// test -- --ignored live`. Its adapter writes with its own tools, asking
 /// as Claude Code's permission settings say, rather than through the
@@ -656,4 +692,104 @@ fn the_agent_gets_e8s_own_tools_when_this_editor_has_a_socket() {
         });"#,
     );
     assert_eq!(s.d.eval_expression("[on, off, unsocketed]"), "[true,true,true]");
+}
+
+/// Initialize and a session, whose answer gives `session`'s keys too.
+fn session_opening(session: Value) -> Vec<Value> {
+    let mut result = json!({"sessionId": "s1"});
+    result.as_object_mut().unwrap().extend(session.as_object().unwrap().clone());
+    vec![
+        json!({"expect": {"method": "initialize", "id": 1}}),
+        json!({"send": {"id": 1, "result": {"protocolVersion": 1, "agentCapabilities": {}, "authMethods": []}}}),
+        json!({"expect": {"method": "session/new", "id": 2}}),
+        json!({"send": {"id": 2, "result": result}}),
+    ]
+}
+
+/// A select setting as ACP's configOptions give one.
+fn select(id: &str, category: &str, current: &str, values: &[(&str, &str)]) -> Value {
+    json!({"id": id, "name": id[..1].to_uppercase() + &id[1..], "category": category, "type": "select", "currentValue": current,
+        "options": values.iter().map(|(v, n)| json!({"value": v, "name": n})).collect::<Vec<_>>()})
+}
+
+fn claude_options(model: &str, effort: &str) -> Value {
+    json!([
+        select("mode", "mode", "auto", &[("default", "Manual"), ("plan", "Plan"), ("auto", "Auto")]),
+        select("model", "model", model, &[("opus", "Opus 5.5"), ("sonnet", "Sonnet 5.5")]),
+        select("effort", "thought_level", effort, &[("high", "High"), ("max", "Max")]),
+        select("fast", "model_config", "off", &[("on", "On"), ("off", "Off")]),
+    ])
+}
+
+/// Waits until `f` holds, failing after ten seconds.
+fn wait_for(what: &str, f: impl Fn() -> bool) {
+    let start = std::time::Instant::now();
+    while !f() {
+        assert!(start.elapsed() < std::time::Duration::from_secs(10), "never: {what}");
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+fn header(d: &Driven) -> String {
+    js_string(d, "e8.variable(\"header-line-format\")")
+}
+
+#[test]
+fn the_session_starts_with_the_buffer_and_its_model_is_picked_with_c_c_c_v() {
+    let mut steps = session_opening(json!({"configOptions": claude_options("opus", "high")}));
+    steps.extend([
+        json!({"expect": {"method": "session/set_config_option", "id": 3, "params": {"sessionId": "s1", "configId": "model", "value": "sonnet"}}}),
+        json!({"send": {"id": 3, "result": {"configOptions": claude_options("sonnet", "high")}}}),
+        json!({"expect": {"method": "session/set_config_option", "id": 4, "params": {"configId": "effort", "value": "max"}}}),
+        json!({"send": {"id": 4, "result": {"configOptions": claude_options("sonnet", "max")}}}),
+        json!({"expect": {"method": "session/set_config_option", "id": 5, "params": {"configId": "fast", "value": "on"}}}),
+        json!({"send": {"id": 5, "result": {}}}),
+        json!({"sleep": 1}),
+        update(json!({"sessionUpdate": "config_option_update", "configOptions": claude_options("opus", "max")})),
+        json!({"sleep": 5}),
+    ]);
+    let Some(s) = setup(steps, "") else { return };
+    // Before any request, the session is there and its settings show.
+    wait_for("the settings show", || header(&s.d).starts_with(" Opus 5.5 · Auto · High  C-c RET send"));
+    s.d.press("C-c C-v");
+    assert_eq!(s.d.prompt().as_deref(), Some("Model (Opus 5.5): "));
+    s.d.type_text("Sonnet 5.5");
+    s.d.press("RET");
+    wait_for("the model changes", || header(&s.d).starts_with(" Sonnet 5.5 · Auto · High"));
+    assert_eq!(s.d.message().as_deref(), Some("Model: Sonnet 5.5"));
+    // Code picks by a value's id as well as its name; C-c C-t is the thought level.
+    s.d.eval(r#"e8.call("agent-shell-set-session-thought-level", "max")"#);
+    wait_for("the effort changes", || header(&s.d).contains("· Max"));
+    // Any setting, by C-c C-s's command; an answer without settings keeps the value picked.
+    s.d.eval(r#"e8.call("agent-shell-set-session-config-option", "Fast", "On")"#);
+    wait_for("fast mode is on", || s.d.message().as_deref() == Some("Fast: On"));
+    // The agent's own changes show too.
+    wait_for("the agent's update shows", || header(&s.d).starts_with(" Opus 5.5 · Auto · Max"));
+    assert_eq!(s.d.text(), "* You\n", "nothing is written in the conversation");
+}
+
+#[test]
+fn an_agent_with_only_modes_cycles_them_with_c_c_tab_or_c_tab() {
+    let mut steps = session_opening(json!({"modes": {"currentModeId": "default", "availableModes": [
+        {"id": "default", "name": "Ask"}, {"id": "plan", "name": "Plan"}]}}));
+    steps.extend([
+        json!({"expect": {"method": "session/set_mode", "id": 3, "params": {"sessionId": "s1", "modeId": "plan"}}}),
+        json!({"send": {"id": 3, "result": {}}}),
+        json!({"sleep": 1}),
+        update(json!({"sessionUpdate": "current_mode_update", "currentModeId": "default"})),
+        json!({"expect": {"method": "session/set_mode", "id": 4, "params": {"modeId": "plan"}}}),
+        json!({"send": {"id": 4, "result": {}}}),
+        json!({"sleep": 5}),
+    ]);
+    let Some(s) = setup(steps, "") else { return };
+    wait_for("the mode shows", || header(&s.d).starts_with(" Ask  C-c RET"));
+    s.d.press("C-c TAB");
+    wait_for("the mode moves on", || header(&s.d).starts_with(" Plan  "));
+    assert_eq!(s.d.message().as_deref(), Some("Mode: Plan"));
+    wait_for("the agent's own mode change shows", || header(&s.d).starts_with(" Ask  "));
+    s.d.press("C-<tab>");
+    wait_for("C-<tab> moves it on too", || header(&s.d).starts_with(" Plan  "));
+    // It offers no model, and says so.
+    s.d.press("C-c C-v");
+    assert_eq!(s.d.message().as_deref(), Some("fake offers no model to pick"));
 }
