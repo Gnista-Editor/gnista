@@ -343,7 +343,7 @@ declare global {
       /**
        * The mode of a conversation with a coding agent, started with M-x agent-shell.
        *
-       * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent, its Markdown made Org; each tool call is a line, with its output or diff folded under it once the turn ends (TAB on the line shows it). The agent asks before its tools act. C-c C-k stops the turn. The mode line shows whether the agent is working and how much of its context the conversation fills.
+       * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent, its Markdown made Org; each tool call is a line, with its output or diff folded into it as it comes (TAB on the line shows it, and a call the agent asks about shows its diff while it asks), as is its thinking. The tools agent-shell-hidden-tools names are left out. The agent asks before its tools act. C-c C-k stops the turn. The mode line shows whether the agent is working and how much of its context the conversation fills.
        *
        * The header line shows the session's model, mode and thought level. C-c TAB, or C-<tab> as in Emacs's agent-shell where tab-bar-mode does not take it, moves to the next mode, C-c C-v picks the model, C-c C-t the thought level, and C-c C-s any setting the agent offers. Picking a mode is M-x agent-shell-set-session-mode, as C-c C-m is C-c RET.
        *
@@ -7235,6 +7235,12 @@ declare global {
        */
       "agent-shell-e8-tools": Value;
       /**
+       * The tools, by the name the agent gives them, whose calls the buffer leaves out: Claude Code's own bookkeeping, finding its tools and keeping its to-do list, which shows as the plan.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-hidden-tools": Value;
+      /**
        * Keymap agent-shell-mode-map.
        */
       "agent-shell-mode-map": Value;
@@ -9624,6 +9630,12 @@ declare global {
        * Defined in packages/org-habit.ts.
        */
       "org-habit-today-glyph": Value;
+      /**
+       * Whether the markers around emphasised text are hidden, the stars of *bold* and the tildes of ~code~, showing only its face.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-hide-emphasis-markers": Value;
       /**
        * Whether a heading shows only its last star, the others in the org-hide face, the colour of the background.
        *

@@ -84,6 +84,18 @@ fn links_show_their_description() {
 }
 
 #[test]
+fn org_hide_emphasis_markers_hides_the_stars_and_tildes() {
+    let text = "Some *bold*, ~code~ and a * b * c.\n";
+    let (ed, _s) = org(text);
+    assert_eq!(rows(&ed)[0], "Some *bold*, ~code~ and a * b * c.", "shown by default, as in Emacs");
+    let (mut ed, s) = org(text);
+    s.eval_typescript(&mut ed, "test.ts", "e8.setVariable(\"org-hide-emphasis-markers\", true); e8.call(\"font-lock-flush\");".into()).unwrap();
+    ed.redisplay();
+    assert_eq!(rows(&ed)[0], "Some bold, code and a * b * c.");
+    assert_eq!(faces_at(&ed, find(&ed, "bold")), ["bold"]);
+}
+
+#[test]
 fn text_objects_get_their_faces() {
     let (ed, _s) = org(
         "#+TITLE: My notes\n\

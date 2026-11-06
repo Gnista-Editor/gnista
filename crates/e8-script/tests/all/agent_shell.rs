@@ -604,6 +604,40 @@ fn live_claude_code_s_model_is_picked_before_the_first_request() {
     assert!(reply.to_lowercase().contains("haiku"), "{text}");
 }
 
+/// The real Claude Code's tool calls: short lines with what they did,
+/// their output folded as it comes, and its bookkeeping left out: `cargo
+/// test -- --ignored live`.
+#[test]
+#[ignore]
+fn live_claude_code_s_tool_calls_fold_as_they_come() {
+    let d = Driven::new(
+        r#"e8.setVariable("agent-shell-agents", [["claude", ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]]]);
+        e8.setVariable("agent-shell-default-agent", "claude");"#,
+    );
+    d.mx("agent-shell");
+    d.type_text("Run `ls crates` with your Bash tool, then read Cargo.toml's first five lines with your Read tool, then reply in one short sentence.");
+    d.press("C-c RET");
+    let start = std::time::Instant::now();
+    // Once the first output is in, and before the turn ends, it is folded.
+    let mut seen_folded = false;
+    while d.text().matches("* You\n").count() < 2 {
+        assert!(start.elapsed() < std::time::Duration::from_secs(180), "{}", d.text());
+        let t = d.text();
+        if let Some(i) = t.find("#+begin_example\n") {
+            if t.matches("* You\n").count() < 2 && hidden_in(&d, &t, i) {
+                seen_folded = true;
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    let text = d.text();
+    eprintln!("{text}");
+    let reply = &text[text.find("* Agent\n").unwrap()..];
+    assert!(reply.contains("→ ~ls crates~"), "{text}");
+    assert!(!reply.contains("ToolSearch"), "{text}");
+    assert!(seen_folded, "a block was folded while the turn went on");
+}
+
 /// The real Claude Code writing a file, answering yes if it asks: `cargo
 /// test -- --ignored live`. Its adapter writes with its own tools, asking
 /// as Claude Code's permission settings say, rather than through the
@@ -792,4 +826,114 @@ fn an_agent_with_only_modes_cycles_them_with_c_c_tab_or_c_tab() {
     // It offers no model, and says so.
     s.d.press("C-c C-v");
     assert_eq!(s.d.message().as_deref(), Some("fake offers no model to pick"));
+}
+
+/// Whether the character at `at` in the shell's buffer is hidden.
+/// Whether the character `at` bytes into `text`, the shell's buffer's text, is hidden.
+fn hidden_in(d: &Driven, text: &str, at: usize) -> bool {
+    hidden_at(d, text[..at].chars().count())
+}
+
+fn hidden_at(d: &Driven, at: usize) -> bool {
+    d.with(move |ed| {
+        let shell = ed.find_buffer("*agent-shell: fake*").or_else(|| ed.find_buffer("*agent-shell: claude*")).unwrap();
+        let b = &ed.buffers()[shell];
+        ed.invisible_in(b, at).is_some()
+    })
+}
+
+fn tool_update(id: &str, extra: Value) -> Value {
+    let mut u = json!({"sessionUpdate": "tool_call_update", "toolCallId": id});
+    u.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+    update(u)
+}
+
+#[test]
+fn tool_output_and_thinking_fold_as_they_stream_and_tab_keeps_one_open() {
+    let mut steps = opening("go");
+    steps.extend([
+        update(json!({"sessionUpdate": "agent_thought_chunk", "content": {"type": "text", "text": "Thinking\nhard"}})),
+        json!({"sleep": 1.5}),
+        update(json!({"sessionUpdate": "tool_call", "toolCallId": "t1", "title": "Run make", "kind": "execute", "status": "in_progress"})),
+        tool_update("t1", json!({"content": [{"type": "content", "content": {"type": "text", "text": "line one"}}]})),
+        json!({"sleep": 1.5}),
+        tool_update("t1", json!({"status": "completed", "content": [{"type": "content", "content": {"type": "text", "text": "line one\nline two"}}]})),
+        json!({"sleep": 1.5}),
+        end_turn("end_turn"),
+    ]);
+    let Some(s) = setup(steps, "go") else { return };
+    s.d.press("C-c RET");
+    // The thinking folds into its line while it is still coming.
+    s.d.until(|t| t.contains("  hard"));
+    let t = s.d.text();
+    assert!(hidden_in(&s.d, &t, t.find("  hard").unwrap()), "{t}");
+    // So does the tool's output, as soon as there is some.
+    s.d.until(|t| t.contains("  line one"));
+    let t = s.d.text();
+    let line = t.find("→ ").unwrap();
+    assert!(hidden_in(&s.d, &t, t.find("  line one").unwrap()), "{t}");
+    assert!(t.contains("Thinking:\n#+begin_example\n  Thinking\n  hard\n#+end_example\n"), "{t}");
+    assert!(hidden_in(&s.d, &t, t.find("#+end_example").unwrap()), "the thinking's end folds with it");
+    // TAB opens it, and the next update keeps it open.
+    s.d.eval(&format!("e8.gotoChar({})", line + 2));
+    s.d.press("TAB");
+    assert!(!hidden_in(&s.d, &t, t.find("  line one").unwrap()));
+    s.d.until(|t| t.contains("  line two"));
+    let t = s.d.text();
+    assert!(!hidden_in(&s.d, &t, t.find("  line two").unwrap()), "still open after the update");
+    let t = s.finished();
+    assert!(!hidden_in(&s.d, &t, t.find("  line two").unwrap()), "and once the turn ends");
+}
+
+#[test]
+fn a_call_s_diff_shows_while_its_permission_is_asked() {
+    let mut steps = opening("edit");
+    steps.extend([
+        update(json!({"sessionUpdate": "tool_call", "toolCallId": "t1", "title": "Edit a.txt", "kind": "edit", "status": "pending",
+            "content": [{"type": "diff", "path": "/x/a.txt", "oldText": "one", "newText": "two"}]})),
+        json!({"send": {"id": 50, "method": "session/request_permission", "params": {"sessionId": "s1",
+            "toolCall": {"toolCallId": "t1", "title": "Edit a.txt"},
+            "options": [{"optionId": "allow", "name": "Allow", "kind": "allow_once"}, {"optionId": "reject", "name": "Reject", "kind": "reject_once"}]}}}),
+        json!({"expect": {"id": 50}}),
+        end_turn("end_turn"),
+    ]);
+    let Some(s) = setup(steps, "edit") else { return };
+    s.d.press("C-c RET");
+    s.wait_asked();
+    let t = s.d.text();
+    assert!(!hidden_in(&s.d, &t, t.find("  +two").unwrap()), "the diff shows while it asks: {t}");
+    s.d.press("y");
+    let t = s.finished();
+    assert!(hidden_in(&s.d, &t, t.find("  +two").unwrap()), "and folds once answered");
+}
+
+#[test]
+fn tool_lines_are_short_and_claude_s_bookkeeping_is_left_out() {
+    let mut steps = opening("look");
+    let home = std::env::var("HOME").unwrap();
+    steps.extend([
+        update(json!({"sessionUpdate": "tool_call", "toolCallId": "t0", "title": "ToolSearch", "kind": "other", "status": "pending",
+            "_meta": {"claudeCode": {"toolName": "ToolSearch"}}})),
+        tool_update("t0", json!({"status": "completed", "content": [{"type": "content", "content": {"type": "text", "text": "tools"}}]})),
+        update(json!({"sessionUpdate": "tool_call", "toolCallId": "t1", "title": "mcp__e8__screen", "kind": "other", "status": "pending",
+            "_meta": {"claudeCode": {"toolName": "mcp__e8__screen"}}})),
+        tool_update("t1", json!({"rawInput": {"window": 1}, "status": "completed"})),
+        update(json!({"sessionUpdate": "tool_call", "toolCallId": "t2", "title": "Terminal", "kind": "execute", "status": "pending",
+            "_meta": {"claudeCode": {"toolName": "Bash"}}})),
+        tool_update("t2", json!({"title": format!("ls {home}/notes"), "rawInput": {"command": "ls", "description": "List the sources"}, "status": "completed"})),
+        end_turn("end_turn"),
+    ]);
+    let Some(s) = setup(steps, "look") else { return };
+    s.d.press("C-c RET");
+    let t = s.finished();
+    assert!(!t.contains("ToolSearch") && !t.contains("tools"), "{t}");
+    assert!(t.contains("→ ~e8: screen window=1~\n"), "{t}");
+    assert!(t.contains("→ =ls ~/notes= — List the sources\n"), "{t}");
+    // ~code~ shows without its tildes here.
+    s.d.with(|ed| ed.redisplay());
+    // In characters, as buffer positions are: the arrow is three bytes.
+    let at = t[..t.find("~e8: screen").unwrap()].chars().count();
+    assert!(hidden_at(&s.d, at) && !hidden_at(&s.d, at + 1), "{t}");
+    // Quitting asks nothing about the agent's process.
+    assert_eq!(js_string(&s.d, "String(e8.processList().filter((p) => e8.processQueryOnExitFlag(p)).length)"), "0");
 }
