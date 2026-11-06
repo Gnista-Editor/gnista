@@ -1,0 +1,119 @@
+# Runs what `make check` runs, every test and clippy on V8 and on QuickJS,
+# on each pull request and on main, and the tests of the ports in their own
+# repositories against this Gnista, so a change here that breaks one shows
+# here (docs/adr/0059-packages-are-git-repositories.md).
+#
+# macOS is where Gnista is made and used, so its jobs must pass. Linux runs
+# too, as an experiment, until its failures are known and fixed.
+
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: ${{ matrix.engine }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [v8, quickjs]
+        os: [macos-15]
+        experimental: [false]
+        include:
+          - engine: v8
+            os: ubuntu-24.04
+            experimental: true
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+    env:
+      FEATURES: ${{ matrix.engine == 'quickjs' && '--no-default-features --features quickjs' || '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust and cargo-nextest
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+          case "$RUNNER_OS" in macOS) platform=mac ;; *) platform=linux ;; esac
+          curl -LsSf "https://get.nexte.st/latest/$platform" | tar zxf - -C "${CARGO_HOME:-$HOME/.cargo}/bin"
+          cargo nextest --version
+
+      # Tests make git repositories and commits of their own.
+      - name: Set up git
+        run: |
+          git config --global user.name "Gnista CI"
+          git config --global user.email "ci@gnista.invalid"
+          git config --global init.defaultBranch main
+
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: test-${{ matrix.os }}-${{ matrix.engine }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: test-${{ matrix.os }}-${{ matrix.engine }}-
+
+      - name: Test
+        run: cargo nextest run --workspace --locked $FEATURES
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked $FEATURES
+
+  ports:
+    name: Ports
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ports-${{ hashFiles('Cargo.lock') }}
+          restore-keys: ports-
+
+      - name: Build gnista
+        run: cargo build --locked -p gnista
+
+      # The ports moved to repositories of their own, each tested with its
+      # own `make test` against the gnista just built.
+      - name: Test the ports
+        run: |
+          gnista="$PWD/target/debug/gnista"
+          failed=""
+          for port in gnista-vundo gnista-nord-theme; do
+            echo "::group::$port"
+            git clone --quiet --depth 1 "https://github.com/Gnista-Editor/$port" "$RUNNER_TEMP/$port"
+            if ! make -C "$RUNNER_TEMP/$port" test GNISTA="$gnista"; then
+              failed="$failed $port"
+            fi
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then
+            echo "::error::Ports whose tests failed against this Gnista:$failed"
+            exit 1
+          fi
