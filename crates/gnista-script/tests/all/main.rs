@@ -8,6 +8,7 @@
 mod driven;
 
 mod abbrev;
+mod acp;
 mod awaiting;
 mod batch;
 mod blocking;

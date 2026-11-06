@@ -120,6 +120,7 @@ Gnista reorders text as Emacs 30.2 does, and `tests/emacs/bidi/` compares the tw
 - **Saving text the coding cannot write** (not yet) asks for a coding without the `*Warning*` buffer Emacs shows listing the characters; written without asking, from code, it is saved as UTF-8.
 - **Imenu** (not yet) makes the index afresh each time, so there is no `*Rescan*` item, and there is no menu bar index ([ADR 0039](adr/0039-imenu.md)).
 - **Comint** (not yet) has no prompt regexps (`comint-use-prompt-regexp`) or completion at the prompt, and ANSI colours other than the 256-colour and RGB ones are faces of Gnista's own rather than face attribute lists ([ADR 0038](adr/0038-comint-and-shell.md)).
+- **Standard error** (not yet): `makeProcess`'s `stderr` takes a buffer, as `make-process`'s `:stderr` does, on pipes only; not a pipe process with a filter of its own, and text inserted there runs no change hooks, as a process's output into its buffer runs none in Gnista.
 - **Network connections** (not yet) connect while the command waits; `:nowait`, TLS and datagrams are not there ([ADR 0037](adr/0037-terminals-sockets-and-process-codings.md)).
 - **Connecting or listening** (deliberate) asks the agent's permission while it acts, as running a program does.
 - **Changing a file's modes or times** (deliberate) asks the agent's permission while it acts, as writing files does; Emacs has no agent to ask.
@@ -143,6 +144,7 @@ Kept for completeness, as they cannot be seen:
 
 - **Installing packages** (not yet): only from git repositories, as package-vc does, with git on PATH; there are no archives, so no `list-packages` to browse, no `package-install` by name, and no tarball downloads. Upgrading a package takes effect when Gnista next starts, as a module once imported is not imported again. Packages are installed in `repos/` beside `init.ts`, where Emacs's go in `elpa/` (deliberate: they are neither Emacs Lisp nor from an archive). There are no autoloads, so `package-vc.ts` is preloaded for its commands ([ADR 0059](adr/0059-packages-are-git-repositories.md)).
 - **ERT** (deliberate): `should` is given a value, or a function whose source it shows, not a form, so `shouldEqual` stands for `(should (equal A B))` to show both values; there are no `ert-explain` explanations, no `M-x ert` results buffer commands, and test bodies run without awaiting.
+- **acp** (not yet): the client follows acp.el 0.18.2, but its traffic buffer is a line for each message, without acp-traffic.el's browser, and what the agent writes to standard error reaches the error handlers when its output, its end or a quarter-second timer looks at its stderr buffer, where Emacs's after-change hook sees it at once. The process group is signalled only while the agent runs, so children it left behind after exiting are not killed at shutdown. Requests from TRAMP directories are not supported ([ADR 0061](adr/0061-agents-over-acp.md)).
 - **Batch mode** (not yet): `--batch` runs `-L`, `-l`, `-f` and `--eval`, not Emacs's other options; prompts are not read from standard input, and timers and processes run only while a script waits on them.
 
 ## Packages that do not ship

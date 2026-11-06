@@ -748,6 +748,7 @@ natives! {
                 _ => Vec::new(),
             },
             merge_stderr: options.get("stderr").is_none_or(EditorValue::is_true),
+            stderr_buffer: options.string("stderr"),
             filter: filter.map(hook_of),
             sentinel: sentinel.map(hook_of),
             pty: options.flag("pty"),

@@ -152,6 +152,16 @@ pub(crate) struct Process {
     pending: Vec<u8>,
     /// How to tell that all a local program's output has been read.
     gate: Option<OutputGate>,
+    /// Where its standard error goes when that is a buffer of its own, as
+    /// make-process's :stderr: the buffer, its own mark, and bytes not
+    /// decoded yet.
+    stderr: Option<StderrBuffer>,
+}
+
+struct StderrBuffer {
+    buffer: u64,
+    mark: u64,
+    pending: Vec<u8>,
 }
 
 /// What tells the editor that a program's output has all been read, so its
@@ -192,6 +202,8 @@ impl OutputGate {
 
 enum Event {
     Output(u64, Vec<u8>),
+    /// What a process wrote to standard error, kept apart from its output.
+    Stderr(u64, Vec<u8>),
     Closed(u64),
     /// A server took a connection, from this peer.
     Accepted(u64, Conn, String),
@@ -333,7 +345,7 @@ impl Processes {
                 return None;
             }
             match self.rx.recv_timeout(Duration::from_millis(5)) {
-                Ok(Event::Output(i, _) | Event::Closed(i)) if i == id => {}
+                Ok(Event::Output(i, _) | Event::Stderr(i, _) | Event::Closed(i)) if i == id => {}
                 Ok(event) => self.held.push_back(event),
                 Err(_) => {}
             }
@@ -395,6 +407,10 @@ pub struct ProcessSpec {
     pub env: Vec<(String, String)>,
     /// Whether what it writes to standard error comes in as output too.
     pub merge_stderr: bool,
+    /// A buffer, by name, for what it writes to standard error, made if
+    /// there is none, as make-process's :stderr; on pipes only, and
+    /// `merge_stderr` then does not apply.
+    pub stderr_buffer: Option<String>,
     pub filter: Option<HookFn>,
     pub sentinel: Option<HookFn>,
     /// Whether it talks through a pseudo-terminal rather than pipes, as
@@ -423,8 +439,16 @@ pub struct NetworkSpec {
 /// gate, it waits until there is something to read, then reads it and sends
 /// it on holding the gate's lock, so the editor, holding the lock, knows
 /// whatever has been read has been sent ([`OutputGate`]); `delay` holds each
-/// read back, for tests of a reader that is slow to run.
-fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: EventSender, gate: Option<(Arc<Mutex<()>>, i32)>, delay: Duration) {
+/// read back, for tests of a reader that is slow to run. `event` makes what
+/// is sent of each chunk: output, or standard error.
+fn read_stream(
+    id: u64,
+    mut stream: impl Read + Send + 'static,
+    tx: EventSender,
+    gate: Option<(Arc<Mutex<()>>, i32)>,
+    delay: Duration,
+    event: fn(u64, Vec<u8>) -> Event,
+) {
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
         loop {
@@ -443,7 +467,7 @@ fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: EventSender,
             match stream.read(&mut buf) {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
-                    if tx.send(Event::Output(id, buf[..n].to_vec())).is_err() {
+                    if tx.send(event(id, buf[..n].to_vec())).is_err() {
                         return;
                     }
                 }
@@ -546,6 +570,7 @@ impl Editor {
         let pty: Option<((), (), String)> = None;
         #[cfg(unix)]
         let gate_fd: std::os::fd::OwnedFd;
+        let mut errors: Option<std::io::PipeReader> = None;
         let mut output: Box<dyn Read + Send> = match &pty {
             #[cfg(unix)]
             Some((master, slave, _)) => {
@@ -576,7 +601,16 @@ impl Editor {
                 {
                     gate_fd = std::os::fd::OwnedFd::from(output.try_clone()?);
                 }
-                let stderr = if spec.merge_stderr { Stdio::from(writer.try_clone()?) } else { Stdio::null() };
+                // Standard error in a pipe of its own when it has a buffer.
+                let stderr = if spec.stderr_buffer.is_some() {
+                    let (reader, writer) = std::io::pipe().map_err(|e| Error::new(format!("Making a pipe: {e}")))?;
+                    errors = Some(reader);
+                    Stdio::from(writer)
+                } else if spec.merge_stderr {
+                    Stdio::from(writer.try_clone()?)
+                } else {
+                    Stdio::null()
+                };
                 command.stdin(Stdio::piped()).stdout(writer).stderr(stderr);
                 // Its own process group, so signals reach what it starts too.
                 #[cfg(unix)]
@@ -620,8 +654,26 @@ impl Editor {
         let (raw, gate) = { let _ = gate; (-1, None::<OutputGate>) };
         #[cfg(unix)]
         let gate = Some(gate);
-        read_stream(id, std::mem::replace(&mut output, Box::new(std::io::empty())), self.processes.tx.clone(), gate.as_ref().map(|g| (g.lock.clone(), raw)), self.processes.read_delay);
-        let open_streams = 1;
+        read_stream(
+            id,
+            std::mem::replace(&mut output, Box::new(std::io::empty())),
+            self.processes.tx.clone(),
+            gate.as_ref().map(|g| (g.lock.clone(), raw)),
+            self.processes.read_delay,
+            Event::Output,
+        );
+        let mut open_streams = 1;
+        let stderr = match (errors, &spec.stderr_buffer) {
+            (Some(errors), Some(name)) => {
+                read_stream(id, errors, self.processes.tx.clone(), None, self.processes.read_delay, Event::Stderr);
+                open_streams += 1;
+                let index = self.get_buffer_create(name);
+                let b = &mut self.buffers[index];
+                let end = b.len();
+                Some(StderrBuffer { buffer: b.id, mark: b.make_marker(end, false), pending: Vec::new() })
+            }
+            _ => None,
+        };
         let coding = spec.coding.unwrap_or_else(|| self.default_process_coding());
         let (buffer_id, mark) = match buffer {
             Some(index) => {
@@ -650,6 +702,7 @@ impl Editor {
             coding,
             pending: Vec::new(),
             gate,
+            stderr,
         });
         Ok(name)
     }
@@ -771,6 +824,7 @@ impl Editor {
             coding,
             pending: Vec::new(),
             gate: None,
+            stderr: None,
         });
         Ok(name)
     }
@@ -779,7 +833,7 @@ impl Editor {
     fn connect(&mut self, id: u64, conn: Conn) -> Result<Sender<Option<Vec<u8>>>> {
         let reader = conn.try_clone()?;
         let closer = conn.try_clone()?;
-        read_stream(id, reader, self.processes.tx.clone(), None, Duration::ZERO);
+        read_stream(id, reader, self.processes.tx.clone(), None, Duration::ZERO, Event::Output);
         Ok(writer(conn, move || closer.shutdown(std::net::Shutdown::Write)))
     }
 
@@ -830,6 +884,7 @@ impl Editor {
             coding,
             pending: Vec::new(),
             gate: None,
+            stderr: None,
         });
         if let Some(f) = sentinel
             && let Err(e) = f(self, &[Value::Str(name), Value::Str(format!("open from {host}\n"))])
@@ -1061,6 +1116,9 @@ impl Editor {
         if let Some(id) = p.mark {
             self.delete_marker(id);
         }
+        if let Some(err) = p.stderr {
+            self.delete_marker(err.mark);
+        }
         Ok(())
     }
 
@@ -1096,6 +1154,7 @@ impl Editor {
                         }
                     }
                 }
+                Event::Stderr(id, bytes) => self.process_stderr(id, &bytes),
                 Event::Accepted(server, conn, peer) => self.accept_connection(server, conn, peer),
                 Event::Closed(id) => {
                     if let Some(p) = self.processes.list.iter_mut().find(|p| p.id == id) {
@@ -1157,7 +1216,7 @@ impl Editor {
                     gate.when_quiet(|| {
                         held.extend(rx.try_iter());
                         let (mine, others): (Vec<Event>, Vec<Event>) =
-                            held.drain(..).partition(|e| matches!(e, Event::Output(i, _) | Event::Closed(i) if *i == id));
+                            held.drain(..).partition(|e| matches!(e, Event::Output(i, _) | Event::Stderr(i, _) | Event::Closed(i) if *i == id));
                         held.extend(others);
                         taken = mine;
                     })
@@ -1176,6 +1235,7 @@ impl Editor {
                             self.process_output(&name, &text);
                         }
                     }
+                    Event::Stderr(_, bytes) => self.process_stderr(id, &bytes),
                     Event::Closed(_) => {}
                     Event::Accepted(..) => unreachable!("only this process's output is taken"),
                 }
@@ -1213,6 +1273,9 @@ impl Editor {
                 let p = self.processes.list.remove(i);
                 if let Some(id) = p.mark {
                     self.delete_marker(id);
+                }
+                if let Some(err) = p.stderr {
+                    self.delete_marker(err.mark);
                 }
             }
         }
@@ -1279,6 +1342,26 @@ impl Editor {
             }
             self.maybe_quit()?;
             std::thread::sleep(Duration::from_millis(2));
+        }
+    }
+
+    /// Inserts what a process wrote to standard error into its stderr
+    /// buffer, decoded in its coding as its output is, as Emacs's :stderr
+    /// buffer takes it: no filter, and point moving along if at the end.
+    fn process_stderr(&mut self, id: u64, bytes: &[u8]) {
+        let Some(p) = self.processes.list.iter_mut().find(|p| p.id == id) else { return };
+        let Some(err) = p.stderr.as_mut() else { return };
+        err.pending.extend_from_slice(bytes);
+        let complete = match std::str::from_utf8(&err.pending) {
+            Ok(_) => err.pending.len(),
+            Err(e) if e.error_len().is_none() && matches!(p.coding.0.system().coding_type, "utf-8" | "undecided") => e.valid_up_to(),
+            Err(_) => err.pending.len(),
+        };
+        let chunk: Vec<u8> = err.pending.drain(..complete).collect();
+        let text = p.coding.0.decode(&chunk).0;
+        let (buffer, mark) = (err.buffer, err.mark);
+        if !text.is_empty() {
+            self.insert_process_text(Some(buffer), Some(mark), &text, true);
         }
     }
 
