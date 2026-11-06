@@ -1,7 +1,13 @@
 # Runs what `make check` runs, every test and clippy on V8 and on QuickJS,
-# on each pull request and on main, and the tests of the ports in their own
-# repositories against this Gnista, so a change here that breaks one shows
-# here (docs/adr/0059-packages-are-git-repositories.md).
+# and the tests of the ports in their own repositories against this Gnista,
+# so a change here that breaks one shows here
+# (docs/adr/0059-packages-are-git-repositories.md).
+#
+# On main after each merge, and by hand (Actions, Test, Run workflow), not on
+# pull requests: while Gnista changes fast, `make check` before pushing is
+# the gate, and waiting 20 minutes on GitHub's runners to merge is not worth
+# it. Turn pull requests back on once a stage branch takes the merges
+# (CLAUDE.md, "Branches, worktrees and pull requests").
 #
 # V8 on macOS, where Gnista is made and used, and both engines on Linux,
 # which the releases are built for too. One job on macOS, not two: GitHub's
@@ -11,8 +17,6 @@
 name: Test
 
 on:
-  pull_request:
-    paths-ignore: ["docs/**", "**.md"]
   push:
     branches: [main]
     paths-ignore: ["docs/**", "**.md"]
