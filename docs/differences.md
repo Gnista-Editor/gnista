@@ -104,6 +104,10 @@ Gnista reorders text as Emacs 30.2 does, and `tests/emacs/bidi/` compares the tw
 - **The title bar** (deliberate): on macOS a window's title bar is transparent, taking the theme's background, and the window looks dark or light as that background is, as Emacs's frames do with the `ns-transparent-titlebar` and `ns-appearance` parameters set. Emacs shows the system's title bar unless they are; Gnista has no frame parameters to turn it back. Full screen, the frame takes the whole screen.
 - **Window configurations** (not yet): a previous-buffer entry a window dropped after the configuration was saved comes back as it was then, not as a marker that followed edits.
 
+## Processes
+
+- **A process's last output after its end** (not yet): a process that has exited is reported finished once its output has closed, or 200 ms after it exited with nothing more arriving, for a program whose children keep its output open. On a heavily loaded machine the thread that reads the output can be held up longer than that, and the output then lands after "Process finished", or not at all. Emacs reads what is waiting before it reports the end. Seen in CI only; the test that shows it is retried until the end is noticed another way.
+
 ## Files and the clipboard
 
 - **Auto-revert** (not yet) polls every `auto-revert-interval` seconds rather than being told by the system ([ADR 0018](adr/0018-files-and-saving.md)).

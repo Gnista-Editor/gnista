@@ -63,6 +63,10 @@ fn annotations_are_what_marginalia_gives_in_emacs() {
         // Emacs in batch formats no mode line, so its buffer status is empty: compare the file.
         let (gnista, emacs) = if r.category == "buffer" {
             (gnista.map(|a| a.chars().rev().take(20).collect::<String>()), r.annotation.clone().map(|a| a.chars().rev().take(20).collect::<String>()))
+        } else if r.category == "file" {
+            // Emacs was recorded as mark; the file belongs to whoever runs the test.
+            let user = std::env::var("USER").unwrap_or_default();
+            (gnista, r.annotation.clone().map(|a| a.replace(" mark:", &format!(" {user}:"))))
         } else {
             (gnista, r.annotation.clone())
         };

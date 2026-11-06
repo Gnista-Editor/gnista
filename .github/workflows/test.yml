@@ -56,6 +56,17 @@ jobs:
           curl -LsSf "https://get.nexte.st/latest/$platform" | tar zxf - -C "$bin"
           PATH="$bin:$PATH" cargo nextest --version
 
+      # Ispell for flyspell's oracle cases, the version Emacs's answers were
+      # recorded with.
+      - name: Install Ispell
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install ispell
+          else
+            sudo apt-get update -q && sudo apt-get install -y -q ispell iamerican
+          fi
+          ispell -v | head -1
+
       # Tests make git repositories and commits of their own.
       - name: Set up git
         run: |
