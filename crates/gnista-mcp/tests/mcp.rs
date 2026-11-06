@@ -72,7 +72,7 @@ fn a_client_cannot_answer_a_question_it_did_not_ask() {
     assert!(!failed, "{said}");
     let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "move-beginning-of-line\n" }));
     assert!(!failed, "its own prompt: {said}");
-    assert!(ed.prompt().is_none());
+    assert!(ed.prompt().is_none(), "{said} / {:?}", ed.prompt());
 }
 
 #[test]
@@ -317,4 +317,187 @@ fn the_socket_directory_is_checked_not_changed() {
     std::fs::remove_dir_all(dir).unwrap();
     let _again = socket::listen(&path, || {}).unwrap();
     assert_eq!(mode(dir), 0o700, "made private when made here");
+}
+
+/// A client of the editor the user sees, named as it said when it connected.
+fn named_client(ed: &mut Editor, scripting: &Scripting, name: &str) -> gnista_mcp::Client {
+    let mut client = gnista_mcp::Client::default();
+    let message = json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "clientInfo": { "name": name, "version": "1" } } });
+    gnista_mcp::handle_client_message(ed, Some(scripting), &message.to_string(), &mut client).unwrap();
+    client
+}
+
+/// The user, answering each question with the next of `answers`; the questions asked so far.
+fn user_answers(ed: &mut Editor, answers: &[&'static str]) -> std::rc::Rc<std::cell::RefCell<Vec<String>>> {
+    let asked = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let seen = asked.clone();
+    let mut answers: std::collections::VecDeque<&'static str> = answers.iter().copied().collect();
+    ed.set_input_source(move |ed| match ed.prompt().map(str::to_string) {
+        Some(prompt) => {
+            let Some(answer) = answers.pop_front() else { return false };
+            seen.borrow_mut().push(prompt);
+            ed.type_text(answer);
+            true
+        }
+        None => false,
+    });
+    asked
+}
+
+/// An agent using the editor the user sees asks before writing a file,
+/// as Gnista's own agent does (ADR 0019): the call is refused, the user is
+/// asked, and the agent makes it again; yes is for that call, ! for good.
+#[test]
+fn a_client_asks_the_user_before_writing_a_file() {
+    let (mut ed, scripting) = setup();
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("notes.txt");
+    std::fs::write(&file, "saved\n").unwrap();
+    ed.call("find-file", vec![gnista_core::Arg::Str(file.display().to_string())]).unwrap();
+    let mut client = named_client(&mut ed, &scripting, "claude-code");
+    let asked = user_answers(&mut ed, &["y", "n", "!"]);
+    let (_, failed) = client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "edited " }));
+    assert!(!failed, "editing a buffer needs no approval");
+    // Asked, and allowed once: the call is made again.
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "call_command", json!({ "name": "save-buffer" }));
+    assert!(failed, "{said}");
+    assert!(said.contains("Needs the user's approval: write") && said.contains("The user allowed this once"), "{said}");
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "saved\n", "nothing written yet");
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "call_command", json!({ "name": "save-buffer" }));
+    assert!(!failed, "{said}");
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "edited saved\n");
+    // Once was once: the next write asks again, and the user declines.
+    client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "again " }));
+    let (said, _) = client_tool(&mut ed, &scripting, &mut client, "call_command", json!({ "name": "save-buffer" }));
+    assert!(said.contains("The user declined to let you write"), "{said}");
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "edited saved\n");
+    // Always: allowed from then on, asked no more.
+    client_tool(&mut ed, &scripting, &mut client, "call_command", json!({ "name": "save-buffer" }));
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "call_command", json!({ "name": "save-buffer" }));
+    assert!(!failed, "{said}");
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "edited again saved\n");
+    client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "more " }));
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "call_command", json!({ "name": "save-buffer" }));
+    assert!(!failed, "{said}");
+    let asked = asked.borrow();
+    assert_eq!(asked.len(), 3, "{asked:?}");
+    assert!(asked[0].starts_with("Let claude-code write ") && asked[0].ends_with("notes.txt? (y, ! for always or n) "), "{asked:?}");
+    assert!(!ed.agent_acting(), "the user acts again after each call");
+}
+
+/// Running TypeScript through gnista-mcp asks too, as M-: does for an agent;
+/// an editor of gnista-mcp's own, with no user to ask, runs it.
+#[test]
+fn a_client_asks_before_running_typescript() {
+    let (mut ed, scripting) = setup();
+    let mut client = named_client(&mut ed, &scripting, "claude-code");
+    let asked = user_answers(&mut ed, &["n"]);
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "eval_typescript", json!({ "code": "gnista.setVariable('ran', true)" }));
+    assert!(failed && said.contains("The user declined to let you run TypeScript"), "{said}");
+    assert_eq!(ed.variable("ran"), None);
+    assert_eq!(asked.borrow().len(), 1);
+    let (said, failed) = tool(&mut ed, &scripting, "eval_typescript", json!({ "code": "gnista.setVariable('ran', true)" }));
+    assert!(!failed, "{said}");
+    assert_eq!(ed.variable("ran"), Some(gnista_core::Value::Bool(true)));
+}
+
+/// A client's tools act in the window the user works in, never one showing
+/// an agent's conversation, as agent-shell's and *agent* are.
+#[test]
+fn a_client_acts_outside_the_agents_buffer() {
+    let (mut ed, scripting) = setup();
+    ed.call("split-window-below", vec![]).unwrap();
+    ed.call("switch-to-buffer", vec![gnista_core::Arg::Str("*conversation*".into())]).unwrap();
+    ed.set_variable("agent-buffer", gnista_core::Value::Bool(true));
+    let mut client = named_client(&mut ed, &scripting, "claude-code");
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "typed" }));
+    assert!(!failed, "{said}");
+    assert!(said.contains("Buffer *scratch*"), "{said}");
+    let text_of = |ed: &Editor, name: &str| {
+        let b = &ed.buffers()[ed.find_buffer(name).unwrap()];
+        b.slice(0..b.len())
+    };
+    assert_eq!(text_of(&ed, "*conversation*"), "");
+    assert!(text_of(&ed, "*scratch*").starts_with("typed"));
+    assert_eq!(ed.window_buffer().name, "*conversation*", "the user's window stays selected");
+}
+
+#[test]
+fn the_binary_with_a_socket_connects_to_that_editor_or_fails() {
+    let _one_at_a_time = CHILDREN.lock().unwrap_or_else(|e| e.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_gnista-mcp"))
+        .args(["--socket", &dir.path().join("none.sock").display().to_string()])
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1), "no editor of its own instead");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("no Gnista listens on"));
+}
+
+/// The real Claude Code, through M-x agent-shell and its adapter, using
+/// Gnista's own tools over this editor's socket: it edits a buffer and
+/// saves it, Gnista asking first. Needs Node and a Claude login: `cargo
+/// nextest run -p gnista-mcp --run-ignored ignored-only live`.
+#[test]
+#[ignore]
+fn live_claude_code_uses_gnistas_tools_and_asks_before_saving() {
+    use gnista_core::driver::{Driver, Input};
+    // A directory outside any repository, so the session works there.
+    let dir = tempfile::tempdir().unwrap();
+    let dir_name = std::fs::canonicalize(dir.path()).unwrap().display().to_string();
+    let notes = format!("{dir_name}/notes.txt");
+    std::fs::write(&notes, "hello\n").unwrap();
+    let path = dir.path().join("gnista.sock");
+    let requests = socket::listen(&path, || {}).unwrap();
+    let driver = Driver::spawn(|ed| Box::new(Scripting::new(ed).unwrap()) as Box<dyn std::any::Any>, |_| Vec::new(), || {});
+    let mcp_dir = std::path::Path::new(env!("CARGO_BIN_EXE_gnista-mcp")).parent().unwrap().display().to_string();
+    let (socket_name, file) = (path.display().to_string(), notes.clone());
+    driver.send(Input::Run(Box::new(move |ed, keep| {
+        let s = keep.downcast_ref::<Scripting>().unwrap();
+        let setup = format!(
+            r#"gnista.setVariable("agent-shell-agents", [["claude", ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]]]);
+            gnista.setVariable("agent-shell-default-agent", "claude");
+            gnista.setVariable("invocation-directory", {});
+            gnista.setVariable("gnista-mcp-socket", {});"#,
+            json!(format!("{mcp_dir}/")),
+            json!(socket_name),
+        );
+        s.eval_typescript(ed, "setup.ts", setup).unwrap();
+        ed.call("find-file", vec![gnista_core::Arg::Str(file)]).unwrap();
+    })));
+    driver.settle();
+    driver.press("M-x");
+    driver.type_text("agent-shell\n");
+    driver.type_text(
+        "Using only the gnista MCP server's tools, not your own file tools: in the buffer notes.txt, call the command \
+         end-of-buffer, type the text world followed by a newline with type_text, then call save-buffer. If a call's \
+         result says the user allowed it, make the same call again.",
+    );
+    driver.press("C-c RET");
+    // The socket's requests answered on the editor's thread, as the front ends do.
+    let client = std::sync::Arc::new(std::sync::Mutex::new(gnista_mcp::Client::default()));
+    let mut asked = Vec::new();
+    let start = std::time::Instant::now();
+    let text = || driver.with(|ed| ed.window_buffer().slice(0..ed.window_buffer().len()));
+    while text().matches("* You\n").count() < 2 {
+        assert!(start.elapsed() < std::time::Duration::from_secs(240), "{}", text());
+        for request in requests.try_iter() {
+            let client = client.clone();
+            driver.send(Input::Run(Box::new(move |ed, keep| {
+                let s = keep.downcast_ref::<Scripting>();
+                let mut client = client.lock().unwrap_or_else(|e| e.into_inner());
+                let reply = gnista_mcp::handle_client_message(ed, s, &request.line, &mut client);
+                let _ = request.reply.send(reply);
+            })));
+        }
+        if let Some(question) = driver.with(|ed| ed.prompt().map(str::to_string)).filter(|q| q.starts_with("Let ")) {
+            asked.push(question);
+            driver.press("y");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    eprintln!("{}\nasked: {asked:?}", text());
+    assert_eq!(std::fs::read_to_string(&notes).unwrap(), "hello\nworld\n");
+    assert!(asked.iter().any(|q| q.contains("write") && q.contains("notes.txt")), "Gnista asked before saving: {asked:?}");
 }

@@ -492,7 +492,9 @@ impl Agent {
                         ("The tool input was not valid JSON; send it again.".to_string(), true)
                     } else {
                         let (target, allowed) = self.with_session(name, |s| (s.target, s.allowed.clone()));
-                        let (text, failed, target) = in_window(ed, name, target, |ed| {
+                        // In the user's window, never this or another agent's conversation.
+                        let avoid = |ed: &Editor, b: &str| b == name || gnista_mcp::is_agent_buffer(ed, b);
+                        let (text, failed, target) = gnista_mcp::in_window(ed, &avoid, target, |ed| {
                             for effect in &allowed {
                                 ed.allow_effect(effect);
                             }
@@ -763,41 +765,6 @@ fn fold(ed: &mut Editor, name: &str, blocks: &[usize]) {
     }
     ed.buffer_mut().set_point(point);
     let _ = ed.set_current_buffer(&old);
-}
-
-/// Runs `f` with the window the agent acts in selected: `target` if it is
-/// still there and not the agent's, else another window, else a new one.
-/// Returns what `f` returned and the window selected afterwards, as tools
-/// can move between windows.
-fn in_window(ed: &mut Editor, agent: &str, target: WindowId, f: impl FnOnce(&mut Editor) -> (String, bool)) -> (String, bool, WindowId) {
-    let selected = ed.selected_window();
-    let windows: Vec<(WindowId, String)> = ed.windows().iter().map(|w| (w.id, w.buffer.name.clone())).collect();
-    let usable = |id: WindowId| windows.iter().any(|(w, b)| *w == id && b != agent);
-    let window = if usable(target) {
-        Some(target)
-    } else {
-        windows.iter().find(|(_, b)| b != agent).map(|(w, _)| *w)
-    };
-    let window = match window {
-        Some(w) => w,
-        None => match ed.split_window(Some(selected), false) {
-            Ok(w) => {
-                let other = ed.buffers().iter().find(|b| b.name != agent && !b.name.starts_with(' ')).map(|b| b.name.clone());
-                if let Some(other) = other {
-                    let _ = ed.set_window_buffer(w, &other);
-                }
-                w
-            }
-            Err(e) => return (format!("No window to act in: {e}"), true, target),
-        },
-    };
-    let _ = ed.select_window(window);
-    let (text, failed) = f(ed);
-    let now = ed.selected_window();
-    if ed.windows().iter().any(|w| w.id == selected) {
-        let _ = ed.select_window(selected);
-    }
-    (text, failed, now)
 }
 
 #[cfg(test)]

@@ -59,6 +59,11 @@ fn permission(id: u64, title: &str) -> Value {
 /// An editor with the fake as the agent `fake`, playing `steps`, its shell
 /// open in another window and the request typed under * You.
 fn setup(steps: Vec<Value>, request: &str) -> Option<Shell> {
+    setup_with(steps, request, "")
+}
+
+/// As [`setup`], running `source` first.
+fn setup_with(steps: Vec<Value>, request: &str, source: &str) -> Option<Shell> {
     let python = python()?;
     let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
     let script = dir.path().join("script.json");
@@ -67,11 +72,13 @@ fn setup(steps: Vec<Value>, request: &str) -> Option<Shell> {
     let log = dir.path().join("received.jsonl");
     let d = Driven::new(&format!(
         r#"gnista.setVariable("agent-shell-agents", [["fake", [{}, {}, {}], [{}]]]);
-        gnista.setVariable("agent-shell-default-agent", "fake");"#,
+        gnista.setVariable("agent-shell-default-agent", "fake");
+        {}"#,
         json!(python),
         json!(fake),
         json!(script.display().to_string()),
         json!(format!("FAKE_ACP_LOG={}", log.display())),
+        source,
     ));
     d.mx("agent-shell");
     assert_eq!(d.buffer_name(), "*agent-shell: fake*");
@@ -506,4 +513,50 @@ fn live_claude_code_asks_then_writes_a_file() {
     eprintln!("traffic: {}", traffic.lines().map(|l| l.split(" {").next().unwrap_or("")).collect::<Vec<_>>().join(" | "));
     // Whether it asks is Claude Code's choice, by its permission settings.
     assert_eq!(std::fs::read_to_string(dir.path().join("hello.txt")).unwrap().trim(), "hello");
+}
+
+/// A session gets Gnista's own tools: gnista-mcp, beside the program, on
+/// this editor's socket, and a word on them after the agent's system prompt.
+#[test]
+fn the_agent_gets_gnistas_own_tools_when_this_editor_has_a_socket() {
+    let Some(_) = python() else { return };
+    let bin = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    let program = bin.path().join("gnista-mcp");
+    std::fs::write(&program, "#!/bin/sh\n").unwrap();
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let steps = vec![
+        json!({"expect": {"method": "initialize"}}),
+        json!({"send": {"id": 1, "result": {"protocolVersion": 1}}}),
+        json!({"expect": {"method": "session/new", "params": {
+            "mcpServers": [{"name": "gnista", "command": shown(&program), "args": ["--socket", "/tmp/gnista-test.sock"], "env": []}],
+            "_meta": {"systemPrompt": {}},
+        }}}),
+        json!({"send": {"id": 2, "result": {"sessionId": "s1"}}}),
+        json!({"expect": {"method": "session/prompt"}}),
+        end_turn("end_turn"),
+    ];
+    let source = format!(
+        r#"gnista.setVariable("invocation-directory", {});
+        gnista.setVariable("gnista-mcp-socket", "/tmp/gnista-test.sock");"#,
+        json!(format!("{}/", shown(bin.path())))
+    );
+    let Some(s) = setup_with(steps, "hi", &source) else { return };
+    s.d.press("C-c RET");
+    let text = s.finished();
+    assert!(!text.contains("Error"), "{text}");
+    let new = s.received().into_iter().find(|m| m["method"] == json!("session/new")).unwrap();
+    assert!(new["params"]["_meta"]["systemPrompt"]["append"].as_str().unwrap().contains("running inside Gnista"));
+    // Turned off, or with no socket, a session gets none.
+    s.d.eval(
+        r#"import("agent-shell").then((m: any) => {
+          (globalThis as any).on = m.gnistaMcpServer() !== undefined;
+          gnista.setVariable("agent-shell-gnista-tools", false);
+          (globalThis as any).off = m.gnistaMcpServer() === undefined;
+          gnista.setVariable("agent-shell-gnista-tools", true);
+          gnista.setVariable("gnista-mcp-socket", null);
+          (globalThis as any).unsocketed = m.gnistaMcpServer() === undefined;
+        });"#,
+    );
+    assert_eq!(s.d.eval_expression("[on, off, unsocketed]"), "[true,true,true]");
 }

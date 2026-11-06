@@ -39,7 +39,7 @@ Gnista talks to coding agents over ACP, launching whatever adapter the configura
 Later, in this order, each when it is wanted:
 
 1. Terminals: `terminal/create` and the rest, on `makeProcess`, shown in the tool call's block.
-2. `gnista-mcp` given to each session as an MCP server, so an ACP agent can use the editor's commands too, under `check_permission` as ADR 0019's agent does.
+2. `gnista-mcp` given to each session as an MCP server, so an ACP agent can use the editor's commands too, under `check_permission` as ADR 0019's agent does. Done: [ADR 0062](0062-agents-through-gnista-mcp-ask-first.md).
 3. One `M-x agent`, its buffer's code in TypeScript, with `gnista-agent` one backend and ACP agents the others.
 4. An agent's edits arriving as changes to review and accept by hunk, rather than written at once.
 5. The frame as what the agent sees, from `describe_frame`.
