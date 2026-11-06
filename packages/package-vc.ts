@@ -4,42 +4,42 @@
 // checkout on load-path. What is installed, and at which commit, is kept in
 // a lock file beside init.ts, so a configuration reproduces elsewhere.
 //
-// A configuration names its packages with gnista.usePackage (use-package.ts);
+// A configuration names its packages with e8.usePackage (use-package.ts);
 // M-x package-vc-install, package-vc-upgrade, package-vc-upgrade-all and
 // package-delete manage them by hand. Only these commands, and installing a
 // package a configuration names that is not there yet, use the network:
-// starting Gnista with its packages installed runs no git at all.
+// starting E8 with its packages installed runs no git at all.
 //
 // Preloaded, for its commands, which Emacs autoloads; it runs nothing until
 // one is used.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "package-user-dir",
   doc: "The directory packages are installed in, each in a directory named after it; nil for repos/ in user-emacs-directory, where Emacs's is elpa/.",
   value: null,
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "package-vc-lock-file",
-  doc: "The file that records each installed package's source, version and commit; nil for gnista-lock.json in user-emacs-directory. Keep it with init.ts so another machine installs the same commits.",
+  doc: "The file that records each installed package's source, version and commit; nil for e8-lock.json in user-emacs-directory. Keep it with init.ts so another machine installs the same commits.",
   value: null,
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "vc-git-program",
   doc: "The git program, as Emacs's vc-git-program: package-vc runs it to install and upgrade packages.",
   value: "git",
 });
 
-gnista.defineError("package-error", "error");
+e8.defineError("package-error", "error");
 
-/** What `gnista-package.json` says about a package. */
+/** What `e8-package.json` says about a package. */
 export interface Manifest {
   name: string;
   description?: string;
-  /** The oldest Gnista it runs on. */
-  gnista?: string;
-  /** The packages it needs, each a source and the oldest version: "Gnista-Editor/gnista-magit-section@0.1.0". */
+  /** The oldest E8 it runs on. */
+  e8?: string;
+  /** The packages it needs, each a source and the oldest version: "e8-editor/e8-magit-section@0.1.0". */
   requires?: Record<string, string>;
 }
 
@@ -63,7 +63,7 @@ interface LockFile {
 }
 
 function fail(message: string): never {
-  return gnista.signal("package-error", message);
+  return e8.signal("package-error", message);
 }
 
 /** A package's name: a directory in package-user-dir, so never "." or "..", nor a path. */
@@ -80,20 +80,20 @@ function checkArgument(what: string, value: string): string {
 }
 
 function userEmacsFile(name: string): string {
-  const base = gnista.variable("user-emacs-directory");
+  const base = e8.variable("user-emacs-directory");
   if (typeof base !== "string" || base === "") fail(`Cannot find ${name}: user-emacs-directory is not set`);
-  return gnista.expandFileName(name, base);
+  return e8.expandFileName(name, base);
 }
 
 /** The directory packages are installed in, with a slash at its end. */
 export function packageUserDir(): string {
-  const dir = gnista.variable("package-user-dir");
-  return gnista.fileNameAsDirectory(typeof dir === "string" && dir !== "" ? gnista.expandFileName(dir) : userEmacsFile("repos"));
+  const dir = e8.variable("package-user-dir");
+  return e8.fileNameAsDirectory(typeof dir === "string" && dir !== "" ? e8.expandFileName(dir) : userEmacsFile("repos"));
 }
 
 function lockFileName(): string {
-  const file = gnista.variable("package-vc-lock-file");
-  return typeof file === "string" && file !== "" ? gnista.expandFileName(file) : userEmacsFile("gnista-lock.json");
+  const file = e8.variable("package-vc-lock-file");
+  return typeof file === "string" && file !== "" ? e8.expandFileName(file) : userEmacsFile("e8-lock.json");
 }
 
 /** The directory a package is installed in, whether or not it is. */
@@ -104,16 +104,16 @@ export function packageDir(name: string): string {
 // Git
 
 function gitProgram(): string {
-  const program = gnista.variable("vc-git-program");
+  const program = e8.variable("vc-git-program");
   return typeof program === "string" && program !== "" ? program : "git";
 }
 
 /**
  * Runs git in `dir`, giving its exit status and output. It never asks for a
- * password, which it would ask on a terminal Gnista may be drawing on.
+ * password, which it would ask on a terminal E8 may be drawing on.
  */
 function runGit(args: string[], dir?: string): { exit: number; output: string } {
-  return gnista.callProcess(["env", "GIT_TERMINAL_PROMPT=0", gitProgram(), ...args], dir === undefined ? {} : { directory: dir });
+  return e8.callProcess(["env", "GIT_TERMINAL_PROMPT=0", gitProgram(), ...args], dir === undefined ? {} : { directory: dir });
 }
 
 function git(args: string[], dir?: string): string {
@@ -124,14 +124,14 @@ function git(args: string[], dir?: string): string {
 
 /** The commit a checkout is at, read from .git without running git. */
 export function checkoutCommit(dir: string): string | undefined {
-  const gitDir = gnista.fileNameAsDirectory(dir) + ".git/";
-  if (!gnista.fileExists(gitDir + "HEAD")) return undefined;
-  const head = gnista.readTextFile(gitDir + "HEAD").trim();
+  const gitDir = e8.fileNameAsDirectory(dir) + ".git/";
+  if (!e8.fileExists(gitDir + "HEAD")) return undefined;
+  const head = e8.readTextFile(gitDir + "HEAD").trim();
   if (!head.startsWith("ref: ")) return head;
   const ref = head.slice(5);
-  if (gnista.fileExists(gitDir + ref)) return gnista.readTextFile(gitDir + ref).trim();
-  if (gnista.fileExists(gitDir + "packed-refs")) {
-    for (const line of gnista.readTextFile(gitDir + "packed-refs").split("\n")) {
+  if (e8.fileExists(gitDir + ref)) return e8.readTextFile(gitDir + ref).trim();
+  if (e8.fileExists(gitDir + "packed-refs")) {
+    for (const line of e8.readTextFile(gitDir + "packed-refs").split("\n")) {
       const [commit, name] = line.split(" ");
       if (name === ref) return commit;
     }
@@ -228,7 +228,7 @@ function describe(dir: string, source: string, url: string, rev: string | undefi
  * anything else a URL or a directory git can clone.
  */
 export function sourceUrl(source: string): string {
-  return /^[\w.-]+\/[\w.-]+$/.test(source) && !gnista.fileExists(source) ? `https://github.com/${source}.git` : source;
+  return /^[\w.-]+\/[\w.-]+$/.test(source) && !e8.fileExists(source) ? `https://github.com/${source}.git` : source;
 }
 
 /** A repository's name, from the last part of its URL. */
@@ -248,28 +248,28 @@ export function parseRequirement(requirement: string): { source: string; version
  * after the repository with nothing more said.
  */
 export function readManifest(dir: string, url: string): Manifest {
-  const file = gnista.fileNameAsDirectory(dir) + "gnista-package.json";
-  if (!gnista.fileExists(file)) return { name: repositoryName(url) };
+  const file = e8.fileNameAsDirectory(dir) + "e8-package.json";
+  if (!e8.fileExists(file)) return { name: repositoryName(url) };
   let manifest: Manifest;
   try {
-    manifest = JSON.parse(gnista.readTextFile(file)) as Manifest;
+    manifest = JSON.parse(e8.readTextFile(file)) as Manifest;
   } catch (e) {
-    return fail(`${url}: gnista-package.json is not JSON: ${e instanceof Error ? e.message : String(e)}`);
+    return fail(`${url}: e8-package.json is not JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
-  if (typeof manifest.name !== "string" || !NAME.test(manifest.name)) fail(`${url}: gnista-package.json has no usable "name"`);
+  if (typeof manifest.name !== "string" || !NAME.test(manifest.name)) fail(`${url}: e8-package.json has no usable "name"`);
   for (const [name, requirement] of Object.entries(manifest.requires ?? {})) {
-    if (!NAME.test(name) || typeof requirement !== "string") fail(`${url}: gnista-package.json requires ${JSON.stringify(name)}, which is not usable`);
+    if (!NAME.test(name) || typeof requirement !== "string") fail(`${url}: e8-package.json requires ${JSON.stringify(name)}, which is not usable`);
   }
   return manifest;
 }
 
-function checkGnistaVersion(manifest: Manifest): void {
-  if (manifest.gnista === undefined) return;
-  const needed = parseVersion(manifest.gnista);
-  const running = parseVersion(String(gnista.variable("gnista-version") ?? ""));
-  if (needed === undefined) fail(`${manifest.name}: "gnista" is not a version: ${manifest.gnista}`);
+function checkE8Version(manifest: Manifest): void {
+  if (manifest.e8 === undefined) return;
+  const needed = parseVersion(manifest.e8);
+  const running = parseVersion(String(e8.variable("e8-version") ?? ""));
+  if (needed === undefined) fail(`${manifest.name}: "e8" is not a version: ${manifest.e8}`);
   if (running !== undefined && compareVersions(running, needed) < 0) {
-    fail(`${manifest.name} needs Gnista ${manifest.gnista} or newer; this is ${String(gnista.variable("gnista-version"))}`);
+    fail(`${manifest.name} needs E8 ${manifest.e8} or newer; this is ${String(e8.variable("e8-version"))}`);
   }
 }
 
@@ -277,9 +277,9 @@ function checkGnistaVersion(manifest: Manifest): void {
 
 export function readLock(): LockFile {
   const file = lockFileName();
-  if (!gnista.fileExists(file)) return { version: 1, packages: {} };
+  if (!e8.fileExists(file)) return { version: 1, packages: {} };
   try {
-    const lock = JSON.parse(gnista.readTextFile(file)) as LockFile;
+    const lock = JSON.parse(e8.readTextFile(file)) as LockFile;
     return { version: 1, packages: lock.packages ?? {} };
   } catch (e) {
     return fail(`${file} is not JSON: ${e instanceof Error ? e.message : String(e)}`);
@@ -290,8 +290,8 @@ function writeLock(lock: LockFile): void {
   const packages: Record<string, LockEntry> = {};
   for (const name of Object.keys(lock.packages).sort()) packages[name] = lock.packages[name];
   const file = lockFileName();
-  gnista.makeDirectory(gnista.fileNameDirectory(file) ?? ".", { parents: true });
-  gnista.writeTextFile(file, JSON.stringify({ version: 1, packages }, null, 2) + "\n");
+  e8.makeDirectory(e8.fileNameDirectory(file) ?? ".", { parents: true });
+  e8.writeTextFile(file, JSON.stringify({ version: 1, packages }, null, 2) + "\n");
 }
 
 function setLockEntry(name: string, entry: LockEntry | undefined): void {
@@ -313,14 +313,14 @@ export function lockedPackage(source: string): string | undefined {
 /** Puts an installed package's checkout on load-path, as package-activate. */
 export function packageActivate(name: string): void {
   const dir = packageDir(name);
-  const path = gnista.variable("load-path");
+  const path = e8.variable("load-path");
   const dirs = Array.isArray(path) ? path.filter((d): d is string => typeof d === "string") : [];
-  if (!dirs.some((d) => gnista.expandFileName(d) === dir)) gnista.setVariable("load-path", [dir, ...dirs]);
+  if (!dirs.some((d) => e8.expandFileName(d) === dir)) e8.setVariable("load-path", [dir, ...dirs]);
 }
 
 /** The packages installed, by name. */
 export function packageInstalledList(): string[] {
-  return Object.keys(readLock().packages).filter((name) => gnista.fileDirectoryP(packageDir(name)));
+  return Object.keys(readLock().packages).filter((name) => e8.fileDirectoryP(packageDir(name)));
 }
 
 function installedVersion(name: string): number[] | undefined {
@@ -332,7 +332,7 @@ function installedVersion(name: string): number[] | undefined {
 function installRequirements(manifest: Manifest, seen: Set<string>): void {
   for (const [name, requirement] of Object.entries(manifest.requires ?? {})) {
     const { source, version } = parseRequirement(requirement);
-    if (!gnista.fileDirectoryP(packageDir(name))) installPackage(source, { seen });
+    if (!e8.fileDirectoryP(packageDir(name))) installPackage(source, { seen });
     else packageActivate(name);
     const have = installedVersion(name);
     if (version !== undefined && have !== undefined && compareVersions(have, version) < 0) {
@@ -359,7 +359,7 @@ export function installPackage(source: string, options: { rev?: string; name?: s
   if (seen.has(url)) fail(`${source} requires itself, through the packages it requires`);
   seen.add(url);
 
-  const installed = lockedName !== undefined && gnista.fileDirectoryP(packageDir(lockedName));
+  const installed = lockedName !== undefined && e8.fileDirectoryP(packageDir(lockedName));
   let dir: string;
   let manifest: Manifest;
   if (installed) {
@@ -367,9 +367,9 @@ export function installPackage(source: string, options: { rev?: string; name?: s
     checkOut(dir, options.rev, commit);
     manifest = readManifest(dir, url);
   } else {
-    gnista.makeDirectory(packageUserDir(), { parents: true });
+    e8.makeDirectory(packageUserDir(), { parents: true });
     const temporary = `${packageUserDir()}.installing-${repositoryName(url)}-${Date.now()}`;
-    gnista.message(`Installing ${source}...`);
+    e8.message(`Installing ${source}...`);
     try {
       git(["clone", "--quiet", "--", url, temporary]);
       checkOut(temporary, options.rev, commit);
@@ -377,22 +377,22 @@ export function installPackage(source: string, options: { rev?: string; name?: s
       if (options.name !== undefined && options.name !== manifest.name) {
         fail(`${url} holds the package ${manifest.name}, not ${options.name}`);
       }
-      checkGnistaVersion(manifest);
+      checkE8Version(manifest);
       dir = packageDir(manifest.name);
-      if (gnista.fileExists(dir)) {
+      if (e8.fileExists(dir)) {
         fail(`${dir} is there already: delete it, or M-x package-delete ${manifest.name}, to install ${source}`);
       }
-      gnista.renameFile(temporary, dir);
+      e8.renameFile(temporary, dir);
     } catch (e) {
-      if (gnista.fileExists(temporary)) gnista.deleteDirectory(temporary, { recursive: true, trash: false });
+      if (e8.fileExists(temporary)) e8.deleteDirectory(temporary, { recursive: true, trash: false });
       throw e;
     }
   }
-  checkGnistaVersion(manifest);
+  checkE8Version(manifest);
   setLockEntry(manifest.name, describe(dir, source, url, options.rev));
   installRequirements(manifest, seen);
   packageActivate(manifest.name);
-  if (!installed) gnista.message(`Installed ${manifest.name}${versionLabel(manifest.name)}`);
+  if (!installed) e8.message(`Installed ${manifest.name}${versionLabel(manifest.name)}`);
   return manifest.name;
 }
 
@@ -415,10 +415,10 @@ export function ensurePackage(source: string, options: { rev?: string; name?: st
   if (name !== undefined) {
     const entry = lock.packages[name];
     const dir = packageDir(name);
-    if (gnista.fileDirectoryP(dir) && entry.rev === options.rev && checkoutCommit(dir) === entry.commit) {
+    if (e8.fileDirectoryP(dir) && entry.rev === options.rev && checkoutCommit(dir) === entry.commit) {
       for (const requirement of Object.values(readManifest(dir, url).requires ?? {})) {
         const required = lockedPackage(parseRequirement(requirement).source);
-        if (required !== undefined && gnista.fileDirectoryP(packageDir(required))) packageActivate(required);
+        if (required !== undefined && e8.fileDirectoryP(packageDir(required))) packageActivate(required);
         else ensurePackage(parseRequirement(requirement).source);
       }
       packageActivate(name);
@@ -438,7 +438,7 @@ export function ensurePackage(source: string, options: { rev?: string; name?: st
 export function upgradePackage(name: string): string {
   const entry = readLock().packages[name];
   const dir = packageDir(name);
-  if (entry === undefined || !gnista.fileDirectoryP(dir)) fail(`${name} is not installed`);
+  if (entry === undefined || !e8.fileDirectoryP(dir)) fail(`${name} is not installed`);
   const old = entry.commit;
   const oldLabel = versionLabel(name).trim();
   git(["fetch", "--quiet", "--tags", "origin"], dir);
@@ -448,7 +448,7 @@ export function upgradePackage(name: string): string {
   else git(["merge", "--quiet", "--ff-only", "@{upstream}"], dir);
   const manifest = readManifest(dir, entry.url);
   try {
-    checkGnistaVersion(manifest);
+    checkE8Version(manifest);
   } catch (e) {
     git(["checkout", "--quiet", "--detach", old], dir);
     throw e;
@@ -458,7 +458,7 @@ export function upgradePackage(name: string): string {
   const now = readLock().packages[name].commit;
   if (now === old) return `${name} is up to date`;
   const commits = git(["rev-list", "--count", `${old}..${now}`], dir);
-  return `${name}: ${oldLabel} -> ${versionLabel(name).trim()} (${commits} commit${commits === "1" ? "" : "s"}); restart Gnista to load it`;
+  return `${name}: ${oldLabel} -> ${versionLabel(name).trim()} (${commits} commit${commits === "1" ? "" : "s"}); restart E8 to load it`;
 }
 
 /** The installed packages whose manifests require a package. */
@@ -472,51 +472,51 @@ export function deletePackage(name: string): void {
   const needed = dependents(name);
   if (needed.length > 0) fail(`Package ${name} is a dependency of ${needed.join(", ")}`);
   const dir = packageDir(name);
-  if (gnista.fileDirectoryP(dir)) gnista.deleteDirectory(dir, { recursive: true, trash: false });
+  if (e8.fileDirectoryP(dir)) e8.deleteDirectory(dir, { recursive: true, trash: false });
   setLockEntry(name, undefined);
-  const path = gnista.variable("load-path");
-  if (Array.isArray(path)) gnista.setVariable("load-path", path.filter((d) => typeof d !== "string" || gnista.expandFileName(d) !== dir));
+  const path = e8.variable("load-path");
+  if (Array.isArray(path)) e8.setVariable("load-path", path.filter((d) => typeof d !== "string" || e8.expandFileName(d) !== dir));
 }
 
 // Commands
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "package-vc-install",
   doc: "Install a package from its git repository, owner/name on GitHub or a URL, at its newest version tag; with a prefix argument, ask for the revision, a tag, branch or commit.",
   params: [
     { name: "source", prompt: "Install package from (owner/name or URL): ", history: "package-vc--install-history" },
     { name: "arg", kind: "prefix" },
   ],
-  run: (source: string, arg: gnista.PrefixArg) => {
-    if (source.trim() === "") gnista.userError("No package given");
-    const rev = arg === null || arg === undefined ? undefined : gnista.readString("Revision: ");
+  run: (source: string, arg: e8.PrefixArg) => {
+    if (source.trim() === "") e8.userError("No package given");
+    const rev = arg === null || arg === undefined ? undefined : e8.readString("Revision: ");
     const name = installPackage(source.trim(), rev === undefined || rev === "" ? {} : { rev });
-    gnista.message(`Installed ${name}${versionLabel(name)}`);
+    e8.message(`Installed ${name}${versionLabel(name)}`);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "package-vc-upgrade",
   doc: "Upgrade an installed package to its newest version tag, or the head of the branch it follows, as the lock file records.",
   params: [{ name: "name", prompt: "Upgrade package: ", collection: () => packageInstalledList(), requireMatch: true }],
-  run: (name: string) => gnista.message(upgradePackage(name)),
+  run: (name: string) => e8.message(upgradePackage(name)),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "package-vc-upgrade-all",
   doc: "Upgrade every installed package, as package-vc-upgrade does each.",
   run: () => {
     const lines = packageInstalledList().map((name) => upgradePackage(name));
-    gnista.message(lines.length === 0 ? "No packages are installed" : lines.join("\n"));
+    e8.message(lines.length === 0 ? "No packages are installed" : lines.join("\n"));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "package-delete",
   doc: "Delete an installed package and its line in the lock file, unless another installed package requires it.",
   params: [{ name: "name", prompt: "Delete package: ", collection: () => packageInstalledList(), requireMatch: true }],
   run: (name: string) => {
     deletePackage(name);
-    gnista.message(`Package ${name} deleted`);
+    e8.message(`Package ${name} deleted`);
   },
 });

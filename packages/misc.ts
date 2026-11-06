@@ -2,12 +2,12 @@ import { forwardLine } from "subr";
 // Small editing commands, after Emacs's misc.el: duplicating lines and the
 // region, and copying the line above.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "duplicate-line-final-position",
   doc: "Where duplicate-line leaves point: 0 where it was, 1 on the first copy, -1 on the last.",
   value: 0,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "duplicate-region-final-position",
   doc: "Where duplicate-dwim leaves the region: 0 where it was, 1 around the first copy, -1 around the last.",
   value: 0,
@@ -15,86 +15,86 @@ gnista.defineVariable({
 
 /** Copies the line point is on `n` times below it, as duplicate-line. */
 function duplicateLine(n: number): void {
-  const line = gnista.bufferSubstring(gnista.lineBeginningPosition(), gnista.lineEndPosition());
-  const pos = gnista.point();
-  const col = gnista.currentColumn();
+  const line = e8.bufferSubstring(e8.lineBeginningPosition(), e8.lineEndPosition());
+  const pos = e8.point();
+  const col = e8.currentColumn();
   forwardLine(1);
   // The last line, with no newline after it, gets one first.
-  if (gnista.point() !== gnista.lineBeginningPosition()) gnista.insert("\n");
+  if (e8.point() !== e8.lineBeginningPosition()) e8.insert("\n");
   for (let i = 0; i < n; i++) {
-    gnista.insert(line);
-    gnista.insert("\n");
+    e8.insert(line);
+    e8.insert("\n");
   }
-  const final = Number(gnista.variable("duplicate-line-final-position") ?? 0);
-  if (!(final < 0)) gnista.gotoChar(pos);
+  const final = Number(e8.variable("duplicate-line-final-position") ?? 0);
+  if (!(final < 0)) e8.gotoChar(pos);
   if (final !== 0) {
     forwardLine(final);
-    gnista.moveToColumn(col);
+    e8.moveToColumn(col);
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "duplicate-line",
   doc: "Copy the line point is on below it; with a prefix argument, that many copies.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => duplicateLine(n),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "duplicate-dwim",
   doc: "Copy the region after itself, keeping it active, or else the line point is on; with a prefix argument, that many copies.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => {
     if (n <= 0) return;
-    const mark = gnista.mark();
-    if (!gnista.regionActive() || mark === undefined) {
+    const mark = e8.mark();
+    if (!e8.regionActive() || mark === undefined) {
       duplicateLine(n);
       return;
     }
-    const [beg, end] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
-    const text = gnista.bufferSubstring(beg, end);
-    const [pt, mk] = [gnista.point(), mark];
-    gnista.saveExcursion(() => {
-      gnista.gotoChar(end);
-      for (let i = 0; i < n; i++) gnista.insert(text);
+    const [beg, end] = [Math.min(mark, e8.point()), Math.max(mark, e8.point())];
+    const text = e8.bufferSubstring(beg, end);
+    const [pt, mk] = [e8.point(), mark];
+    e8.saveExcursion(() => {
+      e8.gotoChar(end);
+      for (let i = 0; i < n; i++) e8.insert(text);
     });
-    const final = Number(gnista.variable("duplicate-region-final-position") ?? 0);
+    const final = Number(e8.variable("duplicate-region-final-position") ?? 0);
     const d = (final < 0 ? n : final) * (end - beg);
     if (d !== 0) {
-      gnista.pushMark(mk + d, { activate: true });
-      gnista.gotoChar(pt + d);
+      e8.pushMark(mk + d, { activate: true });
+      e8.gotoChar(pt + d);
     } else {
-      gnista.setMark(mk);
+      e8.setMark(mk);
     }
     // The region stays active.
-    gnista.setVariable("deactivate-mark", false);
+    e8.setVariable("deactivate-mark", false);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "copy-from-above-command",
   doc: "Copy the rest of the line above, from the column point is at, after point; with a prefix argument, only that many characters.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => {
-    const cc = gnista.currentColumn();
-    const text = gnista.saveExcursion(() => {
-      gnista.gotoChar(gnista.lineBeginningPosition());
-      if (gnista.point() > gnista.pointMin()) gnista.gotoChar(gnista.point() - 1);
-      gnista.skipCharsBackward(" \t\n");
-      gnista.moveToColumn(cc);
-      let n = arg === null ? gnista.pointMax() : gnista.prefixNumericValue(arg);
+  run: (arg: e8.PrefixArg) => {
+    const cc = e8.currentColumn();
+    const text = e8.saveExcursion(() => {
+      e8.gotoChar(e8.lineBeginningPosition());
+      if (e8.point() > e8.pointMin()) e8.gotoChar(e8.point() - 1);
+      e8.skipCharsBackward(" \t\n");
+      e8.moveToColumn(cc);
+      let n = arg === null ? e8.pointMax() : e8.prefixNumericValue(arg);
       let s = "";
-      if (cc < gnista.currentColumn()) {
-        if (gnista.point() > gnista.pointMin() && gnista.charAfter(gnista.point() - 1) === "\t") {
-          const spaces = Math.min(n, gnista.currentColumn() - cc);
+      if (cc < e8.currentColumn()) {
+        if (e8.point() > e8.pointMin() && e8.charAfter(e8.point() - 1) === "\t") {
+          const spaces = Math.min(n, e8.currentColumn() - cc);
           s = " ".repeat(spaces);
           n -= spaces;
         } else {
-          gnista.gotoChar(gnista.point() - 1);
+          e8.gotoChar(e8.point() - 1);
         }
       }
-      return s + gnista.bufferSubstringNoProperties(gnista.point(), Math.min(gnista.lineEndPosition(), gnista.point() + n));
+      return s + e8.bufferSubstringNoProperties(e8.point(), Math.min(e8.lineEndPosition(), e8.point() + n));
     });
-    gnista.insert(text);
+    e8.insert(text);
   },
 });

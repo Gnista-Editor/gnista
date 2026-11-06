@@ -6,7 +6,7 @@ Status: accepted · 2026-10-30
 
 The core lays every window out as a grid of character cells: each character is one or two columns wide, each row one line high, and the GUI draws that grid in a monospace font. Emacs's redisplay works in pixels. A face can make text taller (`:height`) or proportional (`:family`, the `variable-pitch` face); `C-x C-+` scales a buffer's text; a window shows as many rows as fit its height in pixels; and Lisp asks redisplay where things are, with `pos-visible-in-window-p`, `window-end`, `posn-at-point` and `window-text-pixel-size`, which completion popups, scrolling commands, Org's tables and the mouse code use. Images, margins, fringes, the header line and bidirectional text are built on the same layout. [docs/plan.md](../plan.md) lists this third among the gaps in the core, and the largest.
 
-Speed matters as much as fidelity here. Redisplay runs after every key, and Gnista means to be faster than Emacs everywhere ([docs/optimisation.md](../optimisation.md)). Today the core's part of a key, the rows of a 120 × 50 window included, takes 0.1 to 2.4 ms in a 50,000-line Org file and a 100 MB text file ([docs/performance.md](../performance.md)).
+Speed matters as much as fidelity here. Redisplay runs after every key, and E8 means to be faster than Emacs everywhere ([docs/optimisation.md](../optimisation.md)). Today the core's part of a key, the rows of a 120 × 50 window included, takes 0.1 to 2.4 ms in a 50,000-line Org file and a 100 MB text file ([docs/performance.md](../performance.md)).
 
 ## Options considered
 

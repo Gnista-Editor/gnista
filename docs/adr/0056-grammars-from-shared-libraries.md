@@ -4,11 +4,11 @@ Status: accepted · 2026-11-03
 
 ## Context
 
-Gnista compiled in four tree-sitter grammars, each a crate with its own highlighting query. A daily-driver configuration wants many more languages (Go, Nix, YAML, TOML, Bash and the rest), and Emacs users already have them built as shared libraries in `~/.emacs.d/tree-sitter`, which `treesit-install-language-grammar` makes. Emacs's modes highlight with their own `treesit-font-lock-rules`, not the grammar's query, which the libraries do not carry anyway.
+E8 compiled in four tree-sitter grammars, each a crate with its own highlighting query. A daily-driver configuration wants many more languages (Go, Nix, YAML, TOML, Bash and the rest), and Emacs users already have them built as shared libraries in `~/.emacs.d/tree-sitter`, which `treesit-install-language-grammar` makes. Emacs's modes highlight with their own `treesit-font-lock-rules`, not the grammar's query, which the libraries do not carry anyway.
 
 ## Options considered
 
-1. **A crate for each grammar.** Each needs a release, adds compile time and size to every build, and Gnista would choose the languages rather than the user.
+1. **A crate for each grammar.** Each needs a release, adds compile time and size to every build, and E8 would choose the languages rather than the user.
 2. **Load the libraries Emacs builds.** `libtree-sitter-LANG.dylib` (or `.so`) along `treesit-extra-load-path`, then `tree-sitter` in `user-emacs-directory`, by its `tree_sitter_LANG` function, as `treesit-load-name-override-list` can rename; the mode gives its font-lock rules, which the core applies with Emacs's override semantics.
 
 ## Decision
@@ -17,7 +17,7 @@ Option 2. Grammars that ship stay as they are; any other language is looked for 
 
 ## Consequences
 
-- A user's Emacs grammars work in Gnista by adding `~/.emacs.d/tree-sitter` to `treesit-extra-load-path`, or copying them to `~/.config/gnista/tree-sitter`.
+- A user's Emacs grammars work in E8 by adding `~/.emacs.d/tree-sitter` to `treesit-extra-load-path`, or copying them to `~/.config/e8/tree-sitter`.
 - Loading a library runs its code, as Emacs's loading does: the libraries are trusted as the user's own.
 - A library built for a tree-sitter ABI this one does not read is refused with the reason, which `treesit-language-available-p` gives with DETAIL.
 - Rules use tree-sitter's own predicates (`#match?`) for highlighting; Emacs's Lisp predicates in a highlighting rule are not checked yet.

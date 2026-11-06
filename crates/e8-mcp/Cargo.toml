@@ -1,0 +1,20 @@
+[package]
+name = "e8-mcp"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[features]
+default = ["v8"]
+# The script engine, as e8-script's features choose it.
+quickjs = ["e8-script/quickjs"]
+v8 = ["e8-script/v8"]
+
+[dependencies]
+e8-core = { version = "0.2.2", path = "../e8-core" }
+e8-script = { version = "0.2.2", path = "../e8-script", default-features = false }
+libc = "0.2"
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3.27.0"

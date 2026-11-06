@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27
 
 ## Context
 
-The third slice of milestone 3 in [the plan](../plan.md) is windows: `C-x 2`, `C-x 3`, `C-x o`, `C-x 0` and `C-x 1`. Until now the editor had one window, whose point and top line lived in the buffer. In Emacs each window has its own point and start, the selected window's point is the buffer's point, and other windows' points are markers that move with edits. Gnista also has two front ends that measure in different units, cells and points.
+The third slice of milestone 3 in [the plan](../plan.md) is windows: `C-x 2`, `C-x 3`, `C-x o`, `C-x 0` and `C-x 1`. Until now the editor had one window, whose point and top line lived in the buffer. In Emacs each window has its own point and start, the selected window's point is the buffer's point, and other windows' points are markers that move with edits. E8 also has two front ends that measure in different units, cells and points.
 
 ## Options considered
 

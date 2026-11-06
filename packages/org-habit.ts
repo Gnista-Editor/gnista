@@ -5,7 +5,7 @@
 // keeps.
 //
 // Copyright (C) 2009-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 import { type Heading, allKeywords, entryEnd, headings, isDone } from "org";
 import { entryGet } from "org-list";
 
-const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
+const defvar = (name: string, value: e8.Value, doc: string) => e8.defineVariable({ name, value, doc });
 defvar("org-habit-graph-column", 40, "The column of the agenda where habits' graphs start.");
 defvar("org-habit-preceding-days", 21, "How many days before today a habit's graph shows.");
 defvar("org-habit-following-days", 7, "How many days after today a habit's graph shows.");
@@ -35,7 +35,7 @@ for (const [name, doc, light, dark] of [
   ["org-habit-overdue-face", "Days a habit is overdue.", "#f9372d", "firebrick"],
   ["org-habit-overdue-future-face", "Days to come a habit will be overdue.", "#fc9590", "darkred"],
 ] as const) {
-  gnista.defineFace({ name, doc, light: { background: light }, dark: { background: dark } });
+  e8.defineFace({ name, doc, light: { background: light }, dark: { background: dark } });
 }
 
 /** A habit, as org-habit-parse-todo reads it: days counted from 1970. */
@@ -67,12 +67,12 @@ export function parseHabit(h: Heading): Habit | undefined {
   const i = all.findIndex((x) => x.start === h.start);
   const end = entryEnd(all, i);
   const lines: string[] = [];
-  for (let l = h.line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) lines.push(gnista.lineText(l));
+  for (let l = h.line + 1; l < e8.lineCount() && e8.lineStart(l) < end; l++) lines.push(e8.lineText(l));
   const sched = /SCHEDULED:[ \t]*<(\d{4})-(\d\d)-(\d\d)[^>\n]*?([.+]?\+)(\d+)([dwmy])(?:\/(\d+)([dwmy]))?[^>\n]*>/.exec(lines.join("\n"));
-  if (!sched) gnista.signal("error", `Habit ${h.title} has no scheduled repeat period or has an incorrect one`);
+  if (!sched) e8.signal("error", `Habit ${h.title} has no scheduled repeat period or has an incorrect one`);
   const scheduled = dayOf(Number(sched[1]), Number(sched[2]), Number(sched[3]));
   const repeat = durationToDays(Number(sched[5]), sched[6]);
-  if (repeat <= 0) gnista.signal("error", `Habit ${h.title} scheduled repeat period is less than 1d`);
+  if (repeat <= 0) e8.signal("error", `Habit ${h.title} scheduled repeat period is less than 1d`);
   const habit: Habit = { scheduled, repeat, done: [], type: sched[4] };
   if (sched[7] !== undefined) {
     habit.deadlineRepeat = durationToDays(Number(sched[7]), sched[8]);
@@ -81,7 +81,7 @@ export function parseHabit(h: Heading): Habit | undefined {
   // The State notes into a done state, newest first, as many as the graph can show.
   const done = allKeywords().filter((k) => isDone(k)).map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
   const re = new RegExp(`^[ \\t]*-[ \\t]+State "(?:${done})".*\\[(\\d{4})-(\\d\\d)-(\\d\\d)[^\\]]*\\]`);
-  const max = Number(gnista.variable("org-habit-preceding-days") ?? 21) + Number(gnista.variable("org-habit-following-days") ?? 7);
+  const max = Number(e8.variable("org-habit-preceding-days") ?? 21) + Number(e8.variable("org-habit-following-days") ?? 7);
   for (const line of lines) {
     const m = re.exec(line);
     if (m && habit.done.length < max) habit.done.push(dayOf(Number(m[1]), Number(m[2]), Number(m[3])));
@@ -112,7 +112,7 @@ function facesFor(habit: Habit, day: number, scheduledDays: number | undefined, 
   if (day < scheduled) return ["org-habit-clear-face", "org-habit-clear-future-face"];
   if (day < deadline) return ["org-habit-ready-face", "org-habit-ready-future-face"];
   if (day === deadline) return done ? ["org-habit-ready-face", "org-habit-ready-future-face"] : ["org-habit-alert-face", "org-habit-alert-future-face"];
-  if (gnista.variable("org-habit-show-done-always-green") === true && done) return ["org-habit-ready-face", "org-habit-ready-future-face"];
+  if (e8.variable("org-habit-show-done-always-green") === true && done) return ["org-habit-ready-face", "org-habit-ready-future-face"];
   return ["org-habit-overdue-face", "org-habit-overdue-future-face"];
 }
 
@@ -158,13 +158,13 @@ export function buildGraph(habit: Habit, start: number, now: number, end: number
     let marked = false;
     let glyph = " ";
     if (done) {
-      glyph = String(gnista.variable("org-habit-completed-glyph") ?? "*");
+      glyph = String(e8.variable("org-habit-completed-glyph") ?? "*");
       marked = true;
       while (doneDates.length > 0 && doneDates[0] === day) {
         lastDone = doneDates[0];
         doneDates = doneDates.slice(1);
       }
-    } else if (today) glyph = String(gnista.variable("org-habit-today-glyph") ?? "!");
+    } else if (today) glyph = String(e8.variable("org-habit-today-glyph") ?? "!");
     let face = past || today ? pair[0] : pair[1];
     if (past && face !== "org-habit-overdue-face" && !marked) face = pair[1];
     chars.push(glyph);

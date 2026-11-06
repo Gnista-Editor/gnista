@@ -10,7 +10,7 @@ Regular expressions that are data, in variables, options and packages' code, are
 
 1. **Keep translating**, and refuse what the crate cannot match. Fast, but the differences stay.
 2. **Oniguruma**, through the `onig` crate, which has an Emacs syntax mode and back-references. It is C, and it cannot know the buffer's syntax table or Emacs's syntax and category classes, so the classes stay approximate.
-3. **An engine of Gnista's own**, as Emacs's regex-emacs.c is: Emacs's syntax parsed exactly, compiled to a program for a backtracking machine that reads the buffer, with its syntax table and properties, through the same accessor scans use.
+3. **An engine of E8's own**, as Emacs's regex-emacs.c is: Emacs's syntax parsed exactly, compiled to a program for a backtracking machine that reads the buffer, with its syntax table and properties, through the same accessor scans use.
 
 ## Decision
 
@@ -18,7 +18,7 @@ Option 3. `regexp.rs` parses Emacs's syntax as regex-emacs.c does, with its rule
 
 `re-search-forward`, `re-search-backward`, `looking-at` and `string-match` use it, from Rust and from scripts; literal searches stay with the crate, which is fast at them.
 
-What the classes, categories and case of characters past ASCII are comes from Emacs's own tables, which `tests/emacs/unicode.el` writes into `chartab_data.rs` from a running Emacs: each character's general category, which `[:alpha:]`, `[:graph:]` and the rest follow as Emacs's character.c does; its script, for the word boundaries Emacs sees between letters of two scripts; its entry in the standard syntax table, which is now Gnista's standard table for every character; its lower and upper case in the standard case table; and the standard category table's 43 categories. Regenerating them for a newer Emacs is running the script again.
+What the classes, categories and case of characters past ASCII are comes from Emacs's own tables, which `tests/emacs/unicode.el` writes into `chartab_data.rs` from a running Emacs: each character's general category, which `[:alpha:]`, `[:graph:]` and the rest follow as Emacs's character.c does; its script, for the word boundaries Emacs sees between letters of two scripts; its entry in the standard syntax table, which is now E8's standard table for every character; its lower and upper case in the standard case table; and the standard category table's 43 categories. Regenerating them for a newer Emacs is running the script again.
 
 A fuzzer compares it with Emacs's `string-match` and match data on random expressions and strings, and the differences it finds become recorded cases.
 
@@ -30,7 +30,7 @@ The same review found, and the same round fixed: σ, ς and µ did not fold with
 
 ## Consequences
 
-Ports can use Emacs's regexps as their Lisp does, and font-lock keywords, imenu and outline patterns, `compilation-error-regexp-alist` and Org's regexps match what they match in Emacs. A backtracking matcher can take exponential time on some expressions, as Emacs's can: `\(x+x+\)+y` on a line of x's takes seconds in both, and a limit on the failure stack turns only the deepest into an error. Regexps in packages' own code may still be JavaScript's. The packages that matched Emacs regexps from variables with `gnista.emacsRegexp`, a translation to JavaScript, use the engine instead: `auto-mode-alist` and `revert-without-query` with `string-match`, Dired's trivial file names, and outline's headings with `looking-at` on the buffer, as outline.el does. The translation stays, documented as approximate, for code that wants a JavaScript regexp.
+Ports can use Emacs's regexps as their Lisp does, and font-lock keywords, imenu and outline patterns, `compilation-error-regexp-alist` and Org's regexps match what they match in Emacs. A backtracking matcher can take exponential time on some expressions, as Emacs's can: `\(x+x+\)+y` on a line of x's takes seconds in both, and a limit on the failure stack turns only the deepest into an error. Regexps in packages' own code may still be JavaScript's. The packages that matched Emacs regexps from variables with `e8.emacsRegexp`, a translation to JavaScript, use the engine instead: `auto-mode-alist` and `revert-without-query` with `string-match`, Dired's trivial file names, and outline's headings with `looking-at` on the buffer, as outline.el does. The translation stays, documented as approximate, for code that wants a JavaScript regexp.
 
 ## Dependencies introduced
 

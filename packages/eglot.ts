@@ -12,7 +12,7 @@ import { current as projectRoot } from "project";
 import { executableFind, truthy } from "subr";
 import { defineXrefBackend, type Xref } from "xref";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "eglot-server-programs",
   doc:
     "How to start a language server for each major mode: a list of [modes, program], modes a mode or a list of them, " +
@@ -38,14 +38,14 @@ for (const [name, value, doc] of [
   ["eglot-workspace-configuration", [], "Settings given to servers that ask for them, as an object of sections, such as { gopls: { ... } }."],
   ["eglot-ignored-server-capabilities", [], "Capabilities not to use even when a server has them, such as \":hoverProvider\"."],
 ] as const) {
-  gnista.defineVariable({ name, value: value as gnista.Value, doc });
+  e8.defineVariable({ name, value: value as e8.Value, doc });
 }
-gnista.defineHook("eglot-managed-mode-hook", "Run when eglot starts or stops managing a buffer.");
-gnista.defineHook("eglot-server-initialized-hook", "Run with a server's name when it has started.");
+e8.defineHook("eglot-managed-mode-hook", "Run when eglot starts or stops managing a buffer.");
+e8.defineHook("eglot-server-initialized-hook", "Run with a server's name when it has started.");
 
-gnista.defineFace({ name: "flymake-error", doc: "A diagnostic of an error.", attributes: { underline: { style: "wave", color: "Red1" } } });
-gnista.defineFace({ name: "flymake-warning", doc: "A diagnostic of a warning.", attributes: { underline: { style: "wave", color: "DarkOrange" } } });
-gnista.defineFace({ name: "flymake-note", doc: "A diagnostic of a note.", attributes: { underline: { style: "wave", color: "yellow green" } } });
+e8.defineFace({ name: "flymake-error", doc: "A diagnostic of an error.", attributes: { underline: { style: "wave", color: "Red1" } } });
+e8.defineFace({ name: "flymake-warning", doc: "A diagnostic of a warning.", attributes: { underline: { style: "wave", color: "DarkOrange" } } });
+e8.defineFace({ name: "flymake-note", doc: "A diagnostic of a note.", attributes: { underline: { style: "wave", color: "yellow green" } } });
 
 // --- Positions and documents ------------------------------------------------
 
@@ -94,17 +94,17 @@ interface Range {
 }
 
 /** A buffer position as the protocol counts it: its line, and UTF-16 units from the line's start, as eglot--pos-to-lsp-position. */
-function lspPosition(pos = gnista.point()): Position {
-  const line = gnista.lineOf(pos);
-  return { line, character: gnista.bufferText(gnista.lineStart(line), pos).length };
+function lspPosition(pos = e8.point()): Position {
+  const line = e8.lineOf(pos);
+  return { line, character: e8.bufferText(e8.lineStart(line), pos).length };
 }
 
 /** The buffer position a protocol position names, as eglot--lsp-position-to-point. */
 function bufferPosition(p: Position): number {
-  const line = Math.max(0, Math.min(p.line, gnista.lineCount() - 1));
-  const text = gnista.lineText(line);
+  const line = Math.max(0, Math.min(p.line, e8.lineCount() - 1));
+  const text = e8.lineText(line);
   const units = Math.min(p.character, text.length);
-  return gnista.lineStart(line) + [...text.slice(0, units)].length;
+  return e8.lineStart(line) + [...text.slice(0, units)].length;
 }
 
 /** The language id the protocol names a mode's buffers by, as eglot--language-id. */
@@ -138,7 +138,7 @@ const documents = new Map<string, { version: number; dirty: boolean }>();
 
 function send(server: Server, message: object): void {
   const body = JSON.stringify({ jsonrpc: "2.0", ...message });
-  gnista.processSendString(server.process, `Content-Length: ${utf8Length(body)}\r\n\r\n${body}`);
+  e8.processSendString(server.process, `Content-Length: ${utf8Length(body)}\r\n\r\n${body}`);
 }
 
 const notify = (server: Server, method: string, params: unknown): void => send(server, { method, params });
@@ -148,19 +148,19 @@ function request(server: Server, method: string, params: unknown): unknown {
   flushChanges(server);
   const id = server.nextId++;
   send(server, { id, method, params });
-  const timeout = Number(gnista.variable("eglot-sync-request-timeout") ?? 3);
+  const timeout = Number(e8.variable("eglot-sync-request-timeout") ?? 3);
   const until = Date.now() + timeout * 1000;
   while (!server.answers.has(id)) {
-    if (!gnista.processLiveP(server.process)) gnista.userError(`[eglot] ${server.name} has stopped`);
+    if (!e8.processLiveP(server.process)) e8.userError(`[eglot] ${server.name} has stopped`);
     if (Date.now() > until) {
       send(server, { method: "$/cancelRequest", params: { id } });
-      gnista.userError(`[eglot] Timed out waiting for ${method}`);
+      e8.userError(`[eglot] Timed out waiting for ${method}`);
     }
-    gnista.acceptProcessOutput(server.process, 0.05);
+    e8.acceptProcessOutput(server.process, 0.05);
   }
   const answer = server.answers.get(id)!;
   server.answers.delete(id);
-  if (answer.error) gnista.userError(`[eglot] ${answer.error.message}`);
+  if (answer.error) e8.userError(`[eglot] ${answer.error.message}`);
   return answer.result;
 }
 
@@ -168,7 +168,7 @@ function request(server: Server, method: string, params: unknown): unknown {
 function serverRequest(server: Server, method: string, params: any): unknown {
   switch (method) {
     case "workspace/configuration": {
-      const config = gnista.variable("eglot-workspace-configuration") as any;
+      const config = e8.variable("eglot-workspace-configuration") as any;
       return (params?.items ?? []).map((item: { section?: string }) =>
         item.section && config && typeof config === "object" && !Array.isArray(config) ? (config[item.section] ?? null) : null,
       );
@@ -200,7 +200,7 @@ function handle(server: Server, message: any): void {
   } else if (message.method === "textDocument/publishDiagnostics") {
     showDiagnostics(message.params);
   } else if (message.method === "window/showMessage" && message.params?.message) {
-    gnista.message(`[eglot] ${message.params.message}`);
+    e8.message(`[eglot] ${message.params.message}`);
   }
 }
 
@@ -221,19 +221,19 @@ function filter(server: Server, output: string): void {
     try {
       handle(server, JSON.parse(split[0]));
     } catch (e) {
-      gnista.message(`[eglot] Bad message from ${server.name}: ${String(e)}`);
+      e8.message(`[eglot] Bad message from ${server.name}: ${String(e)}`);
     }
   }
 }
 
 /** The first program of a server entry that can be run, as eglot--guess-contact tries them. */
 function serverCommand(mode: string): string[] | undefined {
-  const programs = gnista.variable("eglot-server-programs");
+  const programs = e8.variable("eglot-server-programs");
   for (const entry of Array.isArray(programs) ? programs : []) {
     if (!Array.isArray(entry)) continue;
-    const [modes, program] = entry as [gnista.Value, gnista.Value];
+    const [modes, program] = entry as [e8.Value, e8.Value];
     const list = Array.isArray(modes) ? modes : [modes];
-    if (!list.includes(mode) && !gnista.derivedModeAllParents(mode).some((m) => list.includes(m))) continue;
+    if (!list.includes(mode) && !e8.derivedModeAllParents(mode).some((m) => list.includes(m))) continue;
     const command = Array.isArray(program) ? program : [program];
     if (command[0] !== "eglot-alternatives") return command.map(String);
     // As eglot-alternatives: the first that is installed, else the first.
@@ -245,7 +245,7 @@ function serverCommand(mode: string): string[] | undefined {
 
 /** Starts a server for a mode in a project and tells it what we can do, as eglot--connect. */
 function connect(mode: string, root: string, command: string[]): Server {
-  const name = `EGLOT (${gnista.fileNameNondirectory(root.replace(/\/$/, ""))}/${mode})`;
+  const name = `EGLOT (${e8.fileNameNondirectory(root.replace(/\/$/, ""))}/${mode})`;
   const server: Server = {
     name,
     process: "",
@@ -258,7 +258,7 @@ function connect(mode: string, root: string, command: string[]): Server {
     buffers: new Set(),
     initialized: false,
   };
-  server.process = gnista.makeProcess({
+  server.process = e8.makeProcess({
     name,
     command,
     directory: root,
@@ -268,8 +268,8 @@ function connect(mode: string, root: string, command: string[]): Server {
     coding: "utf-8-unix",
     filter: (_p, output) => filter(server, output),
     sentinel: (_p, event) => {
-      if (!gnista.processLiveP(server.process)) {
-        gnista.message(`[eglot] ${name} ${event.trim()}`);
+      if (!e8.processLiveP(server.process)) {
+        e8.message(`[eglot] ${name} ${event.trim()}`);
         disconnect(server);
       }
     },
@@ -277,7 +277,7 @@ function connect(mode: string, root: string, command: string[]): Server {
   servers.push(server);
   startTimers();
   const result = request(server, "initialize", {
-    processId: gnista.emacsPid(),
+    processId: e8.emacsPid(),
     rootPath: root,
     rootUri: fileUri(root),
     initializationOptions: {},
@@ -302,14 +302,14 @@ function connect(mode: string, root: string, command: string[]): Server {
   server.capabilities = result?.capabilities ?? {};
   notify(server, "initialized", {});
   server.initialized = true;
-  gnista.runHooks("eglot-server-initialized-hook", name);
-  gnista.message(`[eglot] Connected! Server \`${name}' now managing \`${mode}' buffers in project \`${root}'.`);
+  e8.runHooks("eglot-server-initialized-hook", name);
+  e8.message(`[eglot] Connected! Server \`${name}' now managing \`${mode}' buffers in project \`${root}'.`);
   return server;
 }
 
 function disconnect(server: Server): void {
   for (const buffer of [...server.buffers]) {
-    if (gnista.getBuffer(buffer)) gnista.withCurrentBuffer(buffer, () => manage(false));
+    if (e8.getBuffer(buffer)) e8.withCurrentBuffer(buffer, () => manage(false));
   }
   const k = servers.indexOf(server);
   if (k >= 0) servers.splice(k, 1);
@@ -318,44 +318,44 @@ function disconnect(server: Server): void {
 
 /** The server for the current buffer's project and mode, if one runs, as eglot-current-server. */
 function currentServer(): Server | undefined {
-  const name = gnista.currentBuffer().name;
+  const name = e8.currentBuffer().name;
   return name ? managing.get(name) : undefined;
 }
 
 function requireServer(): Server {
   const server = currentServer();
-  if (!server) gnista.userError("No current JSON-RPC connection");
+  if (!server) e8.userError("No current JSON-RPC connection");
   return server;
 }
 
 const hasCapability = (server: Server, name: string): boolean => {
-  const ignored = (gnista.variable("eglot-ignored-server-capabilities") ?? []) as gnista.Value[];
-  return truthy(server.capabilities[name] as gnista.Value) && !(Array.isArray(ignored) && ignored.includes(`:${name}`));
+  const ignored = (e8.variable("eglot-ignored-server-capabilities") ?? []) as e8.Value[];
+  return truthy(server.capabilities[name] as e8.Value) && !(Array.isArray(ignored) && ignored.includes(`:${name}`));
 };
 
 // --- Managing buffers -------------------------------------------------------
 
 /** The current buffer's document, as the protocol names it. */
-const textDocument = () => ({ uri: fileUri(gnista.bufferFileName()!) });
+const textDocument = () => ({ uri: fileUri(e8.bufferFileName()!) });
 
 /** Tells the server of the buffers' edits it has not heard of, with their whole text, as eglot--signal-textDocument/didChange. */
 function flushChanges(server: Server): void {
   for (const buffer of server.buffers) {
     const doc = documents.get(buffer);
-    if (!doc?.dirty || !gnista.getBuffer(buffer)) continue;
+    if (!doc?.dirty || !e8.getBuffer(buffer)) continue;
     doc.dirty = false;
     doc.version++;
-    gnista.withCurrentBuffer(buffer, () =>
+    e8.withCurrentBuffer(buffer, () =>
       notify(server, "textDocument/didChange", {
         textDocument: { ...textDocument(), version: doc.version },
-        contentChanges: [{ text: gnista.bufferText(gnista.pointMin(), gnista.pointMax()) }],
+        contentChanges: [{ text: e8.bufferText(e8.pointMin(), e8.pointMax()) }],
       }),
     );
   }
 }
 
 const afterChange = (): void => {
-  const doc = documents.get(gnista.currentBuffer().name ?? "");
+  const doc = documents.get(e8.currentBuffer().name ?? "");
   if (doc) doc.dirty = true;
 };
 
@@ -371,73 +371,73 @@ const killBuffer = (): void => {
   const server = currentServer();
   if (!server) return;
   notify(server, "textDocument/didClose", { textDocument: textDocument() });
-  const name = gnista.currentBuffer().name!;
+  const name = e8.currentBuffer().name!;
   server.buffers.delete(name);
   managing.delete(name);
   documents.delete(name);
-  if (server.buffers.size === 0 && truthy(gnista.variable("eglot-autoshutdown"))) shutdown(server);
+  if (server.buffers.size === 0 && truthy(e8.variable("eglot-autoshutdown"))) shutdown(server);
 };
 
 /** Starts or stops managing the current buffer with the server, as eglot--managed-mode. */
 function manage(on: boolean, server?: Server): void {
-  const name = gnista.currentBuffer().name!;
+  const name = e8.currentBuffer().name!;
   if (on && server) {
     managing.set(name, server);
     server.buffers.add(name);
     documents.set(name, { version: 0, dirty: false });
     notify(server, "textDocument/didOpen", {
-      textDocument: { ...textDocument(), languageId: languageId(String(gnista.variable("major-mode"))), version: 0, text: gnista.bufferText(gnista.pointMin(), gnista.pointMax()) },
+      textDocument: { ...textDocument(), languageId: languageId(String(e8.variable("major-mode"))), version: 0, text: e8.bufferText(e8.pointMin(), e8.pointMax()) },
     });
-    gnista.addHook("after-change-functions", afterChange, { local: true });
-    gnista.addHook("after-save-hook", afterSave, { local: true });
-    gnista.addHook("kill-buffer-hook", killBuffer, { local: true });
-    gnista.addHook("xref-backend-functions", () => "eglot", { local: true });
-    gnista.addHook("completion-at-point-functions", completionAtPoint, { local: true });
-    if (!truthy(gnista.variable("eglot--managed-mode"))) gnista.callWithPrefix(1, "eglot--managed-mode");
+    e8.addHook("after-change-functions", afterChange, { local: true });
+    e8.addHook("after-save-hook", afterSave, { local: true });
+    e8.addHook("kill-buffer-hook", killBuffer, { local: true });
+    e8.addHook("xref-backend-functions", () => "eglot", { local: true });
+    e8.addHook("completion-at-point-functions", completionAtPoint, { local: true });
+    if (!truthy(e8.variable("eglot--managed-mode"))) e8.callWithPrefix(1, "eglot--managed-mode");
   } else {
-    gnista.removeHook("after-change-functions", afterChange, { local: true });
-    gnista.removeHook("after-save-hook", afterSave, { local: true });
-    gnista.removeHook("kill-buffer-hook", killBuffer, { local: true });
+    e8.removeHook("after-change-functions", afterChange, { local: true });
+    e8.removeHook("after-save-hook", afterSave, { local: true });
+    e8.removeHook("kill-buffer-hook", killBuffer, { local: true });
     managing.get(name)?.buffers.delete(name);
     managing.delete(name);
     documents.delete(name);
     clearDiagnostics();
-    if (truthy(gnista.variable("eglot--managed-mode"))) gnista.callWithPrefix(-1, "eglot--managed-mode");
+    if (truthy(e8.variable("eglot--managed-mode"))) e8.callWithPrefix(-1, "eglot--managed-mode");
   }
 }
 
-gnista.defineKeymap("eglot-mode-map");
-gnista.defineMinorMode({
+e8.defineKeymap("eglot-mode-map");
+e8.defineMinorMode({
   name: "eglot--managed-mode",
   lighter: " eglot",
   doc: "Eglot manages this buffer: a language server hears of its text and answers M-., M-?, C-M-i and the eglot commands.",
-  onChange: () => gnista.runHooks("eglot-managed-mode-hook"),
+  onChange: () => e8.runHooks("eglot-managed-mode-hook"),
 });
-gnista.setKeymapParent("eglot--managed-mode-map", "eglot-mode-map");
+e8.setKeymapParent("eglot--managed-mode-map", "eglot-mode-map");
 
 /** Manages the current buffer, starting a server for its project and mode if none runs, as M-x eglot. */
 function eglot(): void {
-  const file = gnista.bufferFileName();
-  if (!file) gnista.userError("[eglot] This buffer is not visiting a file");
-  const mode = String(gnista.variable("major-mode"));
-  const root = gnista.fileNameAsDirectory(gnista.expandFileName(projectRoot() ?? gnista.fileNameDirectory(file) ?? "."));
-  let server = servers.find((s) => s.root === root && s.modes.includes(mode) && gnista.processLiveP(s.process));
+  const file = e8.bufferFileName();
+  if (!file) e8.userError("[eglot] This buffer is not visiting a file");
+  const mode = String(e8.variable("major-mode"));
+  const root = e8.fileNameAsDirectory(e8.expandFileName(projectRoot() ?? e8.fileNameDirectory(file) ?? "."));
+  let server = servers.find((s) => s.root === root && s.modes.includes(mode) && e8.processLiveP(s.process));
   if (!server) {
     const command = serverCommand(mode);
-    if (!command) gnista.userError(`[eglot] Couldn't guess LSP server for \`${mode}'`);
-    if (executableFind(command[0]) === undefined) gnista.userError(`[eglot] Couldn't start \`${command.join(" ")}': program not found`);
+    if (!command) e8.userError(`[eglot] Couldn't guess LSP server for \`${mode}'`);
+    if (executableFind(command[0]) === undefined) e8.userError(`[eglot] Couldn't start \`${command.join(" ")}': program not found`);
     server = connect(mode, root, command);
   }
   // The project's other buffers of the mode too, as eglot--maybe-activate-editing-mode does.
-  for (const name of gnista.bufferList()) {
-    gnista.withCurrentBuffer(name, () => {
-      const f = gnista.bufferFileName();
-      if (f && f.startsWith(root) && gnista.variable("major-mode") === mode && !managing.has(name)) manage(true, server);
+  for (const name of e8.bufferList()) {
+    e8.withCurrentBuffer(name, () => {
+      const f = e8.bufferFileName();
+      if (f && f.startsWith(root) && e8.variable("major-mode") === mode && !managing.has(name)) manage(true, server);
     });
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot",
   doc: "Start the language server eglot-server-programs names for this buffer's mode, in its project, and manage its buffers of that mode.",
   run: () => eglot(),
@@ -445,17 +445,17 @@ gnista.defineCommand({
 
 /** Starts eglot in the current buffer if a server is known for it, as eglot-ensure does from a mode hook. */
 export function ensure(): void {
-  if (!gnista.bufferFileName() || managing.has(gnista.currentBuffer().name!)) return;
-  const command = serverCommand(String(gnista.variable("major-mode")));
+  if (!e8.bufferFileName() || managing.has(e8.currentBuffer().name!)) return;
+  const command = serverCommand(String(e8.variable("major-mode")));
   if (command && executableFind(command[0]) !== undefined) {
     try {
       eglot();
     } catch (e) {
-      gnista.message(String(e instanceof Error ? e.message : e));
+      e8.message(String(e instanceof Error ? e.message : e));
     }
   }
 }
-gnista.defun("eglot-ensure", () => ensure());
+e8.defun("eglot-ensure", () => ensure());
 
 function shutdown(server: Server): void {
   try {
@@ -464,23 +464,23 @@ function shutdown(server: Server): void {
   } catch {
     // A server that does not answer is killed.
   }
-  if (gnista.processLiveP(server.process)) gnista.deleteProcess(server.process);
+  if (e8.processLiveP(server.process)) e8.deleteProcess(server.process);
   disconnect(server);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot-shutdown",
   doc: "Stop the current buffer's language server, and manage its buffers no more.",
   run: () => shutdown(requireServer()),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot-shutdown-all",
   doc: "Stop every language server.",
   run: () => [...servers].forEach(shutdown),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot-reconnect",
   doc: "Stop the current buffer's language server and start it again.",
   run: () => {
@@ -498,26 +498,26 @@ function xrefs(locations: unknown): Xref[] {
     const uri: string = l.uri ?? l.targetUri;
     const range: Range = l.range ?? l.targetSelectionRange ?? l.targetRange;
     const file = uriFile(uri);
-    const buffer = gnista.getBuffer(file) ?? (gnista.fileExists(file) ? gnista.getBuffer(gnista.findFileNoselect(file)) : undefined);
+    const buffer = e8.getBuffer(file) ?? (e8.fileExists(file) ? e8.getBuffer(e8.findFileNoselect(file)) : undefined);
     let summary = "";
     let col = range.start.character;
     if (buffer) {
-      gnista.withCurrentBuffer(buffer, () => {
-        summary = gnista.lineText(Math.min(range.start.line, gnista.lineCount() - 1));
-        col = bufferPosition(range.start) - gnista.lineStart(range.start.line);
+      e8.withCurrentBuffer(buffer, () => {
+        summary = e8.lineText(Math.min(range.start.line, e8.lineCount() - 1));
+        col = bufferPosition(range.start) - e8.lineStart(range.start.line);
       });
     }
-    return { file, line: range.start.line + 1, col, length: range.end.line === range.start.line ? range.end.character - range.start.character : 0, summary, group: gnista.abbreviateFileName(file) };
+    return { file, line: range.start.line + 1, col, length: range.end.line === range.start.line ? range.end.character - range.start.character : 0, summary, group: e8.abbreviateFileName(file) };
   });
 }
 
 defineXrefBackend("eglot", {
   identifierAtPoint: () =>
-    gnista.saveExcursion(() => {
-      gnista.skipSyntaxBackward("w_");
-      const start = gnista.point();
-      gnista.skipSyntaxForward("w_");
-      return gnista.point() > start ? gnista.bufferText(start, gnista.point()) : "LSP identifier at point";
+    e8.saveExcursion(() => {
+      e8.skipSyntaxBackward("w_");
+      const start = e8.point();
+      e8.skipSyntaxForward("w_");
+      return e8.point() > start ? e8.bufferText(start, e8.point()) : "LSP identifier at point";
     }),
   definitions: () => xrefs(request(requireServer(), "textDocument/definition", { textDocument: textDocument(), position: lspPosition() })),
   references: () =>
@@ -526,13 +526,13 @@ defineXrefBackend("eglot", {
 
 // --- Completion, as eglot-completion-at-point --------------------------------
 
-function completionAtPoint(): gnista.Value {
+function completionAtPoint(): e8.Value {
   const server = currentServer();
   if (!server || !hasCapability(server, "completionProvider")) return null;
-  const end = gnista.point();
-  const start = gnista.saveExcursion(() => {
-    gnista.skipSyntaxBackward("w_");
-    return gnista.point();
+  const end = e8.point();
+  const start = e8.saveExcursion(() => {
+    e8.skipSyntaxBackward("w_");
+    return e8.point();
   });
   const answer = request(server, "textDocument/completion", { textDocument: textDocument(), position: lspPosition(), context: { triggerKind: 1 } }) as any;
   const items: any[] = Array.isArray(answer) ? answer : (answer?.items ?? []);
@@ -540,35 +540,35 @@ function completionAtPoint(): gnista.Value {
   return [start, end, [...new Set(words)]];
 }
 
-gnista.defineKey("eglot--managed-mode-map", "C-M-i", "completion-at-point");
+e8.defineKey("eglot--managed-mode-map", "C-M-i", "completion-at-point");
 
 // --- Diagnostics, as eglot's flymake backend ---------------------------------
 
 /** Each buffer's diagnostic overlays. */
 const diagnosticOverlays = new Map<string, number[]>();
 
-function clearDiagnostics(buffer = gnista.currentBuffer().name!): void {
-  for (const o of diagnosticOverlays.get(buffer) ?? []) gnista.deleteOverlay(o);
+function clearDiagnostics(buffer = e8.currentBuffer().name!): void {
+  for (const o of diagnosticOverlays.get(buffer) ?? []) e8.deleteOverlay(o);
   diagnosticOverlays.delete(buffer);
 }
 
 /** Shows a file's diagnostics as underlined overlays carrying their messages, as eglot--report-to-flymake does. */
 function showDiagnostics(params: { uri: string; diagnostics: { range: Range; severity?: number; message: string; source?: string }[] }): void {
   const file = uriFile(params.uri);
-  const buffer = [...managing.keys()].find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName()) === file);
+  const buffer = [...managing.keys()].find((b) => e8.withCurrentBuffer(b, () => e8.bufferFileName()) === file);
   if (!buffer) return;
-  gnista.withCurrentBuffer(buffer, () => {
+  e8.withCurrentBuffer(buffer, () => {
     clearDiagnostics(buffer);
     const overlays: number[] = [];
     for (const d of params.diagnostics) {
       let start = bufferPosition(d.range.start);
       let end = bufferPosition(d.range.end);
       // An empty range marks the thing at it, as flymake-diag-region does.
-      if (end <= start) end = Math.min(gnista.lineEndPosition(start), start + 1);
+      if (end <= start) end = Math.min(e8.lineEndPosition(start), start + 1);
       if (end <= start) start = Math.max(0, end - 1);
       const face = d.severity === 1 || d.severity === undefined ? "flymake-error" : d.severity === 2 ? "flymake-warning" : "flymake-note";
       const text = d.source ? `${d.source}: ${d.message}` : d.message;
-      overlays.push(gnista.makeOverlay(start, end, { face, "flymake-diagnostic": text, "eglot-severity": d.severity ?? 1 }));
+      overlays.push(e8.makeOverlay(start, end, { face, "flymake-diagnostic": text, "eglot-severity": d.severity ?? 1 }));
     }
     diagnosticOverlays.set(buffer, overlays);
   });
@@ -576,19 +576,19 @@ function showDiagnostics(params: { uri: string; diagnostics: { range: Range; sev
 
 /** The diagnostics' overlays in the current buffer, in order. */
 const diagnostics = (): number[] =>
-  (diagnosticOverlays.get(gnista.currentBuffer().name ?? "") ?? []).filter((o) => gnista.overlayStart(o) !== undefined).sort((a, b) => gnista.overlayStart(a)! - gnista.overlayStart(b)!);
+  (diagnosticOverlays.get(e8.currentBuffer().name ?? "") ?? []).filter((o) => e8.overlayStart(o) !== undefined).sort((a, b) => e8.overlayStart(a)! - e8.overlayStart(b)!);
 
 function gotoDiagnostic(n: number): void {
   const all = diagnostics();
-  const here = gnista.point();
-  const next = n > 0 ? all.find((o) => gnista.overlayStart(o)! > here) : [...all].reverse().find((o) => gnista.overlayStart(o)! < here);
-  if (next === undefined) gnista.userError(n > 0 ? "No more Flymake diagnostics" : "No more Flymake diagnostics before point");
-  gnista.gotoChar(gnista.overlayStart(next)!);
-  gnista.message(String(gnista.overlayGet(next, "flymake-diagnostic") ?? ""));
+  const here = e8.point();
+  const next = n > 0 ? all.find((o) => e8.overlayStart(o)! > here) : [...all].reverse().find((o) => e8.overlayStart(o)! < here);
+  if (next === undefined) e8.userError(n > 0 ? "No more Flymake diagnostics" : "No more Flymake diagnostics before point");
+  e8.gotoChar(e8.overlayStart(next)!);
+  e8.message(String(e8.overlayGet(next, "flymake-diagnostic") ?? ""));
 }
 
-gnista.defineCommand({ name: "flymake-goto-next-error", doc: "Go to the next diagnostic and show its message.", run: () => gotoDiagnostic(1) });
-gnista.defineCommand({ name: "flymake-goto-prev-error", doc: "Go to the diagnostic before point and show its message.", run: () => gotoDiagnostic(-1) });
+e8.defineCommand({ name: "flymake-goto-next-error", doc: "Go to the next diagnostic and show its message.", run: () => gotoDiagnostic(1) });
+e8.defineCommand({ name: "flymake-goto-prev-error", doc: "Go to the diagnostic before point and show its message.", run: () => gotoDiagnostic(-1) });
 
 // --- What point is on, as eglot's eldoc functions -----------------------------
 
@@ -596,21 +596,21 @@ gnista.defineCommand({ name: "flymake-goto-prev-error", doc: "Go to the diagnost
 let lastHoverAt: string | undefined;
 function showAtPoint(): void {
   const server = currentServer();
-  if (!server || gnista.minibufferDepth() > 0) return;
-  const here = gnista.point();
-  const at = `${gnista.currentBuffer().name}:${here}:${documents.get(gnista.currentBuffer().name!)?.version}`;
+  if (!server || e8.minibufferDepth() > 0) return;
+  const here = e8.point();
+  const at = `${e8.currentBuffer().name}:${here}:${documents.get(e8.currentBuffer().name!)?.version}`;
   if (at === lastHoverAt) return;
   lastHoverAt = at;
-  const diagnostic = diagnostics().find((o) => gnista.overlayStart(o)! <= here && here < gnista.overlayEnd(o)!);
+  const diagnostic = diagnostics().find((o) => e8.overlayStart(o)! <= here && here < e8.overlayEnd(o)!);
   if (diagnostic !== undefined) {
-    gnista.message(String(gnista.overlayGet(diagnostic, "flymake-diagnostic")));
+    e8.message(String(e8.overlayGet(diagnostic, "flymake-diagnostic")));
     return;
   }
   if (!hasCapability(server, "hoverProvider")) return;
   try {
     const hover = request(server, "textDocument/hover", { textDocument: textDocument(), position: lspPosition() }) as any;
     const text = hoverText(hover?.contents);
-    if (text) gnista.letBind({ "message-log-max": null }, () => gnista.message(text));
+    if (text) e8.letBind({ "message-log-max": null }, () => e8.message(text));
   } catch {
     // The server may not answer for what point is on.
   }
@@ -629,14 +629,14 @@ function hoverText(contents: unknown): string {
 function applyTextEdits(edits: { range: Range; newText: string }[]): void {
   const resolved = edits.map((e) => ({ start: bufferPosition(e.range.start), end: bufferPosition(e.range.end), text: e.newText }));
   resolved.sort((a, b) => b.start - a.start || b.end - a.end);
-  const point = gnista.makeMarker(gnista.point());
+  const point = e8.makeMarker(e8.point());
   for (const e of resolved) {
-    gnista.deleteRegion(e.start, e.end);
-    gnista.gotoChar(e.start);
-    gnista.insert(e.text);
+    e8.deleteRegion(e.start, e.end);
+    e8.gotoChar(e.start);
+    e8.insert(e.text);
   }
-  gnista.gotoChar(gnista.markerPosition(point)!);
-  gnista.deleteMarker(point);
+  e8.gotoChar(e8.markerPosition(point)!);
+  e8.deleteMarker(point);
 }
 
 /** Applies a WorkspaceEdit to the files it names, visiting them, as eglot--apply-workspace-edit. */
@@ -647,52 +647,52 @@ function applyWorkspaceEdit(edit: any): void {
   }
   for (const [uri, edits] of Object.entries(edit?.changes ?? {})) byFile.push([uriFile(uri), edits as { range: Range; newText: string }[]]);
   for (const [file, edits] of byFile) {
-    const buffer = gnista.findFileNoselect(file);
-    gnista.withCurrentBuffer(buffer, () => applyTextEdits(edits));
+    const buffer = e8.findFileNoselect(file);
+    e8.withCurrentBuffer(buffer, () => applyTextEdits(edits));
   }
-  if (byFile.length > 0) gnista.message(`[eglot] Edited ${byFile.length} file${byFile.length === 1 ? "" : "s"}`);
+  if (byFile.length > 0) e8.message(`[eglot] Edited ${byFile.length} file${byFile.length === 1 ? "" : "s"}`);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot-rename",
   doc: "Rename the thing at point everywhere the server knows of it.",
   params: [{ name: "newname", prompt: () => "Rename to: " }],
   run: (newname) => {
     const server = requireServer();
-    if (!hasCapability(server, "renameProvider")) gnista.userError("[eglot] Server can't rename");
+    if (!hasCapability(server, "renameProvider")) e8.userError("[eglot] Server can't rename");
     applyWorkspaceEdit(request(server, "textDocument/rename", { textDocument: textDocument(), position: lspPosition(), newName: newname }));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot-format-buffer",
   doc: "Have the server format the whole buffer.",
   run: () => {
     const server = requireServer();
-    if (!hasCapability(server, "documentFormattingProvider")) gnista.userError("[eglot] Server can't format");
-    const tabWidth = Number(gnista.variable("tab-width") ?? 8);
+    if (!hasCapability(server, "documentFormattingProvider")) e8.userError("[eglot] Server can't format");
+    const tabWidth = Number(e8.variable("tab-width") ?? 8);
     const edits = request(server, "textDocument/formatting", {
       textDocument: textDocument(),
-      options: { tabSize: tabWidth, insertSpaces: !truthy(gnista.variable("indent-tabs-mode")) },
+      options: { tabSize: tabWidth, insertSpaces: !truthy(e8.variable("indent-tabs-mode")) },
     }) as { range: Range; newText: string }[] | null;
     if (edits) applyTextEdits(edits);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "eglot-code-actions",
   doc: "Choose one of the changes the server offers for point, or the region, and make it.",
   run: () => {
     const server = requireServer();
-    const [start, end] = gnista.regionActive() ? [Math.min(gnista.point(), gnista.mark()!), Math.max(gnista.point(), gnista.mark()!)] : [gnista.point(), gnista.point()];
-    const here = diagnostics().filter((o) => gnista.overlayStart(o)! <= end && start <= gnista.overlayEnd(o)!);
+    const [start, end] = e8.regionActive() ? [Math.min(e8.point(), e8.mark()!), Math.max(e8.point(), e8.mark()!)] : [e8.point(), e8.point()];
+    const here = diagnostics().filter((o) => e8.overlayStart(o)! <= end && start <= e8.overlayEnd(o)!);
     const actions = (request(server, "textDocument/codeAction", {
       textDocument: textDocument(),
       range: { start: lspPosition(start), end: lspPosition(end) },
-      context: { diagnostics: here.map((o) => ({ range: { start: lspPosition(gnista.overlayStart(o)), end: lspPosition(gnista.overlayEnd(o)) }, message: String(gnista.overlayGet(o, "flymake-diagnostic")) })) },
+      context: { diagnostics: here.map((o) => ({ range: { start: lspPosition(e8.overlayStart(o)), end: lspPosition(e8.overlayEnd(o)) }, message: String(e8.overlayGet(o, "flymake-diagnostic")) })) },
     }) ?? []) as any[];
-    if (actions.length === 0) gnista.userError("[eglot] No code actions here");
-    const title = gnista.completingRead("[eglot] Pick an action: ", actions.map((a) => String(a.title)), { requireMatch: true });
+    if (actions.length === 0) e8.userError("[eglot] No code actions here");
+    const title = e8.completingRead("[eglot] Pick an action: ", actions.map((a) => String(a.title)), { requireMatch: true });
     const action = actions.find((a) => a.title === title);
     if (action?.edit) applyWorkspaceEdit(action.edit);
     const command = action?.command && typeof action.command === "object" ? action.command : action?.command ? action : undefined;
@@ -706,15 +706,15 @@ let timers: number[] = [];
 function startTimers(): void {
   if (timers.length > 0) return;
   timers = [
-    // Edits are sent once Gnista has been idle a moment, as eglot-send-changes-idle-time has it.
-    gnista.runWithIdleTimer(Number(gnista.variable("eglot-send-changes-idle-time") ?? 0.5), true, () => {
-      for (const server of servers) if (server.initialized && gnista.processLiveP(server.process)) flushChanges(server);
+    // Edits are sent once E8 has been idle a moment, as eglot-send-changes-idle-time has it.
+    e8.runWithIdleTimer(Number(e8.variable("eglot-send-changes-idle-time") ?? 0.5), true, () => {
+      for (const server of servers) if (server.initialized && e8.processLiveP(server.process)) flushChanges(server);
     }),
-    gnista.runWithIdleTimer(0.5, true, showAtPoint),
+    e8.runWithIdleTimer(0.5, true, showAtPoint),
   ];
 }
 
 function stopTimers(): void {
-  for (const t of timers) gnista.cancelTimer(t);
+  for (const t of timers) e8.cancelTimer(t);
   timers = [];
 }

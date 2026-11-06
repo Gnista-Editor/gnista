@@ -104,7 +104,7 @@ export { PLANNING } from "org-element";
 
 // Variables
 
-const variables: [string, string, gnista.Value][] = [
+const variables: [string, string, e8.Value][] = [
   [
     "org-todo-keywords",
     'The TODO states headings cycle through, in order: states before "|" are not done, those after it are. ' +
@@ -186,13 +186,13 @@ const variables: [string, string, gnista.Value][] = [
     [0, 5],
   ],
 ];
-for (const [name, doc, value] of variables) gnista.defineVariable({ name, doc, value });
+for (const [name, doc, value] of variables) e8.defineVariable({ name, doc, value });
 
-gnista.defineHook(
+e8.defineHook(
   "org-cycle-tab-first-hook",
   "Functions TAB in Org tries first, each until one gives true, which then is all TAB does. Emacs also calls it org-tab-first-hook.",
 );
-gnista.defineHook(
+e8.defineHook(
   "org-tab-before-tab-emulation-hook",
   "Functions TAB in Org tries where it would indent, not being on a heading, an item, a table or a block, each until one gives true.",
 );
@@ -202,17 +202,17 @@ for (const [name, doc] of [
   ["org-cycle-global-status", "What S-TAB last did: \"overview\", \"contents\" or \"all\"."],
   ["org--todo-sets", "The buffer's TODO state sequences: each a list of the states not done and the states done."],
 ]) {
-  gnista.defineVariable({ name, doc, value: null, local: true });
+  e8.defineVariable({ name, doc, value: null, local: true });
 }
 
 {
-  const alist = gnista.variable("auto-mode-alist");
-  if (Array.isArray(alist)) gnista.setDefault("auto-mode-alist", [["\\.org\\'", "org-mode"], ...alist]);
+  const alist = e8.variable("auto-mode-alist");
+  if (Array.isArray(alist)) e8.setDefault("auto-mode-alist", [["\\.org\\'", "org-mode"], ...alist]);
 }
 
 // Faces
 
-const faces: [string, string, gnista.FaceAttributes][] = [
+const faces: [string, string, e8.FaceAttributes][] = [
   ["org-todo", "TODO states that are not done.", { foreground: "bad", bold: true }],
   ["org-done", "Done TODO states, such as DONE.", { foreground: "good", bold: true }],
   ["org-headline-done", "The text of a heading that is done.", { foreground: "muted" }],
@@ -245,9 +245,9 @@ const faces: [string, string, gnista.FaceAttributes][] = [
   ["org-ellipsis", "The text a folded heading shows after it, as org-ellipsis says.", { foreground: "warn", underline: true }],
   ["org-hide", "The leading stars of headings org-hide-leading-stars hides, in the colour of the background.", { foreground: "bg" }],
 ];
-for (const [name, doc, attributes] of faces) gnista.defineFace({ name, doc, attributes });
+for (const [name, doc, attributes] of faces) e8.defineFace({ name, doc, attributes });
 for (let i = 1; i <= 8; i++) {
-  gnista.defineFace({ name: `org-level-${i}`, doc: `Level ${i} headings, and deeper levels in turn.`, attributes: { inherit: `outline-${i}` } });
+  e8.defineFace({ name: `org-level-${i}`, doc: `Level ${i} headings, and deeper levels in turn.`, attributes: { inherit: `outline-${i}` } });
 }
 
 // Text and positions. Positions count characters; JavaScript strings count
@@ -256,12 +256,12 @@ for (let i = 1; i <= 8; i++) {
 
 /** The position of index `i` of a line's text. */
 export function at(line: number, text: string, i: number): number {
-  return gnista.lineStart(line) + charCount(text.slice(0, i));
+  return e8.lineStart(line) + charCount(text.slice(0, i));
 }
 
 /** The index in a line's text of a position on it. */
 function indexOf(line: number, text: string, pos: number): number {
-  const n = pos - gnista.lineStart(line);
+  const n = pos - e8.lineStart(line);
   if (!/[\uD800-\uDFFF]/.test(text)) return n;
   return Array.from(text).slice(0, n).join("").length;
 }
@@ -276,7 +276,7 @@ export function indentation(text: string): number {
 
 /** Replaces text and puts point back where it was, moved along with the text around it. */
 function replaceText(start: number, end: number, text: string): void {
-  let p = gnista.point();
+  let p = e8.point();
   const delta = charCount(text) - (end - start);
   const saved: [Marker, number][] = markers.map((m) => {
     const x = m.pos;
@@ -285,11 +285,11 @@ function replaceText(start: number, end: number, text: string): void {
   // As a marker would: text inserted at point goes after it.
   if (p > end || (p === end && start < end)) p += delta;
   else if (p > start) p = Math.min(p, start + charCount(text));
-  gnista.deleteRegion(start, end);
-  gnista.gotoChar(start);
-  gnista.insert(text);
+  e8.deleteRegion(start, end);
+  e8.gotoChar(start);
+  e8.insert(text);
   placeMarkers(saved);
-  gnista.gotoChar(p);
+  e8.gotoChar(p);
 }
 
 function shiftSelectError(): never {
@@ -298,7 +298,7 @@ function shiftSelectError(): never {
 
 // TODO states
 
-gnista.defineHook("org-after-todo-state-change-hook", "Functions called after a heading's TODO state changes, at the heading.");
+e8.defineHook("org-after-todo-state-change-hook", "Functions called after a heading's TODO state changes, at the heading.");
 
 interface TodoSet {
   todo: string[];
@@ -339,9 +339,9 @@ function todoSetFrom(words: string[]): TodoSet | undefined {
 
 /** The whole buffer's #+KEYWORD: lines, found in one pass. */
 export function keywordLines(): [number, number, string][] {
-  return gnista.saveRestriction(() => {
-    gnista.widen();
-    return gnista.matchingLines("^#\\+", { caseFold: true });
+  return e8.saveRestriction(() => {
+    e8.widen();
+    return e8.matchingLines("^#\\+", { caseFold: true });
   });
 }
 
@@ -354,8 +354,8 @@ function readTodoSets(): TodoSet[] {
     if (set) sets.push(set);
   }
   if (sets.length === 0) {
-    const value = gnista.variable("org-todo-keywords");
-    const lists = Array.isArray(value) && value.every(Array.isArray) ? (value as gnista.Value[][]) : [value as gnista.Value[]];
+    const value = e8.variable("org-todo-keywords");
+    const lists = Array.isArray(value) && value.every(Array.isArray) ? (value as e8.Value[][]) : [value as e8.Value[]];
     for (const list of lists) {
       const set = Array.isArray(list) ? todoSetFrom(list.map(String)) : undefined;
       if (set) sets.push(set);
@@ -365,7 +365,7 @@ function readTodoSets(): TodoSet[] {
 }
 
 function todoSets(): TodoSet[] {
-  const value = gnista.variable("org--todo-sets");
+  const value = e8.variable("org--todo-sets");
   if (!Array.isArray(value)) return readTodoSets();
   return (value as unknown as [string[], string[], [string, string | null][], [string, string | null, string | null][]][]).map(([todo, done, keys, logs]) => ({
     todo,
@@ -376,7 +376,7 @@ function todoSets(): TodoSet[] {
 }
 
 function storeTodoSets(): void {
-  gnista.setVariable("org--todo-sets", readTodoSets().map((s) => [s.todo, s.done, s.keys.map(([k, c]) => [k, c ?? null]), s.logs.map(([k, a, b]) => [k, a ?? null, b ?? null])]));
+  e8.setVariable("org--todo-sets", readTodoSets().map((s) => [s.todo, s.done, s.keys.map(([k, c]) => [k, c ?? null]), s.logs.map(([k, a, b]) => [k, a ?? null, b ?? null])]));
 }
 
 /** How a change from one state to another is logged, as org-todo works out dolog: "time", "note" or nothing. */
@@ -387,7 +387,7 @@ function logHow(state: string | undefined, previous: string | undefined): string
 
 /** The drawer notes go in, as org-log-into-drawer says: LOGBOOK for t, or the name given. */
 function logDrawer(): string | undefined {
-  const v = gnista.variable("org-log-into-drawer");
+  const v = e8.variable("org-log-into-drawer");
   return v === true ? "LOGBOOK" : typeof v === "string" && v !== "" ? v : undefined;
 }
 
@@ -428,9 +428,9 @@ const TAGS = /[ \t](:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u;
  * the TODO keywords, longest first, when the caller has them already, as
  * headings() does for every heading in the buffer.
  */
-export function parseHeading(line: number, keywords = allKeywords(), text = gnista.lineText(line), sorted?: string[]): Heading | undefined {
+export function parseHeading(line: number, keywords = allKeywords(), text = e8.lineText(line), sorted?: string[]): Heading | undefined {
   const h = parseHeadingText(text, keywords, sorted);
-  return h && placeHeading(h, line, gnista.lineStart(line));
+  return h && placeHeading(h, line, e8.lineStart(line));
 }
 
 /** A heading parsed from its line's text, its positions counted from the line's start. */
@@ -541,21 +541,21 @@ const MAX_PENDING = 32;
 const headingIndexes = new Map<string, HeadingIndex>();
 
 /** The current buffer's index's key: its id, which outlives a rename, and a buffer killed and made again does not share. */
-const indexKey = (): string => String(gnista.currentBuffer().id);
+const indexKey = (): string => String(e8.currentBuffer().id);
 
 /** The changes to each indexed buffer since its index was last brought up to date, as after-change-functions gives them. */
 const headingChanges = new Map<string, [number, number, number][]>();
 
 // A killed buffer's index goes with it: indirect buffers, capture and the
 // agenda's visits each make one.
-gnista.addHook("kill-buffer-hook", () => {
+e8.addHook("kill-buffer-hook", () => {
   headingIndexes.delete(indexKey());
   headingChanges.delete(indexKey());
 });
 
 /** Records a change to an Org buffer, for headings() to follow it, and for the parse org-indent-region keeps. */
 function headingsAfterChange(beg: number, end: number, oldLen: number): void {
-  if (parseShifts && gnista.currentBuffer().id === parseShifts.buffer) parseShifts.changes.push([beg, end, oldLen]);
+  if (parseShifts && e8.currentBuffer().id === parseShifts.buffer) parseShifts.changes.push([beg, end, oldLen]);
   const name = indexKey();
   if (!headingIndexes.has(name)) return;
   const list = headingChanges.get(name);
@@ -568,9 +568,9 @@ function scanHeadings(keywords: string[], sorted: string[], start?: number, end?
   const found: Heading[] = [];
   // The heading lines in one pass in the editor, rather than a call per
   // line or the whole text copied here: much the faster in a large buffer.
-  const lines = gnista.saveRestriction(() => {
-    gnista.widen();
-    return gnista.matchingLines("^\\*+ ", { caseFold: false, start, end });
+  const lines = e8.saveRestriction(() => {
+    e8.widen();
+    return e8.matchingLines("^\\*+ ", { caseFold: false, start, end });
   });
   for (const [line, lineStart, text] of lines) {
     let h = parsed.get(text);
@@ -676,7 +676,7 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
   if (changes.length > 16) return false;
   // Changes made without the hooks, which the sizes would not account for.
   const grown = changes.reduce((sum, [beg, end, oldLen]) => sum + (end - beg) - oldLen, 0);
-  if (index.size + grown !== gnista.bufferSize()) return false;
+  if (index.size + grown !== e8.bufferSize()) return false;
   // A caller may still hold the array.
   if (index.shared) {
     index.all = index.all.slice();
@@ -727,7 +727,7 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
     if (k >= hs.length) break;
     if (startAt(index, k) > bound) continue;
     const [chars, lines] = pendingAt(index, k);
-    stretches.push([k, gnista.lineOf(hs[k].start + chars) - (hs[k].line + lines)]);
+    stretches.push([k, e8.lineOf(hs[k].start + chars) - (hs[k].line + lines)]);
     // The first heading past this bound starts the next stretch.
     let [lo, hi] = [k, hs.length];
     while (lo < hi) {
@@ -744,8 +744,8 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
   }
   // The lines the changes touched, looked at again.
   for (const [from, to] of mergeRanges(dirty)) {
-    const start = gnista.lineStart(gnista.lineOf(Math.min(from, gnista.bufferSize())));
-    const stop = gnista.lineEnd(gnista.lineOf(Math.min(to, gnista.bufferSize())));
+    const start = e8.lineStart(e8.lineOf(Math.min(from, e8.bufferSize())));
+    const stop = e8.lineEnd(e8.lineOf(Math.min(to, e8.bufferSize())));
     const found = scanHeadings(keywords, sorted, start, stop, epoch);
     let [lo, hi] = [0, hs.length];
     while (lo < hi) {
@@ -778,12 +778,12 @@ function mergeRanges(ranges: [number, number][]): [number, number][] {
  * agrees with finding every heading again: nil if so, else where they
  * first differ, as Org's org-element--cache-self-verify checks its cache.
  */
-gnista.defun("org--headings-verify", (only?: number) => {
+e8.defun("org--headings-verify", (only?: number) => {
   // With an index, only that heading, read as the element parser reads
   // one, leaving the shifts pending for the rest.
   const kept = typeof only === "number" ? headingsAsRead() : headings();
   const keywords = allKeywords();
-  const fresh = scanHeadings(keywords, [...keywords].sort((a, b) => b.length - a.length)).filter((h) => h.start >= gnista.pointMin() && h.start < gnista.pointMax());
+  const fresh = scanHeadings(keywords, [...keywords].sort((a, b) => b.length - a.length)).filter((h) => h.start >= e8.pointMin() && h.start < e8.pointMax());
   const show = (h?: Heading) => (h === undefined ? "none" : JSON.stringify(h, (key, value) => (key === "synced" ? undefined : value)));
   if (typeof only === "number") {
     if (kept.length !== fresh.length) return `${kept.length} headings kept, ${fresh.length} found`;
@@ -805,7 +805,7 @@ function currentIndex(): HeadingIndex {
     parsedFor = keywordsKey;
   }
   const name = indexKey();
-  const tick = gnista.bufferModifiedTick();
+  const tick = e8.bufferModifiedTick();
   let index = headingIndexes.get(name);
   if (!index || index.keywords !== keywordsKey || index.tick !== tick) {
     const sorted = [...keywords].sort((a, b) => b.length - a.length);
@@ -813,11 +813,11 @@ function currentIndex(): HeadingIndex {
     headingChanges.delete(name);
     const followed = index !== undefined && index.keywords === keywordsKey && changes !== undefined && followChanges(index, changes, keywords, sorted);
     if (!followed) {
-      index = { tick, size: gnista.bufferSize(), keywords: keywordsKey, all: scanHeadings(keywords, sorted), pending: [], epoch: 0, shared: false };
+      index = { tick, size: e8.bufferSize(), keywords: keywordsKey, all: scanHeadings(keywords, sorted), pending: [], epoch: 0, shared: false };
       headingIndexes.set(name, index);
     }
     index!.tick = tick;
-    index!.size = gnista.bufferSize();
+    index!.size = e8.bufferSize();
     index!.view = undefined;
   }
   return index!;
@@ -834,8 +834,8 @@ export function headings(): Heading[] {
   const index = currentIndex();
   syncAll(index);
   index.shared = true;
-  const [min, max] = [gnista.pointMin(), gnista.pointMax()];
-  if (min === 0 && max === gnista.bufferSize()) return index.all;
+  const [min, max] = [e8.pointMin(), e8.pointMax()];
+  if (min === 0 && max === e8.bufferSize()) return index.all;
   if (index.view?.min !== min || index.view.max !== max) {
     index.view = { min, max, tick: index.tick, headings: index.all.filter((h) => h.start >= min && h.start < max) };
   }
@@ -850,7 +850,7 @@ export function headings(): Heading[] {
  */
 export function headingsAsRead(): Heading[] {
   const index = currentIndex();
-  if (gnista.pointMin() !== 0 || gnista.pointMax() !== gnista.bufferSize()) return headings();
+  if (e8.pointMin() !== 0 || e8.pointMax() !== e8.bufferSize()) return headings();
   // Not marked shared: the parser reads it and lets it go before any edit.
   if (index.pending.length === 0) return index.all;
   return new Proxy(index.all, {
@@ -886,9 +886,9 @@ function backToHeading(move = false): [Heading[], number] {
   const all = headings();
   const i = headingIndex(all, lineAt());
   if (i === undefined) {
-    const bol = gnista.lineStart(lineAt());
-    if (move) gnista.gotoChar(bol);
-    gnista.userError(`Before first headline at position ${bol + 1} in buffer ${gnista.bufferName()}`);
+    const bol = e8.lineStart(lineAt());
+    if (move) e8.gotoChar(bol);
+    e8.userError(`Before first headline at position ${bol + 1} in buffer ${e8.bufferName()}`);
   }
   return [all, i];
 }
@@ -900,13 +900,13 @@ function backToHeading(move = false): [Heading[], number] {
 function visibleHeadingIndex(all: Heading[], line: number): number | undefined {
   const i = headingIndex(all, line);
   if (i === undefined) return undefined;
-  for (const a of [i, ...ancestors(all, i)]) if (!gnista.invisibleAt(all[a].start)) return a;
+  for (const a of [i, ...ancestors(all, i)]) if (!e8.invisibleAt(all[a].start)) return a;
   return i;
 }
 
 /** The heading on point's line, if it is a heading line. */
 function headingHere(): [Heading[], number] | undefined {
-  if (!isHeadingLine(gnista.lineText(lineAt()))) return undefined;
+  if (!isHeadingLine(e8.lineText(lineAt()))) return undefined;
   const all = headings();
   const i = headingIndex(all, lineAt());
   return i === undefined ? undefined : [all, i];
@@ -949,12 +949,12 @@ export function nextSameOrHigher(all: Heading[], i: number): Heading | undefined
  */
 export function subtreeEnd(all: Heading[], i: number): number {
   const next = nextSameOrHigher(all, i);
-  return next ? next.start - 1 : gnista.pointMax();
+  return next ? next.start - 1 : e8.pointMax();
 }
 
 /** Where a heading's entry ends for showing it: at the next heading, as org-fold-show-entry takes it. */
 export function entryEnd(all: Heading[], i: number): number {
-  return all[i + 1]?.start ?? gnista.pointMax();
+  return all[i + 1]?.start ?? e8.pointMax();
 }
 
 /**
@@ -963,44 +963,44 @@ export function entryEnd(all: Heading[], i: number): number {
  */
 export function subtreeRegion(all: Heading[], i: number): [number, number] {
   const next = nextSameOrHigher(all, i);
-  return [all[i].start, next ? next.start : gnista.pointMax()];
+  return [all[i].start, next ? next.start : e8.pointMax()];
 }
 
 // Narrowing, as org.el's org-narrow-to-subtree and its kin.
 
-const narrowToSubtree = gnista.defineCommand({
+const narrowToSubtree = e8.defineCommand({
   name: "org-narrow-to-subtree",
   doc: "Narrow the buffer to the current subtree: the heading point is under and everything below it.",
   run: () => {
     const all = headings();
     const i = headingIndex(all, lineAt());
-    if (i === undefined || all[i].start < gnista.pointMin()) throw new Error("Before first heading");
+    if (i === undefined || all[i].start < e8.pointMin()) throw new Error("Before first heading");
     const end = subtreeRegion(all, i)[1];
     // The subtree's last newline stays outside, and an existing narrowing is not widened.
-    gnista.narrowToRegion(all[i].start, Math.min(gnista.pointMax(), end === gnista.pointMax() ? end : end - 1));
+    e8.narrowToRegion(all[i].start, Math.min(e8.pointMax(), end === e8.pointMax() ? end : end - 1));
   },
 });
 
 // Subtrees in indirect buffers, as org.el's org-tree-to-indirect-buffer.
 
 /** The buffer the last C-c C-x b made, which the next one kills, as org-last-indirect-buffer. */
-let lastIndirectBuffer: gnista.Buffer | undefined;
+let lastIndirectBuffer: e8.Buffer | undefined;
 /** The frame "dedicated-frame" shows indirect buffers in, as org-indirect-dedicated-frame. */
 let indirectDedicatedFrame: number | undefined;
 
 /** An indirect buffer of `buffer`'s base, named after it and `heading`, as org-get-indirect-buffer. */
-function getIndirectBuffer(buffer: gnista.Buffer, heading?: string): gnista.Buffer {
-  const base = gnista.bufferBaseBuffer(buffer) ?? buffer;
-  const name = gnista.generateNewBufferName(`${base.name}${heading === undefined ? "" : `::${heading}`}`);
-  return gnista.makeIndirectBuffer(base, name, true);
+function getIndirectBuffer(buffer: e8.Buffer, heading?: string): e8.Buffer {
+  const base = e8.bufferBaseBuffer(buffer) ?? buffer;
+  const name = e8.generateNewBufferName(`${base.name}${heading === undefined ? "" : `::${heading}`}`);
+  return e8.makeIndirectBuffer(base, name, true);
 }
 
 /** The window showing `buffer`, if one does. */
-function bufferWindow(buffer: gnista.Buffer): number | undefined {
-  return buffer.live ? gnista.windowList().find((w) => gnista.windowBuffer(w) === buffer.name) : undefined;
+function bufferWindow(buffer: e8.Buffer): number | undefined {
+  return buffer.live ? e8.windowList().find((w) => e8.windowBuffer(w) === buffer.name) : undefined;
 }
 
-const treeToIndirectBuffer = gnista.defineCommand({
+const treeToIndirectBuffer = e8.defineCommand({
   name: "org-tree-to-indirect-buffer",
   doc:
     "Show the current subtree in an indirect buffer of its own, narrowed to it: the same text, folded apart.\n\n" +
@@ -1009,10 +1009,10 @@ const treeToIndirectBuffer = gnista.defineCommand({
     "is killed first; with C-u it is kept.",
   params: [{ name: "arg", kind: "prefix" }],
   run: (arg) => {
-    const cbuf = gnista.currentBuffer();
-    const cwin = gnista.selectedWindow();
-    const pos = gnista.point();
-    const display = String(gnista.variable("org-indirect-buffer-display"));
+    const cbuf = e8.currentBuffer();
+    const cwin = e8.selectedWindow();
+    const pos = e8.point();
+    const display = String(e8.variable("org-indirect-buffer-display"));
     const lastWindow = lastIndirectBuffer && bufferWindow(lastIndirectBuffer);
     const [all, found] = backToHeading();
     let i = found;
@@ -1031,75 +1031,75 @@ const treeToIndirectBuffer = gnista.defineCommand({
     const beg = h.start;
     let end = subtreeRegion(all, i)[1];
     // Up to the next heading's line, not its start, as org-end-of-subtree leaves it.
-    if (end < gnista.pointMax()) end--;
-    if (lastIndirectBuffer?.live && display !== "new-frame" && arg === null) gnista.call("kill-buffer", lastIndirectBuffer.name ?? "");
+    if (end < e8.pointMax()) end--;
+    if (lastIndirectBuffer?.live && display !== "new-frame" && arg === null) e8.call("kill-buffer", lastIndirectBuffer.name ?? "");
     const ibuf = getIndirectBuffer(cbuf, heading);
     lastIndirectBuffer = ibuf;
     if (display === "new-frame" || (arg !== null && display === "dedicated-frame")) {
-      gnista.makeFrame(ibuf);
+      e8.makeFrame(ibuf);
     } else if (display === "dedicated-frame") {
-      if (indirectDedicatedFrame === undefined || !gnista.frameList().includes(indirectDedicatedFrame)) {
-        indirectDedicatedFrame = gnista.makeFrame(ibuf);
+      if (indirectDedicatedFrame === undefined || !e8.frameList().includes(indirectDedicatedFrame)) {
+        indirectDedicatedFrame = e8.makeFrame(ibuf);
       } else {
-        gnista.selectFrame(indirectDedicatedFrame);
-        gnista.setWindowBuffer(undefined, ibuf);
+        e8.selectFrame(indirectDedicatedFrame);
+        e8.setWindowBuffer(undefined, ibuf);
       }
     } else if (display === "current-window") {
-      gnista.setWindowBuffer(undefined, ibuf);
+      e8.setWindowBuffer(undefined, ibuf);
     } else if (display === "other-window") {
-      if (lastWindow !== undefined && gnista.windowList().includes(lastWindow)) {
-        gnista.setWindowBuffer(lastWindow, ibuf);
-        gnista.selectWindow(lastWindow);
+      if (lastWindow !== undefined && e8.windowList().includes(lastWindow)) {
+        e8.setWindowBuffer(lastWindow, ibuf);
+        e8.selectWindow(lastWindow);
       } else {
-        gnista.call("pop-to-buffer", ibuf.name ?? "");
+        e8.call("pop-to-buffer", ibuf.name ?? "");
       }
     } else {
       throw new Error("Invalid value");
     }
-    gnista.withCurrentBuffer(ibuf, () => {
-      gnista.narrowToRegion(beg, end);
-      gnista.call("org-show-all");
-      gnista.gotoChar(pos);
+    e8.withCurrentBuffer(ibuf, () => {
+      e8.narrowToRegion(beg, end);
+      e8.call("org-show-all");
+      e8.gotoChar(pos);
     });
-    if (gnista.windowList().includes(cwin)) gnista.selectWindow(cwin);
+    if (e8.windowList().includes(cwin)) e8.selectWindow(cwin);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-toggle-narrow-to-subtree",
   doc: "Narrow to the current subtree, or widen if the buffer is narrowed.",
   run: () => {
-    if (gnista.bufferNarrowedP()) {
-      gnista.widen();
-      gnista.message("Buffer widen");
+    if (e8.bufferNarrowedP()) {
+      e8.widen();
+      e8.message("Buffer widen");
     } else {
-      gnista.call("org-narrow-to-subtree");
-      gnista.message("Buffer narrowed to current subtree");
+      e8.call("org-narrow-to-subtree");
+      e8.message("Buffer narrowed to current subtree");
     }
   },
 });
 
-const narrowToElement = gnista.defineCommand({
+const narrowToElement = e8.defineCommand({
   name: "org-narrow-to-element",
   doc: "Narrow the buffer to the element at point: a heading's subtree, a greater element's contents, or the element.",
   run: () => {
-    const e = elementAt(gnista.point());
-    if (!e) gnista.userError("No element at point");
+    const e = elementAt(e8.point());
+    if (!e) e8.userError("No element at point");
     if (e.type !== "headline" && GREATER_ELEMENTS.includes(e.type) && e.contentsBegin !== undefined) {
-      gnista.narrowToRegion(e.contentsBegin, e.contentsEnd ?? e.end);
+      e8.narrowToRegion(e.contentsBegin, e.contentsEnd ?? e.end);
     } else {
-      gnista.narrowToRegion(e.begin, e.end);
+      e8.narrowToRegion(e.begin, e.end);
     }
   },
 });
 
-const narrowToBlock = gnista.defineCommand({
+const narrowToBlock = e8.defineCommand({
   name: "org-narrow-to-block",
   doc: "Narrow the buffer to the block at point.",
   run: () => {
-    const e = elementAt(gnista.point());
-    if (!e || !e.type.includes("block")) gnista.userError("Not in a block");
-    gnista.call("org-narrow-to-element");
+    const e = elementAt(e8.point());
+    if (!e || !e.type.includes("block")) e8.userError("Not in a block");
+    e8.call("org-narrow-to-element");
   },
 });
 
@@ -1114,20 +1114,20 @@ function logBeginning(h: Heading, create = false): number {
     const meta = endOfMetaData(h);
     const all = headings();
     const i = headingIndex(all, h.line);
-    const end = i === undefined ? gnista.bufferSize() : (all[i + 1]?.start ?? gnista.bufferSize());
+    const end = i === undefined ? e8.bufferSize() : (all[i + 1]?.start ?? e8.bufferSize());
     const opener = new RegExp(`^[ \t]*:${escapeRegExp(drawer)}:[ \t]*$`, "i");
-    for (let l = lineAt(meta); l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
-      if (opener.test(gnista.lineText(l))) return lineStartOrEnd(l + 1);
+    for (let l = lineAt(meta); l < e8.lineCount() && e8.lineStart(l) < end; l++) {
+      if (opener.test(e8.lineText(l))) return lineStartOrEnd(l + 1);
     }
     if (!create) return meta;
     let at = meta;
     // Before the next heading, at the end of the line before it.
-    if (at < gnista.bufferSize() && at === end) at = Math.max(gnista.lineStart(lineAt(at)) - 1, 0);
+    if (at < e8.bufferSize() && at === end) at = Math.max(e8.lineStart(lineAt(at)) - 1, 0);
     // As looking-at "^[ \t]*$": only at the start of a line.
-    const atBlank = at === gnista.lineStart(lineAt(at)) && /^[ \t]*$/.test(gnista.bufferText(at, gnista.lineEnd(lineAt(at))));
-    const atNonBlankStart = at === gnista.lineStart(lineAt(at)) && at < gnista.lineEnd(lineAt(at));
+    const atBlank = at === e8.lineStart(lineAt(at)) && /^[ \t]*$/.test(e8.bufferText(at, e8.lineEnd(lineAt(at))));
+    const atNonBlankStart = at === e8.lineStart(lineAt(at)) && at < e8.lineEnd(lineAt(at));
     withoutFoldChecks(() => {
-      if (at !== gnista.lineStart(lineAt(at))) {
+      if (at !== e8.lineStart(lineAt(at))) {
         edInsert(at, "\n");
         at++;
       }
@@ -1140,36 +1140,36 @@ function logBeginning(h: Heading, create = false): number {
   }
   const endpos = endOfMetaData(h);
   let p = endpos;
-  while (p < gnista.bufferSize() && /[ \t\n]/.test(gnista.bufferText(p, p + 1))) p++;
-  p = gnista.lineStart(lineAt(p));
+  while (p < e8.bufferSize() && /[ \t\n]/.test(e8.bufferText(p, p + 1))) p++;
+  p = e8.lineStart(lineAt(p));
   if (p < endpos) p = endpos;
-  return p === gnista.lineStart(lineAt(p)) ? p : lineStartOrEnd(lineAt(p) + 1);
+  return p === e8.lineStart(lineAt(p)) ? p : lineStartOrEnd(lineAt(p) + 1);
 }
 
 /** Adds a note about a state change to a heading's entry, as org-store-log-note does for a repeating task. */
 function storeStateNote(headingLine: number, state: string, previous: string | undefined): void {
   const h = parseHeading(headingLine);
   if (!h) return;
-  const p = marker(gnista.point());
+  const p = marker(e8.point());
   newDrawerLine = undefined;
   withoutFoldChecks(() => {
     let at = logBeginning(h, true);
-    if (at !== gnista.lineStart(lineAt(at))) {
+    if (at !== e8.lineStart(lineAt(at))) {
       edInsert(at, "\n");
       at++;
-    } else if (/^[ \t]*\S/.test(gnista.bufferText(at, gnista.lineEnd(lineAt(at))))) {
+    } else if (/^[ \t]*\S/.test(e8.bufferText(at, e8.lineEnd(lineAt(at))))) {
       edInsert(at, "\n");
     }
     const pad = (x: string): string => x.padEnd(12, " ");
     const time = `[${formatTimestamp(today(true), true)}]`;
     const note = `State ${pad(`"${state}"`)} from ${pad(previous === undefined ? "" : `"${previous}"`)} ${time}`;
-    gnista.gotoChar(at);
+    e8.gotoChar(at);
     indentLine(lineAt(at));
-    edInsert(gnista.point(), `- ${note}`);
+    edInsert(e8.point(), `- ${note}`);
     if (newDrawerLine !== undefined) toggleDrawerOrBlock(newDrawerLine, true);
     newDrawerLine = undefined;
   });
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -1182,23 +1182,23 @@ const HAS_COOKIE = /\[(\d*\/\d*|\d*%)\]/;
  * boxes, one elsewhere the top items of the section's lists.
  */
 export function updateCheckboxCount(): void {
-  const saved = marker(gnista.point());
+  const saved = marker(e8.point());
   try {
     const all = headings();
-    const p = gnista.point();
+    const p = e8.point();
     // From the heading before point, as outline-previous-heading finds it:
     // searching back, so a heading's own stars must end before point.
     const previousHeading = (pos: number) => all.filter((h) => h.start + h.level + 1 <= pos).at(-1)?.start ?? 0;
-    const nextHeading = (pos: number) => all.find((h) => h.start > pos)?.start ?? gnista.bufferSize();
+    const nextHeading = (pos: number) => all.find((h) => h.start > pos)?.start ?? e8.bufferSize();
     const start = previousHeading(p);
     const end = nextHeading(p);
     const cookies: { start: number; end: number; percent: boolean; count: [number, number] }[] = [];
     const countIn = (from: number, to: number, item: number | undefined): [number, number] => {
       let on = 0;
       let total = 0;
-      for (let l = lineAt(from); l < gnista.lineCount() && gnista.lineStart(l) < to; l++) {
-        if (gnista.lineStart(l) < from) continue;
-        if (!/^[ \t]*(?:[-+*]|(?:\d+|[A-Za-z])[.)])[ \t]+(?:\[@(?:start:)?(?:\d+|[A-Za-z])\][ \t]*)?\[[- X]\]/.test(gnista.lineText(l))) continue;
+      for (let l = lineAt(from); l < e8.lineCount() && e8.lineStart(l) < to; l++) {
+        if (e8.lineStart(l) < from) continue;
+        if (!/^[ \t]*(?:[-+*]|(?:\d+|[A-Za-z])[.)])[ \t]+(?:\[@(?:start:)?(?:\d+|[A-Za-z])\][ \t]*)?\[[- X]\]/.test(e8.lineText(l))) continue;
         if (!itemLine(l)) continue;
         const s = listStruct(l);
         const items = item !== undefined ? children(item, parentsAlist(s)) : allItems(s[0].pos, prevsAlist(s));
@@ -1213,10 +1213,10 @@ export function updateCheckboxCount(): void {
       }
       return [on, total];
     };
-    for (let l = lineAt(start); l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
-      const text = gnista.lineText(l);
+    for (let l = lineAt(start); l < e8.lineCount() && e8.lineStart(l) < end; l++) {
+      const text = e8.lineText(l);
       for (const m of allMatches(COOKIE, text)) {
-        const cs = gnista.lineStart(l) + charCount(text.slice(0, m.index ?? 0));
+        const cs = e8.lineStart(l) + charCount(text.slice(0, m.index ?? 0));
         if (cs < start || cs >= end) continue;
         const container = inItem(l);
         let count: [number, number];
@@ -1242,7 +1242,7 @@ export function updateCheckboxCount(): void {
       if (h && h.tagsAt !== undefined) alignTags(h.line);
     }
   } finally {
-    gnista.gotoChar(saved.pos);
+    e8.gotoChar(saved.pos);
     dropMarker(saved);
   }
 }
@@ -1252,10 +1252,10 @@ function writeCookies(line: number, done: number, total: number): void {
   // As org-update-parent-todo-statistics does, a cookie that changes gets
   // the new text inserted before it and the old deleted after, so point
   // inside it ends up after the new one.
-  const pt = marker(gnista.point());
-  const count = allMatches(COOKIE, gnista.lineText(line)).length;
+  const pt = marker(e8.point());
+  const count = allMatches(COOKIE, e8.lineText(line)).length;
   for (let k = 0; k < count; k++) {
-    const text = gnista.lineText(line);
+    const text = e8.lineText(line);
     const m = allMatches(COOKIE, text)[k];
     if (!m) break;
     const percent = m[1].endsWith("%");
@@ -1267,7 +1267,7 @@ function writeCookies(line: number, done: number, total: number): void {
     // org-fix-tags-on-the-fly, with org-auto-align-tags on.
     if (parseHeading(line)?.tagsAt !== undefined) alignTagsAway(line);
   }
-  gnista.gotoChar(pt.pos);
+  e8.gotoChar(pt.pos);
   dropMarker(pt);
 }
 
@@ -1278,16 +1278,16 @@ function writeCookies(line: number, done: number, total: number): void {
  */
 function updateHeadingCookies(all: Heading[], i: number): void {
   const h = all[i];
-  const end = all[i + 1]?.start ?? gnista.bufferSize();
+  const end = all[i + 1]?.start ?? e8.bufferSize();
   let boxes = false;
-  for (let l = h.line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
-    if (/^[ \t]*([-+*]|[0-9]+[.)]) \[[- X]\]/.test(gnista.lineText(l))) boxes = true;
+  for (let l = h.line + 1; l < e8.lineCount() && e8.lineStart(l) < end; l++) {
+    if (/^[ \t]*([-+*]|[0-9]+[.)]) \[[- X]\]/.test(e8.lineText(l))) boxes = true;
   }
   if (boxes) {
-    const p = gnista.point();
-    gnista.gotoChar(h.end);
+    const p = e8.point();
+    e8.gotoChar(h.end);
     updateCheckboxCount();
-    gnista.gotoChar(p);
+    e8.gotoChar(p);
     return;
   }
   const next = all[i + 1];
@@ -1297,7 +1297,7 @@ function updateHeadingCookies(all: Heading[], i: number): void {
     for (let k = i + 1; k < all.length && all[k].start < sub; k++) if (all[k].level === next.level && all[k].todo !== undefined) states.push(all[k]);
     writeCookies(h.line, states.filter((x) => isDone(x.todo)).length, states.length);
   } else {
-    const text = gnista.lineText(h.line);
+    const text = e8.lineText(h.line);
     for (const m of allMatches(COOKIE, text).reverse()) {
       const start = at(h.line, text, m.index ?? 0);
       replaceText(start, start + charCount(m[0]), m[1].endsWith("%") ? "[100%]" : "[0/0]");
@@ -1307,7 +1307,7 @@ function updateHeadingCookies(all: Heading[], i: number): void {
 
 /** Folds or shows an item, as org-list-set-item-visibility does. */
 function setItemVisibility(item: number, struct: Struct, view: "folded" | "children" | "subtree"): void {
-  if (view === "folded") flag(gnista.lineEnd(lineAt(item)), itemEndBeforeBlank(struct, item), true);
+  if (view === "folded") flag(e8.lineEnd(lineAt(item)), itemEndBeforeBlank(struct, item), true);
   else if (view === "subtree") flag(item, getItem(struct, item).end, false);
   else {
     setItemVisibility(item, struct, "subtree");
@@ -1334,14 +1334,14 @@ interface Item {
 const ITEM = /^([ \t]*)([-+*]|\d+[.)])([ \t]+|$)/;
 
 function parseItem(line: number): Item | undefined {
-  if (line < 0 || line >= gnista.lineCount()) return undefined;
-  const text = gnista.lineText(line);
+  if (line < 0 || line >= e8.lineCount()) return undefined;
+  const text = e8.lineText(line);
   const m = ITEM.exec(text);
   if (!m || (m[1] === "" && m[2] === "*")) return undefined;
   const contentIndex = m[0].length;
   const item: Item = {
     line,
-    start: gnista.lineStart(line),
+    start: e8.lineStart(line),
     indent: indentation(text),
     bullet: m[2],
     bulletAt: at(line, text, m[1].length),
@@ -1371,11 +1371,11 @@ function itemHere(): Item | undefined {
 
 /** Puts a face on a stretch, ahead of the faces already there. */
 function face(start: number, end: number, name: string): void {
-  if (end > start) gnista.addFaceTextProperty(start, end, name);
+  if (end > start) e8.addFaceTextProperty(start, end, name);
 }
 
 function hide(start: number, end: number): void {
-  if (end > start) gnista.putTextProperty(start, end, "invisible", "org-link");
+  if (end > start) e8.putTextProperty(start, end, "invisible", "org-link");
 }
 
 export const LINK = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^\n]+?)\])?\]/g;
@@ -1404,7 +1404,7 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
     const end = i + m[0].length;
     taken.push([i, end]);
     face(pos(i), pos(end), "org-link");
-    if (gnista.variable("org-link-descriptive") === true) {
+    if (e8.variable("org-link-descriptive") === true) {
       if (m[2] !== undefined) {
         const desc = i + 2 + m[1].length + 2;
         hide(pos(i), pos(desc));
@@ -1453,41 +1453,41 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
  * A face from a face's name, a colour, or a list of attributes, over the
  * face `inherit`, as org-face-from-face-or-color makes one.
  */
-function faceFromFaceOrColor(inherit: string, spec: gnista.Value | undefined): gnista.Value | undefined {
-  if (typeof spec === "string") return gnista.facep(spec) ? spec : [":inherit", inherit, ":foreground", spec];
+function faceFromFaceOrColor(inherit: string, spec: e8.Value | undefined): e8.Value | undefined {
+  if (typeof spec === "string") return e8.facep(spec) ? spec : [":inherit", inherit, ":foreground", spec];
   if (Array.isArray(spec)) return [":inherit", inherit, ...spec];
   return undefined;
 }
 
 /** The value an alist of [key, value] lists gives a key. */
-function alistGet(name: string, key: string): gnista.Value | undefined {
-  const alist = gnista.variable(name);
+function alistGet(name: string, key: string): e8.Value | undefined {
+  const alist = e8.variable(name);
   if (!Array.isArray(alist)) return undefined;
-  const entry = alist.find((e) => Array.isArray(e) && e[0] === key) as gnista.Value[] | undefined;
+  const entry = alist.find((e) => Array.isArray(e) && e[0] === key) as e8.Value[] | undefined;
   return entry === undefined ? undefined : entry.length === 2 ? entry[1] : entry.slice(1);
 }
 
 function fontifyHeading(h: Heading, text: string): void {
-  gnista.putTextProperty(h.start, h.end, "face", `org-level-${((h.level - 1) % 8) + 1}`);
+  e8.putTextProperty(h.start, h.end, "face", `org-level-${((h.level - 1) % 8) + 1}`);
   // All but the last star, as org-get-level-face gives them org-hide.
-  if (h.level > 1 && gnista.variable("org-hide-leading-stars") === true) gnista.putTextProperty(h.start, h.start + h.level - 1, "face", "org-hide");
+  if (h.level > 1 && e8.variable("org-hide-leading-stars") === true) e8.putTextProperty(h.start, h.start + h.level - 1, "face", "org-hide");
   if (h.todo !== undefined && h.todoAt !== undefined) {
     const done = isDone(h.todo);
-    if (done && gnista.variable("org-fontify-done-headline") === true) face(h.todoAt, h.end, "org-headline-done");
+    if (done && e8.variable("org-fontify-done-headline") === true) face(h.todoAt, h.end, "org-headline-done");
     // As org-get-todo-face: the keyword's own face from org-todo-keyword-faces, else org-done or org-todo.
     const own = faceFromFaceOrColor("org-todo", alistGet("org-todo-keyword-faces", h.todo));
-    if (own !== undefined) gnista.addFaceTextProperty(h.todoAt, h.todoAt + charCount(h.todo), own as gnista.Value[] | string);
+    if (own !== undefined) e8.addFaceTextProperty(h.todoAt, h.todoAt + charCount(h.todo), own as e8.Value[] | string);
     else face(h.todoAt, h.todoAt + charCount(h.todo), done ? "org-done" : "org-todo");
   }
   if (h.priorityAt !== undefined) face(h.priorityAt, h.priorityAt + 4, "org-priority");
   if (h.tagsAt !== undefined) {
     face(h.tagsAt, h.end, "org-tag");
     // Each tag in its own face from org-tag-faces, as org-get-tag-face gives it.
-    if (Array.isArray(gnista.variable("org-tag-faces"))) {
+    if (Array.isArray(e8.variable("org-tag-faces"))) {
       let at = h.tagsAt + 1;
       for (const tag of h.tags) {
         const own = faceFromFaceOrColor("org-tag", alistGet("org-tag-faces", tag));
-        if (own !== undefined) gnista.addFaceTextProperty(at, at + charCount(tag), own as gnista.Value[] | string);
+        if (own !== undefined) e8.addFaceTextProperty(at, at + charCount(tag), own as e8.Value[] | string);
         at += charCount(tag) + 1;
       }
     }
@@ -1500,7 +1500,7 @@ function fontifyHeading(h: Heading, text: string): void {
 /** The block a line is inside, by looking back for its #+begin_ line. */
 function blockBefore(line: number): string | undefined {
   for (let l = line - 1; l >= 0; l--) {
-    const text = gnista.lineText(l);
+    const text = e8.lineText(l);
     if (BLOCK_END.test(text)) return undefined;
     const begin = BLOCK_BEGIN.exec(text);
     if (begin) return begin[1].toLowerCase();
@@ -1517,42 +1517,42 @@ const KEYWORD = /^([ \t]*#\+(\w+):)(.*)$/;
  * org-block face too, newlines and all, as Emacs does. The line it ends on, if it could.
  */
 function fontifySrcNatively(beginLine: number): number | undefined {
-  if (!truthy(gnista.variable("org-src-fontify-natively")) || !gnista.fboundp("org-src-font-lock-fontify-block")) return undefined;
-  const lang = /^[ \t]*#\+begin_src[ \t]+(\S+)/i.exec(gnista.lineText(beginLine))?.[1];
+  if (!truthy(e8.variable("org-src-fontify-natively")) || !e8.fboundp("org-src-font-lock-fontify-block")) return undefined;
+  const lang = /^[ \t]*#\+begin_src[ \t]+(\S+)/i.exec(e8.lineText(beginLine))?.[1];
   if (lang === undefined) return undefined;
   let endLine = beginLine + 1;
-  while (endLine < gnista.lineCount() && !BLOCK_END.test(gnista.lineText(endLine))) endLine++;
-  if (endLine >= gnista.lineCount()) return undefined;
-  if (!truthy(gnista.funcall("org-src-font-lock-fontify-block", lang, gnista.lineStart(beginLine + 1), gnista.lineStart(endLine)))) return undefined;
-  if (endLine > beginLine + 1) gnista.addFaceTextProperty(gnista.lineStart(beginLine + 1), gnista.lineStart(endLine), "org-block", { append: true });
+  while (endLine < e8.lineCount() && !BLOCK_END.test(e8.lineText(endLine))) endLine++;
+  if (endLine >= e8.lineCount()) return undefined;
+  if (!truthy(e8.funcall("org-src-font-lock-fontify-block", lang, e8.lineStart(beginLine + 1), e8.lineStart(endLine)))) return undefined;
+  if (endLine > beginLine + 1) e8.addFaceTextProperty(e8.lineStart(beginLine + 1), e8.lineStart(endLine), "org-block", { append: true });
   return endLine;
 }
 
 /** Where a block's #+begin or #+end line's face ends: after its newline, as org-fontify-whole-block-delimiter-line says. */
 function delimiterEnd(lineEnd: number): number {
-  return truthy(gnista.variable("org-fontify-whole-block-delimiter-line")) ? Math.min(lineEnd + 1, gnista.pointMax()) : lineEnd;
+  return truthy(e8.variable("org-fontify-whole-block-delimiter-line")) ? Math.min(lineEnd + 1, e8.pointMax()) : lineEnd;
 }
 
 /** Fontifies whole lines from start to end, for jit-lock-functions. */
 function fontify(start: number, end: number): void {
-  if (!gnista.derivedModeP("org-mode")) return;
-  const first = gnista.lineOf(start);
-  const from = gnista.lineStart(first);
-  gnista.removeTextProperty(from, end, "face");
-  gnista.removeTextProperty(from, end, "invisible");
+  if (!e8.derivedModeP("org-mode")) return;
+  const first = e8.lineOf(start);
+  const from = e8.lineStart(first);
+  e8.removeTextProperty(from, end, "face");
+  e8.removeTextProperty(from, end, "invisible");
   const keywords = allKeywords();
   let block = blockBefore(first);
   let firstLine = first;
   if (block === "src") {
     // In a source block: fontify all of it, from its #+begin_src line.
     let begin = first - 1;
-    while (begin >= 0 && !BLOCK_BEGIN.test(gnista.lineText(begin))) begin--;
+    while (begin >= 0 && !BLOCK_BEGIN.test(e8.lineText(begin))) begin--;
     if (begin >= 0) firstLine = fontifySrcNatively(begin) ?? first;
   }
-  for (let line = firstLine; line < gnista.lineCount() && gnista.lineStart(line) < Math.max(end, from + 1); line++) {
-    const text = gnista.lineText(line);
-    const ls = gnista.lineStart(line);
-    const le = gnista.lineEnd(line);
+  for (let line = firstLine; line < e8.lineCount() && e8.lineStart(line) < Math.max(end, from + 1); line++) {
+    const text = e8.lineText(line);
+    const ls = e8.lineStart(line);
+    const le = e8.lineEnd(line);
     if (block !== undefined) {
       // Each face takes the newline too, as Org's does, so a background
       // with :extend goes on to the window's edge.
@@ -1560,7 +1560,7 @@ function fontify(start: number, end: number): void {
         face(ls, delimiterEnd(le), "org-block-end-line");
         block = undefined;
       } else {
-        face(ls, Math.min(le + 1, gnista.pointMax()), block === "quote" ? "org-quote" : block === "verse" ? "org-verse" : "org-block");
+        face(ls, Math.min(le + 1, e8.pointMax()), block === "quote" ? "org-quote" : block === "verse" ? "org-verse" : "org-block");
       }
       continue;
     }
@@ -1634,7 +1634,7 @@ function fontify(start: number, end: number): void {
     if (footnote) face(ls, ls + footnote[0].length, "org-footnote");
     fontifyObjects(line, text, objectsFrom);
   }
-  fontifyLinksAcrossLines(from, Math.min(Math.max(end, from + 1), gnista.bufferSize()));
+  fontifyLinksAcrossLines(from, Math.min(Math.max(end, from + 1), e8.bufferSize()));
 }
 
 /**
@@ -1644,9 +1644,9 @@ function fontify(start: number, end: number): void {
 function fontifyLinksAcrossLines(start: number, end: number): void {
   // A line beyond each end too, as Org's font-lock extends its region for
   // these, so fontifying one line still finds a link it shares with the next.
-  const from = gnista.lineStart(Math.max(0, lineAt(start) - 1));
+  const from = e8.lineStart(Math.max(0, lineAt(start) - 1));
   const to = lineStartOrEnd(lineAt(Math.max(start, end - 1)) + 2);
-  const text = gnista.bufferText(from, to);
+  const text = e8.bufferText(from, to);
   if (!text.includes("\n")) return;
   const linkRe = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^]+?)\])?\]/g;
   for (const m of allMatches(linkRe, text)) {
@@ -1658,10 +1658,10 @@ function fontifyLinksAcrossLines(start: number, end: number): void {
     const lines = m[0].split("\n").length - 1;
     const first = lineAt(linkStart);
     let within = true;
-    for (let l = first + 1; l <= first + lines; l++) if (startsElement(l, gnista.bufferSize())) within = false;
+    for (let l = first + 1; l <= first + lines; l++) if (startsElement(l, e8.bufferSize())) within = false;
     if (!within) continue;
     face(linkStart, pos(m[0].length), "org-link");
-    if (gnista.variable("org-link-descriptive") !== true) continue;
+    if (e8.variable("org-link-descriptive") !== true) continue;
     if (m[2] !== undefined) {
       const desc = 2 + m[1].length + 2;
       hide(linkStart, pos(desc));
@@ -1677,9 +1677,9 @@ function fontifyLinksAcrossLines(start: number, end: number): void {
 
 /** The column an item's text starts at, after its bullet, as org-list-item-body-column says. */
 function listBodyColumn(pos: number): number {
-  const text = gnista.lineText(lineAt(pos));
+  const text = e8.lineText(lineAt(pos));
   const m = /^[ \t]*(\S+)/.exec(text);
-  return m ? gnista.stringWidth(m[0].replace(/\t/g, "        ")) + 1 : 0;
+  return m ? e8.stringWidth(m[0].replace(/\t/g, "        ")) + 1 : 0;
 }
 
 const GREATER_ELEMENTS = ["center-block", "drawer", "headline", "item", "plain-list", "property-drawer", "quote-block", "section", "special-block", "table"];
@@ -1687,15 +1687,15 @@ const GREATER_ELEMENTS = ["center-block", "drawer", "headline", "item", "plain-l
 /** The column Org expects a line to start at, given the element it is in, as org--get-expected-indentation works it out. */
 function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number): number {
   const type = el?.type;
-  const indentOf = (pos: number): number => textIndentation(gnista.lineText(lineAt(pos)));
+  const indentOf = (pos: number): number => textIndentation(e8.lineText(lineAt(pos)));
   if (contentsp) {
     if (type === "section") return expectedIndent(el?.parent, true, line);
     if (type === undefined || type === "headline") return 0;
     if (type === "item" || type === "plain-list") return listBodyColumn((el as Elem).begin);
     return indentOf((el as Elem).begin);
   }
-  if (!el || type === "headline" || type === "org-data") return isBlank(gnista.lineText(line)) ? expectedIndent(el, true, line) : 0;
-  const bol = gnista.lineStart(line);
+  if (!el || type === "headline" || type === "org-data") return isBlank(e8.lineText(line)) ? expectedIndent(el, true, line) : 0;
+  const bol = e8.lineStart(line);
   const start = el.begin;
   if (bol < start) return expectedIndent(el.parent, true, line);
   if (bol === start) {
@@ -1704,14 +1704,14 @@ function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number):
     for (let parent = previous; parent && parent.end <= start; parent = parent.parent) previous = parent;
     if (!previous || previous.type === "org-data") return 0;
     if (previous.end > start) return expectedIndent(previous, true, line);
-    if (previous.begin === gnista.lineStart(lineAt(previous.begin))) return indentOf(previous.begin);
+    if (previous.begin === e8.lineStart(lineAt(previous.begin))) return indentOf(previous.begin);
     return expectedIndent(previous.parent, true, line);
   }
   let q = bol;
-  while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
+  while (q > 0 && /[ \r\t\n]/.test(e8.bufferText(q - 1, q))) q--;
   if (type === "plain-list" && lineAt(bol) - lineAt(q) > 2) return indentOf(start);
-  if (gnista.lineStart(lineAt(q)) < start) return expectedIndent(el.parent, true, line);
-  if (gnista.lineStart(lineAt(q)) === start) return expectedIndent(el, true, line);
+  if (e8.lineStart(lineAt(q)) < start) return expectedIndent(el.parent, true, line);
+  if (e8.lineStart(lineAt(q)) === start) return expectedIndent(el, true, line);
   if (GREATER_ELEMENTS.includes(type ?? "") && el.contentsEnd !== undefined && el.contentsEnd <= bol) {
     if (type === "item" || type === "plain-list") {
       const last = elementAt(q);
@@ -1724,19 +1724,19 @@ function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number):
 
 /** Indents a line as org-indent-line does, keeping point in the text or after the indentation. */
 function indentLine(line: number): void {
-  const text = gnista.lineText(line);
-  const ls = gnista.lineStart(line);
+  const text = e8.lineText(line);
+  const ls = e8.lineStart(line);
   const block = elementAt(ls);
   if (block?.type === "src-block" && line > lineAt(block.begin) && line < lineAt(endBeforeBlank(block))) {
     // An empty line gets the block's content indentation, then Org hands
     // the line to the language's mode, with org-src-tab-acts-natively.
-    if (!preservesIndentation(block) && text === "" && gnista.point() === ls) {
-      const ind = textIndentation(gnista.lineText(lineAt(block.begin))) + Number(gnista.variable("org-edit-src-content-indentation") ?? 2);
+    if (!preservesIndentation(block) && text === "" && e8.point() === ls) {
+      const ind = textIndentation(e8.lineText(lineAt(block.begin))) + Number(e8.variable("org-edit-src-content-indentation") ?? 2);
       indentLineTo(line, ind);
-      gnista.gotoChar(gnista.lineEnd(line));
+      e8.gotoChar(e8.lineEnd(line));
     }
-    if (truthy(gnista.variable("org-src-tab-acts-natively")) && gnista.fboundp("org-babel-do-key-sequence-in-edit-buffer")) {
-      gnista.funcall("org-babel-do-key-sequence-in-edit-buffer", "indent-for-tab-command");
+    if (truthy(e8.variable("org-src-tab-acts-natively")) && e8.fboundp("org-babel-do-key-sequence-in-edit-buffer")) {
+      e8.funcall("org-babel-do-key-sequence-in-edit-buffer", "indent-for-tab-command");
     }
     return;
   }
@@ -1745,18 +1745,18 @@ function indentLine(line: number): void {
   if (el && (el.type === "plain-list" || el.type === "item") && el.begin === ls) return;
   const want = expectedIndent(el, false, line);
   const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
-  const p = gnista.point();
+  const p = e8.point();
   if (lineAt(p) === line && p - ls <= charCount(ws)) {
     indentLineTo(line, want);
-    gnista.gotoChar(ls + charCount(/^[ \t]*/.exec(gnista.lineText(line))?.[0] ?? ""));
+    e8.gotoChar(ls + charCount(/^[ \t]*/.exec(e8.lineText(line))?.[0] ?? ""));
   } else {
     const m = marker(p);
     indentLineTo(line, want);
-    gnista.gotoChar(m.pos);
+    e8.gotoChar(m.pos);
     dropMarker(m);
   }
   if (el?.type === "node-property") {
-    const column = gnista.stringWidth(gnista.bufferText(ls, gnista.point()).replace(/\t/g, "        "));
+    const column = e8.stringWidth(e8.bufferText(ls, e8.point()).replace(/\t/g, "        "));
     alignNodeProperty(line);
     moveToColumn(column);
   }
@@ -1765,14 +1765,14 @@ function indentLine(line: number): void {
 /** Moves point to a column on its line, or to the line's end, as move-to-column does. */
 export function moveToColumn(column: number): void {
   const line = lineAt();
-  let p = gnista.lineStart(line);
+  let p = e8.lineStart(line);
   let c = 0;
-  for (const ch of gnista.lineText(line)) {
+  for (const ch of e8.lineText(line)) {
     if (c >= column) break;
-    c = ch === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + gnista.stringWidth(ch);
+    c = ch === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + e8.stringWidth(ch);
     p++;
   }
-  gnista.gotoChar(p);
+  e8.gotoChar(p);
 }
 
 /** A node property line's parts, as org-property-re matches them: indentation, :KEY:, and value. */
@@ -1780,13 +1780,13 @@ const PROPERTY_RE = /^([ \t]*)(:(\S+):)(?:()$|[ \t]+(.*?))([ \t]*)$/;
 
 /** Aligns the node property on a line by org-property-format ("%-10s %s"), as org--align-node-property does. */
 export function alignNodeProperty(line: number): void {
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const m = PROPERTY_RE.exec(text);
   if (!m) return;
   const key = m[2];
-  const formatted = `${key}${" ".repeat(Math.max(0, 10 - gnista.stringWidth(key)))} ${m[5] ?? ""}`;
+  const formatted = `${key}${" ".repeat(Math.max(0, 10 - e8.stringWidth(key)))} ${m[5] ?? ""}`;
   const replacement = m[1] + formatted.replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, "");
-  const ls = gnista.lineStart(line);
+  const ls = e8.lineStart(line);
   // Deleted and inserted again rather than replaced, so markers in the line go to its start.
   const checks = !foldChecksOff;
   withoutFoldChecks(() => {
@@ -1799,10 +1799,10 @@ export function alignNodeProperty(line: number): void {
 /** Changes the indentation of the lines from start to end by offset, as indent-rigidly does. */
 function indentRigidly(start: number, end: number, offset: number): void {
   const endM = marker(end);
-  for (let line = lineAt(start); line < gnista.lineCount() && gnista.lineStart(line) < endM.pos; line++) {
-    const text = gnista.lineText(line);
+  for (let line = lineAt(start); line < e8.lineCount() && e8.lineStart(line) < endM.pos; line++) {
+    const text = e8.lineText(line);
     const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
-    const ls = gnista.lineStart(line);
+    const ls = e8.lineStart(line);
     if (ws.length === text.length) edDelete(ls, ls + charCount(ws));
     else {
       const added = indentString(Math.max(0, textIndentation(text) + offset));
@@ -1820,26 +1820,26 @@ function orgIndentRegion(start: number, end: number): void {
 
 function indentRegionElements(start: number, end: number): void {
   const endM = marker(end);
-  const size = (): number => gnista.bufferSize();
+  const size = (): number => e8.bufferSize();
   let p = start;
-  while (p < size() && /[ \r\t\n]/.test(gnista.bufferText(p, p + 1))) p++;
-  if (p < size()) p = gnista.lineStart(lineAt(p));
+  while (p < size() && /[ \r\t\n]/.test(e8.bufferText(p, p + 1))) p++;
+  if (p < size()) p = e8.lineStart(lineAt(p));
   // Gives lines up to pos the indentation ind, leaving p after pos.
   const indentTo = (ind: number, pos: number): void => {
     const limit = marker(pos);
     while (p < limit.pos) {
       const line = lineAt(p);
-      if (!/^[ \t]*$/.test(gnista.lineText(line))) indentLineTo(line, ind);
+      if (!/^[ \t]*$/.test(e8.lineText(line))) indentLineTo(line, ind);
       p = lineStartOrEnd(line + 1);
-      if (line + 1 >= gnista.lineCount()) p = size();
+      if (line + 1 >= e8.lineCount()) p = size();
     }
     dropMarker(limit);
   };
   while (p < endM.pos) {
     const line = lineAt(p);
-    const el = isHeadingLine(gnista.lineText(line)) ? undefined : elementAt(p);
+    const el = isHeadingLine(e8.lineText(line)) ? undefined : elementAt(p);
     if (!el) {
-      p = line + 1 < gnista.lineCount() ? gnista.lineStart(line + 1) : size();
+      p = line + 1 < e8.lineCount() ? e8.lineStart(line + 1) : size();
       continue;
     }
     const type = el.type;
@@ -1847,35 +1847,35 @@ function indentRegionElements(start: number, end: number): void {
     const ind = expectedIndent(el, false, line);
     if (type === "export-block" || (type === "example-block" && !preservesIndentation(el))) {
       // Indented as a whole, keeping the lines' indentation relative to each other.
-      const offset = ind - textIndentation(gnista.lineText(lineAt(p)));
+      const offset = ind - textIndentation(e8.lineText(lineAt(p)));
       if (offset !== 0) indentRigidly(el.begin, el.end, offset);
       p = elementEnd.pos;
     } else if (type === "src-block" || type === "example-block") {
       // The lines between the block's first and last are left alone: Org
-      // hands a source block's to its language's mode, which Gnista lacks.
+      // hands a source block's to its language's mode, which E8 lacks.
       const lastLine = lineAt(endBeforeBlank(el));
       indentTo(ind, Math.min(lineStartOrEnd(lineAt(el.begin) + 1), endM.pos));
-      p = Math.max(p, Math.min(gnista.lineStart(lastLine), endM.pos));
+      p = Math.max(p, Math.min(e8.lineStart(lastLine), endM.pos));
       if (p < endM.pos) indentTo(ind, Math.min(elementEnd.pos, endM.pos));
     } else if (["paragraph", "table", "table-row"].includes(type) || el.contentsBegin === undefined) {
       if (type === "node-property") {
         const pm = marker(p);
         alignNodeProperty(lineAt(p));
-        p = gnista.lineStart(lineAt(pm.pos));
+        p = e8.lineStart(lineAt(pm.pos));
         dropMarker(pm);
       }
       indentTo(ind, Math.min(elementEnd.pos, endM.pos));
     } else {
       let cb = el.contentsBegin;
       if (type === "item" || type === "plain-list") {
-        let q = gnista.lineEnd(lineAt(el.begin));
-        while (q < size() && /[ \r\t\n]/.test(gnista.bufferText(q, q + 1))) q++;
-        cb = q >= size() ? q : gnista.lineStart(lineAt(q));
+        let q = e8.lineEnd(lineAt(el.begin));
+        while (q < size() && /[ \r\t\n]/.test(e8.bufferText(q, q + 1))) q++;
+        cb = q >= size() ? q : e8.lineStart(lineAt(q));
       }
       const cbeg = marker(cb);
       const cend = marker(el.contentsEnd ?? el.end, true);
       if (type === "plain-list") {
-        const offset = ind - textIndentation(gnista.lineText(lineAt(p)));
+        const offset = ind - textIndentation(e8.lineText(lineAt(p)));
         if (offset !== 0) indentRigidly(el.begin, elementEnd.pos, offset);
         p = cbeg.pos;
       } else if (type === "item") p = cbeg.pos;
@@ -1893,7 +1893,7 @@ function indentRegionElements(start: number, end: number): void {
   dropMarker(endM);
 }
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-edit-src-content-indentation",
   doc: "How far the lines of a source block are indented past its #+begin_src line.",
   value: 2,
@@ -1901,7 +1901,7 @@ gnista.defineVariable({
 
 /** Whether an example block keeps its lines' indentation, with its -i switch or org-src-preserve-indentation. */
 function preservesIndentation(el: Elem): boolean {
-  return gnista.variable("org-src-preserve-indentation") === true || /\s-i(\s|$)/.test(gnista.lineText(lineAt(el.begin)));
+  return e8.variable("org-src-preserve-indentation") === true || /\s-i(\s|$)/.test(e8.lineText(lineAt(el.begin)));
 }
 
 const BLOCK_TYPES = ["comment-block", "center-block", "example-block", "export-block", "quote-block", "special-block", "src-block", "verse-block"];
@@ -1909,44 +1909,44 @@ const BLOCK_TYPES = ["comment-block", "center-block", "example-block", "export-b
 /** Whether point's line opens a block that is closed, as org-at-block-p checks with org-block-regexp. */
 function atBlock(): boolean {
   const line = lineAt();
-  const m = /^[ \t]*#\+begin_?([^ \n]+)/i.exec(gnista.lineText(line));
+  const m = /^[ \t]*#\+begin_?([^ \n]+)/i.exec(e8.lineText(line));
   if (!m) return false;
   const close = new RegExp(`^[ \\t]*#\\+end_?${escapeRegExp(m[1])}[ \\t]*$`, "i");
-  for (let l = line + 1; l < gnista.lineCount(); l++) if (close.test(gnista.lineText(l))) return true;
+  for (let l = line + 1; l < e8.lineCount(); l++) if (close.test(e8.lineText(l))) return true;
   return false;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-indent-block",
   doc: "Indent the block at point.\nSignal an error when not at a block.",
   run: () => {
-    const el = elementAt(gnista.point());
-    if (!el || !BLOCK_TYPES.includes(el.type)) gnista.userError("Not at a block");
-    const pt = marker(gnista.point());
+    const el = elementAt(e8.point());
+    if (!el || !BLOCK_TYPES.includes(el.type)) e8.userError("Not at a block");
+    const pt = marker(e8.point());
     orgIndentRegion(el.begin, el.end);
-    gnista.gotoChar(pt.pos);
+    e8.gotoChar(pt.pos);
     dropMarker(pt);
-    gnista.message("Block at point indented");
+    e8.message("Block at point indented");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-indent-drawer",
   doc: "Indent the drawer at point.\nSignal an error when not at a drawer.",
   run: () => {
-    const el = elementAt(gnista.point());
-    if (el?.type !== "drawer" && el?.type !== "property-drawer") gnista.userError("Not at a drawer");
-    const pt = marker(gnista.point());
+    const el = elementAt(e8.point());
+    if (el?.type !== "drawer" && el?.type !== "property-drawer") e8.userError("Not at a drawer");
+    const pt = marker(e8.point());
     orgIndentRegion(el.begin, el.end);
-    gnista.gotoChar(pt.pos);
+    e8.gotoChar(pt.pos);
     dropMarker(pt);
-    gnista.message("Drawer at point indented");
+    e8.message("Drawer at point indented");
   },
 });
 
 // Commands: visibility
 
-const cycle = gnista.defineCommand({
+const cycle = e8.defineCommand({
   name: "org-cycle",
   doc:
     "TAB in Org: fold and unfold.\n\n" +
@@ -1954,47 +1954,47 @@ const cycle = gnista.defineCommand({
     "On a list item with items under it, the same for the item. On a drawer or block line, fold or unfold it. " +
     "In a table, move to the next field. Anywhere else, indent the line. " +
     "With C-u, cycle the whole buffer as S-TAB does.",
-  run: () => orgCycle(gnista.prefixArg()),
+  run: () => orgCycle(e8.prefixArg()),
 });
 
 /** TAB in Org, as org-cycle does with prefix argument arg. */
-function orgCycle(arg: gnista.PrefixArg): void {
+function orgCycle(arg: e8.PrefixArg): void {
   {
-    if (gnista.runHookWithArgsUntilSuccess("org-cycle-tab-first-hook")) return;
+    if (e8.runHookWithArgsUntilSuccess("org-cycle-tab-first-hook")) return;
     if (cycleLevel() || cycleItemIndentation()) return;
     if (Array.isArray(arg) && arg[0] === 4) {
       globalCycle();
       return;
     }
     if (Array.isArray(arg) && arg[0] === 16) {
-      gnista.setVariable("org-cycle-global-status", null);
+      e8.setVariable("org-cycle-global-status", null);
       startupVisibility();
-      gnista.message("Startup visibility, plus VISIBILITY properties");
+      e8.message("Startup visibility, plus VISIBILITY properties");
       return;
     }
     if (Array.isArray(arg) && arg[0] === 64) {
-      for (const spec of FOLD_SPECS) flag(0, gnista.bufferSize(), false, spec);
-      gnista.message("Entire buffer visible, including drawers");
+      for (const spec of FOLD_SPECS) flag(0, e8.bufferSize(), false, spec);
+      e8.message("Entire buffer visible, including drawers");
       return;
     }
     const line = lineAt();
-    const text = gnista.lineText(line);
+    const text = e8.lineText(line);
     if ((DRAWER.test(text) && !/^[ \t]*:END:/i.test(text)) || BLOCK_BEGIN.test(text)) {
       if (toggleDrawerOrBlock(line)) {
         // As org-fold--hide-wrapper-toggle does, point is left where it shows.
-        if (gnista.point() > 0 && gnista.invisibleAt(gnista.point() - 1)) gnista.gotoChar(gnista.lineStart(line));
+        if (e8.point() > 0 && e8.invisibleAt(e8.point() - 1)) e8.gotoChar(e8.lineStart(line));
         return;
       }
     }
     // On the closing line too, as org-fold--hide-wrapper-toggle allows.
     const opener = openerOf(line);
     if (opener !== undefined && toggleDrawerOrBlock(opener)) {
-      if (gnista.point() > 0 && gnista.invisibleAt(gnista.point() - 1)) gnista.gotoChar(gnista.lineStart(opener));
+      if (e8.point() > 0 && e8.invisibleAt(e8.point() - 1)) e8.gotoChar(e8.lineStart(opener));
       return;
     }
     if (/^[ \t]*[|+]/.test(text) && /^[ \t]*\|/.test(text)) {
-      gnista.call("org-table-justify-field-maybe");
-      gnista.call("org-table-next-field");
+      e8.call("org-table-justify-field-maybe");
+      e8.call("org-table-next-field");
       return;
     }
     const here = headingHere();
@@ -2003,7 +2003,7 @@ function orgCycle(arg: gnista.PrefixArg): void {
       // as org-back-to-heading finds it.
       const [all, at] = here;
       let i = at;
-      while (i > 0 && gnista.invisibleAt(all[i].start)) i--;
+      while (i > 0 && e8.invisibleAt(all[i].start)) i--;
       cycleHeading(all, i, at);
       return;
     }
@@ -2012,16 +2012,16 @@ function orgCycle(arg: gnista.PrefixArg): void {
       return;
     }
     // From there TAB emulation, after what else wants TAB, as org-tempo's templates.
-    if (gnista.runHookWithArgsUntilSuccess("org-tab-before-tab-emulation-hook")) return;
+    if (e8.runHookWithArgsUntilSuccess("org-tab-before-tab-emulation-hook")) return;
     // TAB as indent-for-tab-command does: the region if it is active, then
     // the mark goes, as indent-region sets deactivate-mark.
     if (orgRegionActive()) {
-      const mark = gnista.mark() as number;
-      const pt = marker(gnista.point());
-      orgIndentRegion(Math.min(mark, gnista.point()), Math.max(mark, gnista.point()));
-      gnista.gotoChar(pt.pos);
+      const mark = e8.mark() as number;
+      const pt = marker(e8.point());
+      orgIndentRegion(Math.min(mark, e8.point()), Math.max(mark, e8.point()));
+      e8.gotoChar(pt.pos);
       dropMarker(pt);
-      gnista.deactivateMark();
+      e8.deactivateMark();
       return;
     }
     indentLine(line);
@@ -2031,42 +2031,42 @@ function orgCycle(arg: gnista.PrefixArg): void {
 /** Cycles an item's visibility, as org-cycle-internal-local does for items. */
 function cycleItem(line: number): void {
   const struct = listStruct(line);
-  const item = gnista.lineStart(line);
-  const eoh = gnista.lineEnd(line);
+  const item = e8.lineStart(line);
+  const eoh = e8.lineEnd(line);
   const eos = itemEndBeforeBlank(struct, item);
   const hasChildren = hasChild(struct, item) !== undefined;
   const eol = endOfHidden(line);
-  const again = gnista.lastCommand() === gnista.thisCommand();
-  const status = gnista.variable("org-cycle-subtree-status");
+  const again = e8.lastCommand() === e8.thisCommand();
+  const status = e8.variable("org-cycle-subtree-status");
   const all = headings();
   const inSection = headingIndex(all, line) !== undefined;
   const showFollowing = (): void => {
     const next = all.find((h) => h.start > eos);
-    if (next && next.start < gnista.bufferSize() && gnista.invisibleAt(next.start)) showHeadingLine(next);
+    if (next && next.start < e8.bufferSize() && e8.invisibleAt(next.start)) showHeadingLine(next);
   };
   if (eos === eoh) {
-    gnista.message("EMPTY ENTRY");
-    gnista.setVariable("org-cycle-subtree-status", null);
+    e8.message("EMPTY ENTRY");
+    e8.setVariable("org-cycle-subtree-status", null);
     showFollowing();
     return;
   }
-  const hiddenInOneLine = eol >= eos || /^\s*$/.test(gnista.bufferText(eol, eos));
+  const hiddenInOneLine = eol >= eos || /^\s*$/.test(e8.bufferText(eol, eos));
   const skipped = hiddenInOneLine && !hasChildren;
   if (hiddenInOneLine && hasChildren) {
     setItemVisibility(item, struct, "children");
-    gnista.message("CHILDREN");
+    e8.message("CHILDREN");
     showFollowing();
-    gnista.setVariable("org-cycle-subtree-status", "children");
+    e8.setVariable("org-cycle-subtree-status", "children");
     if (inSection) showEmptyLines("children");
   } else if (skipped || (again && status === "children")) {
     flag(eoh, eos, false);
-    gnista.message(skipped ? "SUBTREE (NO CHILDREN)" : "SUBTREE");
-    gnista.setVariable("org-cycle-subtree-status", "subtree");
+    e8.message(skipped ? "SUBTREE (NO CHILDREN)" : "SUBTREE");
+    e8.setVariable("org-cycle-subtree-status", "subtree");
     if (inSection) showEmptyLines("subtree");
   } else {
     flag(eoh, eos, true);
-    gnista.message("FOLDED");
-    gnista.setVariable("org-cycle-subtree-status", "folded");
+    e8.message("FOLDED");
+    e8.setVariable("org-cycle-subtree-status", "folded");
     if (inSection) showEmptyLines("folded");
   }
 }
@@ -2079,12 +2079,12 @@ function cycleItem(line: number): void {
 export function cycleLevel(): boolean {
   const line = lineAt();
   const h = parseHeading(line);
-  if (!h || !/^[ \t]*$/.test(gnista.bufferText(gnista.point(), h.end))) return false;
-  const rest = gnista.lineText(line).slice(h.level);
+  if (!h || !/^[ \t]*$/.test(e8.bufferText(e8.point(), h.end))) return false;
+  const rest = e8.lineText(line).slice(h.level);
   const keywords = allKeywords().map((k) => escapeRegExp(k)).join("|");
   const m = new RegExp(`^(?: +(?:${keywords}))?(?: +(.*?))?[ \t]*$`).exec(rest);
   if (!m || m[1] !== "") return false;
-  gnista.setThisCommand("org-cycle-level");
+  e8.setThisCommand("org-cycle-level");
   const cur = h.level;
   let prev = 0;
   if (h.start !== 0) {
@@ -2093,10 +2093,10 @@ export function cycleLevel(): boolean {
     prev = k === undefined ? 0 : all[k].level;
   }
   const promote = (n: number): void => {
-    for (let i = 0; i < n; i++) gnista.call("org-do-promote");
+    for (let i = 0; i < n; i++) e8.call("org-do-promote");
   };
   const demote = (n: number): void => {
-    for (let i = 0; i < n; i++) gnista.call("org-do-demote");
+    for (let i = 0; i < n; i++) e8.call("org-do-demote");
   };
   if (prev === 0) promote(cur - 1);
   else if (prev === cur) demote(1);
@@ -2107,22 +2107,22 @@ export function cycleLevel(): boolean {
   return true;
 }
 
-const shiftTab = gnista.defineCommand({
+const shiftTab = e8.defineCommand({
   name: "org-shifttab",
   doc:
     "S-TAB in Org: cycle the whole buffer between its top headings, all its headings and everything.\n\n" +
     "In a table, move to the previous field. With a number as prefix argument, show that many levels of headings.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) {
-      gnista.call("org-table-previous-field");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) {
+      e8.call("org-table-previous-field");
       return;
     }
-    const prefix = gnista.prefixArg();
+    const prefix = e8.prefixArg();
     if (typeof prefix === "number") {
-      gnista.message(`Content view to level: ${prefix}`);
+      e8.message(`Content view to level: ${prefix}`);
       showLevels(prefix);
       showEmptyLines("t");
-      gnista.setVariable("org-cycle-global-status", "overview");
+      e8.setVariable("org-cycle-global-status", "overview");
       return;
     }
     // As org-cycle-global does: C-u means the startup visibility, else C-u TAB.
@@ -2130,40 +2130,40 @@ const shiftTab = gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-global-cycle",
   doc: "Cycle the whole buffer: top headings only, then all headings, then everything.",
   run: () => orgCycle([4]),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-overview",
   doc: "Show only the top headings.",
   run: () => overview(),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-content",
   doc: "Show all headings, hiding the text under them.",
   run: () => contents(),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-show-all",
   doc: "Show everything accessible, drawers and blocks included.",
   run: () => {
     // As org-fold-show-all: what is outside a narrowing stays as it is.
-    for (const spec of ["outline", "org-hide-drawer", "org-hide-block"]) flag(gnista.pointMin(), gnista.pointMax(), false, spec);
+    for (const spec of ["outline", "org-hide-drawer", "org-hide-block"]) flag(e8.pointMin(), e8.pointMax(), false, spec);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-indent-line",
   doc: "Indent the line: text under a heading to the left margin, a list item's lines to its text, others as the line before.",
   run: () => indentLine(lineAt()),
 });
 
-const orgReturn = gnista.defineCommand({
+const orgReturn = e8.defineCommand({
   name: "org-return",
   doc:
     "RET in Org: in a table, move to the next row; elsewhere start a new line, indented as org-indent-line does.\n\n" +
@@ -2172,26 +2172,26 @@ const orgReturn = gnista.defineCommand({
   run: () => orgReturnWith(true),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-return-and-maybe-indent",
   doc: "C-j in Org: what RET does, but the new line is not indented, as electric-indent-mode leaves C-j alone.",
   run: () => orgReturnWith(false),
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-special-ctrl-o",
   doc: "Whether C-o in a table inserts a row rather than opening a line.",
   value: true,
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-open-line",
   doc: "C-o in Org: in a table, insert a row above; elsewhere, or at the very start of the buffer, open-line.",
   run: () => {
-    const p = gnista.point();
-    if (gnista.variable("org-special-ctrl-o") === true && p !== 0 && /^[ \t]*\|/.test(gnista.lineText(lineAt())))
-      gnista.call("org-table-insert-row");
-    else gnista.callWithPrefix(gnista.prefixArg(), "open-line");
+    const p = e8.point();
+    if (e8.variable("org-special-ctrl-o") === true && p !== 0 && /^[ \t]*\|/.test(e8.lineText(lineAt())))
+      e8.call("org-table-insert-row");
+    else e8.callWithPrefix(e8.prefixArg(), "open-line");
   },
 });
 
@@ -2203,38 +2203,38 @@ function orgReturnWith(electric: boolean): void {
   // Org's newline self-inserts, so the newlines take on the text properties
   // around them, and runs of them undo together.
   const newline = (n: number): void => {
-    gnista.undoAutoAmalgamate();
+    e8.undoAutoAmalgamate();
     if (electric) electricNewline(n);
-    else gnista.insertAndInherit("\n".repeat(n));
+    else e8.insertAndInherit("\n".repeat(n));
   };
   checkInvisibleEditMaybe();
   const line = lineAt();
-  const p = gnista.point();
-  const [ls, le] = [gnista.lineStart(line), gnista.lineEnd(line)];
-  const n = Math.max(1, gnista.prefixNumericValue());
-  if (/^[ \t]*\|/.test(gnista.lineText(line))) {
+  const p = e8.point();
+  const [ls, le] = [e8.lineStart(line), e8.lineEnd(line)];
+  const n = Math.max(1, e8.prefixNumericValue());
+  if (/^[ \t]*\|/.test(e8.lineText(line))) {
     // Before the first column or after the last, a table is split.
-    if (/^[ \t]*$/.test(gnista.bufferText(p, le)) || /^[ \t]*$/.test(gnista.bufferText(ls, p))) gnista.insert("\n");
+    if (/^[ \t]*$/.test(e8.bufferText(p, le)) || /^[ \t]*$/.test(e8.bufferText(ls, p))) e8.insert("\n");
     else {
-      gnista.call("org-table-justify-field-maybe");
-      gnista.call("org-table-next-row");
+      e8.call("org-table-justify-field-maybe");
+      e8.call("org-table-next-row");
     }
     return;
   }
   // On a link, RET follows it, as org-return-follows-link says.
-  if (gnista.variable("org-return-follows-link") === true && linkHere() !== undefined) {
-    gnista.callInteractively("org-open-at-point");
+  if (e8.variable("org-return-follows-link") === true && linkHere() !== undefined) {
+    e8.callInteractively("org-open-at-point");
     return;
   }
   const h = p > ls ? parseHeading(line) : undefined;
   // org-complex-heading-regexp also matches a line of bare stars, which
   // is not a heading, so the entry shown is the one it is in.
-  const bareStars = p > ls && /^\*+[ \t]*$/.test(gnista.lineText(line));
+  const bareStars = p > ls && /^\*+[ \t]*$/.test(e8.lineText(line));
   if (h || bareStars) {
     const titleEnd = h ? h.titleAt + charCount(h.title) : p;
-    const rest = h && h.title !== "" && p >= h.titleAt && p <= titleEnd ? gnista.deleteRegion(p, titleEnd) : undefined;
+    const rest = h && h.title !== "" && p >= h.titleAt && p <= titleEnd ? e8.deleteRegion(p, titleEnd) : undefined;
     if (rest !== undefined && h?.tagsAt !== undefined) alignTags(line);
-    gnista.gotoChar(gnista.lineEnd(line));
+    e8.gotoChar(e8.lineEnd(line));
     const all = headings();
     const i = headingIndex(all, line);
     if (i !== undefined) {
@@ -2242,26 +2242,26 @@ function orgReturnWith(electric: boolean): void {
       hideDrawersIn(all[i].line + 1, entryEnd(all, i));
     } else {
       // Before the first heading, org-fold-show-entry works from the buffer's start.
-      const end = all[0]?.start ?? gnista.bufferSize();
+      const end = all[0]?.start ?? e8.bufferSize();
       flag(0, end, false);
       hideDrawersIn(0, end);
     }
     newline(n);
     if (rest !== undefined) {
-      const q = gnista.point();
-      gnista.insert(rest.trim());
-      gnista.gotoChar(q);
+      const q = e8.point();
+      e8.insert(rest.trim());
+      e8.gotoChar(q);
     }
     return;
   }
   let context = elementAt(p)?.parent;
   while (context && context.type !== "item") context = context.parent;
   if (p < le && context) {
-    const rest = gnista.deleteRegion(p, le);
+    const rest = e8.deleteRegion(p, le);
     newline(n);
-    const q = gnista.point();
-    gnista.insert(rest);
-    gnista.gotoChar(q);
+    const q = e8.point();
+    e8.insert(rest);
+    e8.gotoChar(q);
     return;
   }
   newline(n);
@@ -2272,35 +2272,35 @@ function orgReturnWith(electric: boolean): void {
  * electric-indent-mode: spaces left at the end of the line before go.
  */
 function electricNewline(n: number): void {
-  gnista.insertAndInherit("\n".repeat(n));
-  const before = gnista.point() - 1;
-  const text = gnista.bufferText(gnista.lineStart(lineAt(before)), before);
+  e8.insertAndInherit("\n".repeat(n));
+  const before = e8.point() - 1;
+  const text = e8.bufferText(e8.lineStart(lineAt(before)), before);
   const spaces = text.length - text.replace(/[ \t]+$/, "").length;
-  if (spaces > 0) gnista.deleteRegion(before - spaces, before);
+  if (spaces > 0) e8.deleteRegion(before - spaces, before);
   indentLine(lineAt());
 }
 
 // Commands: moving between headings
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-end-of-line",
   doc: "Move to the end of the line, staying on a folded heading's line rather than going past its hidden text.",
   run: () => {
-    const n = gnista.prefixNumericValue();
-    if (n !== 1) gnista.callWithPrefix(n - 1, "next-line");
+    const n = e8.prefixNumericValue();
+    if (n !== 1) e8.callWithPrefix(n - 1, "next-line");
     // As move-beginning-of-line does, back to the start of the visible line first.
-    gnista.gotoChar(gnista.lineStart(lineAt()));
-    while (gnista.point() > 0 && gnista.invisibleAt(gnista.point() - 1)) {
-      let q = gnista.point() - 1;
-      while (q > 0 && gnista.invisibleAt(q - 1)) q--;
-      gnista.gotoChar(gnista.lineStart(lineAt(q)));
+    e8.gotoChar(e8.lineStart(lineAt()));
+    while (e8.point() > 0 && e8.invisibleAt(e8.point() - 1)) {
+      let q = e8.point() - 1;
+      while (q > 0 && e8.invisibleAt(q - 1)) q--;
+      e8.gotoChar(e8.lineStart(lineAt(q)));
     }
-    gnista.gotoChar(gnista.lineEnd(lineAt()));
+    e8.gotoChar(e8.lineEnd(lineAt()));
   },
 });
 
 function visible(h: Heading): boolean {
-  return h.start === 0 || !gnista.invisibleAt(h.start - 1);
+  return h.start === 0 || !e8.invisibleAt(h.start - 1);
 }
 
 /**
@@ -2311,38 +2311,38 @@ function visible(h: Heading): boolean {
 function nextVisibleHeading(arg: number): void {
   const regexp = "^\\*+ ";
   const searchFails = (found: number | undefined, to: number): boolean => {
-    if (found === undefined) gnista.gotoChar(to);
+    if (found === undefined) e8.gotoChar(to);
     return found === undefined;
   };
-  gnista.gotoChar(arg < 0 ? gnista.lineStart(lineAt()) : gnista.lineEnd(lineAt()));
-  while (arg < 0 && !searchFails(gnista.reSearchBackward(regexp, { noerror: true }), gnista.pointMin())) {
-    if (gnista.point() > gnista.pointMin() && folded(gnista.point())) {
-      gnista.gotoChar(gnista.previousSingleCharPropertyChange(gnista.point(), "invisible"));
-      if (!gnista.lookingAt(regexp)) searchFails(gnista.reSearchBackward(regexp, { noerror: true }), gnista.pointMin());
+  e8.gotoChar(arg < 0 ? e8.lineStart(lineAt()) : e8.lineEnd(lineAt()));
+  while (arg < 0 && !searchFails(e8.reSearchBackward(regexp, { noerror: true }), e8.pointMin())) {
+    if (e8.point() > e8.pointMin() && folded(e8.point())) {
+      e8.gotoChar(e8.previousSingleCharPropertyChange(e8.point(), "invisible"));
+      if (!e8.lookingAt(regexp)) searchFails(e8.reSearchBackward(regexp, { noerror: true }), e8.pointMin());
     }
     arg++;
   }
-  while (arg > 0 && !searchFails(gnista.reSearchForward(regexp, { noerror: true }), gnista.pointMax())) {
-    if (folded(gnista.point())) {
-      gnista.gotoChar(gnista.nextSingleCharPropertyChange(gnista.point(), "invisible"));
-      gnista.skipCharsForward(" \t\n");
-      gnista.gotoChar(gnista.lineEnd(lineAt()));
+  while (arg > 0 && !searchFails(e8.reSearchForward(regexp, { noerror: true }), e8.pointMax())) {
+    if (folded(e8.point())) {
+      e8.gotoChar(e8.nextSingleCharPropertyChange(e8.point(), "invisible"));
+      e8.skipCharsForward(" \t\n");
+      e8.gotoChar(e8.lineEnd(lineAt()));
     }
     arg--;
   }
-  gnista.gotoChar(arg > 0 ? gnista.pointMax() : gnista.lineStart(lineAt()));
+  e8.gotoChar(arg > 0 ? e8.pointMax() : e8.lineStart(lineAt()));
 }
 
-const nextHeading = gnista.defineCommand({
+const nextHeading = e8.defineCommand({
   name: "org-next-visible-heading",
   doc: "Move to the next heading that is not hidden, or to the end of the buffer.",
-  run: () => nextVisibleHeading(gnista.prefixNumericValue()),
+  run: () => nextVisibleHeading(e8.prefixNumericValue()),
 });
 
-const previousHeading = gnista.defineCommand({
+const previousHeading = e8.defineCommand({
   name: "org-previous-visible-heading",
   doc: "Move to the previous heading that is not hidden, or to the start of the buffer.",
-  run: () => nextVisibleHeading(-gnista.prefixNumericValue()),
+  run: () => nextVisibleHeading(-e8.prefixNumericValue()),
 });
 
 /** The sibling `by` headings on from heading i, skipping deeper ones, if any. */
@@ -2366,8 +2366,8 @@ function forwardHeadingSameLevel(arg: number): void {
   const all = headings();
   const current = visibleHeadingIndex(all, lineAt());
   if (current === undefined) {
-    if (backward) gnista.gotoChar(0);
-    else gnista.gotoChar(all.find((h) => h.start > gnista.point())?.start ?? gnista.bufferSize());
+    if (backward) e8.gotoChar(0);
+    else e8.gotoChar(all.find((h) => h.start > e8.point())?.start ?? e8.bufferSize());
     return;
   }
   const { level } = all[current];
@@ -2383,17 +2383,17 @@ function forwardHeadingSameLevel(arg: number): void {
       result = h.start;
     }
   }
-  gnista.gotoChar(gnista.lineStart(lineAt(result)));
+  e8.gotoChar(e8.lineStart(lineAt(result)));
 }
 
-const forwardSameLevel = gnista.defineCommand({
+const forwardSameLevel = e8.defineCommand({
   name: "org-forward-heading-same-level",
   doc: "Move to the next heading at the same level, under the same parent.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => forwardHeadingSameLevel(arg),
 });
 
-const backwardSameLevel = gnista.defineCommand({
+const backwardSameLevel = e8.defineCommand({
   name: "org-backward-heading-same-level",
   doc: "Move to the previous heading at the same level, under the same parent.",
   params: [{ name: "arg", kind: "count" }],
@@ -2406,33 +2406,33 @@ const backwardSameLevel = gnista.defineCommand({
  * as org-mark-element does.
  */
 function markElement(): void {
-  const mark = gnista.mark();
-  const again = gnista.lastCommand() === gnista.thisCommand() && mark !== undefined;
-  if (gnista.calledInteractively() && (again || (gnista.regionActive() && mark !== undefined))) {
-    gnista.setMark(elementAt(mark as number)?.end ?? (mark as number));
+  const mark = e8.mark();
+  const again = e8.lastCommand() === e8.thisCommand() && mark !== undefined;
+  if (e8.calledInteractively() && (again || (e8.regionActive() && mark !== undefined))) {
+    e8.setMark(elementAt(mark as number)?.end ?? (mark as number));
     return;
   }
-  const e = elementAt(gnista.point());
+  const e = elementAt(e8.point());
   if (!e) return;
-  gnista.gotoChar(gnista.lineEnd(lineAt()));
-  gnista.pushMark(Math.min(gnista.bufferSize(), e.end), { activate: true });
-  gnista.gotoChar(e.begin);
+  e8.gotoChar(e8.lineEnd(lineAt()));
+  e8.pushMark(Math.min(e8.bufferSize(), e.end), { activate: true });
+  e8.gotoChar(e.begin);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-mark-element",
   doc: "Make the region the element at point; repeated, or with the mark active, take in the next element too.",
   run: () => markElement(),
 });
 
-const markSubtree = gnista.defineCommand({
+const markSubtree = e8.defineCommand({
   name: "org-mark-subtree",
   doc: "Make the region the subtree point is in: point at its heading, the mark at its end.",
   run: () => {
     const line = lineAt();
-    if (parseHeading(line)) gnista.gotoChar(gnista.lineStart(line));
-    else if (headingIndex(headings(), line) === undefined) gnista.userError("Not in a subtree");
-    else gnista.call("org-previous-visible-heading");
+    if (parseHeading(line)) e8.gotoChar(e8.lineStart(line));
+    else if (headingIndex(headings(), line) === undefined) e8.userError("Not in a subtree");
+    else e8.call("org-previous-visible-heading");
     markElement();
   },
 });
@@ -2440,13 +2440,13 @@ const markSubtree = gnista.defineCommand({
 // Commands: inserting headings and items
 
 function blankLineAt(line: number): boolean {
-  return line < gnista.lineCount() && gnista.lineText(line) === "";
+  return line < e8.lineCount() && e8.lineText(line) === "";
 }
 
 /** Whether the line before point's is empty, as org-previous-line-empty-p says. */
 function previousLineEmpty(): boolean {
-  if (gnista.point() === 0) return false;
-  return /^[ \t]*$/.test(gnista.lineText(Math.max(0, lineAt() - 1)));
+  if (e8.point() === 0) return false;
+  return /^[ \t]*$/.test(e8.lineText(Math.max(0, lineAt() - 1)));
 }
 
 /**
@@ -2462,47 +2462,47 @@ export function blankBeforeHeading(parent: boolean): boolean {
   let i = headingIndex(all, lineAt());
   if (i === undefined) {
     // Before the first heading, the next one counts.
-    i = all.findIndex((h) => h.start > gnista.point());
+    i = all.findIndex((h) => h.start > e8.point());
     if (i < 0) return false;
   }
   if (parent) i = ancestors(all, i)[0] ?? i;
   const h = all[i];
   // Within the accessible portion, as bobp and point-max are.
-  const [min, max] = [gnista.pointMin(), gnista.pointMax()];
-  if (h.start !== min) return isBlank(gnista.lineText(h.line - 1));
+  const [min, max] = [e8.pointMin(), e8.pointMax()];
+  if (h.start !== min) return isBlank(e8.lineText(h.line - 1));
   const next = all[i + 1];
-  if (next) return isBlank(gnista.lineText(next.line - 1));
+  if (next) return isBlank(e8.lineText(next.line - 1));
   // Trailing spaces on the last line are ignored.
   let q = max;
-  while (q > min && /[ \t]/.test(gnista.bufferText(q - 1, q))) q--;
-  if (q !== gnista.lineStart(lineAt(q)) || q === min) return false;
-  return isBlank(gnista.lineText(lineAt(q) - 1));
+  while (q > min && /[ \t]/.test(e8.bufferText(q - 1, q))) q--;
+  if (q !== e8.lineStart(lineAt(q)) || q === min) return false;
+  return isBlank(e8.lineText(lineAt(q) - 1));
 }
 
 /** Makes the number of empty lines before point's line exactly n, as org-N-empty-lines-before-current does. */
 function emptyLinesBeforeCurrent(n: number): void {
-  const column = gnista.point() - gnista.lineStart(lineAt());
-  gnista.gotoChar(gnista.lineStart(lineAt()));
-  if (gnista.point() > 0) {
-    let q = gnista.point();
-    while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
-    const start = gnista.lineEnd(lineAt(q));
-    if (start < gnista.point() - 1) gnista.deleteRegion(start, gnista.point() - 1);
+  const column = e8.point() - e8.lineStart(lineAt());
+  e8.gotoChar(e8.lineStart(lineAt()));
+  if (e8.point() > 0) {
+    let q = e8.point();
+    while (q > 0 && /[ \r\t\n]/.test(e8.bufferText(q - 1, q))) q--;
+    const start = e8.lineEnd(lineAt(q));
+    if (start < e8.point() - 1) e8.deleteRegion(start, e8.point() - 1);
   }
-  gnista.insert("\n".repeat(n));
+  e8.insert("\n".repeat(n));
   const line = lineAt();
-  gnista.gotoChar(gnista.lineStart(line) + Math.min(column, gnista.lineEnd(line) - gnista.lineStart(line)));
+  e8.gotoChar(e8.lineStart(line) + Math.min(column, e8.lineEnd(line) - e8.lineStart(line)));
 }
 
 /** Keeps an empty line before the heading after a new one, as org-insert-heading's maybe-add-blank-after does. */
 function maybeAddBlankAfter(blank: boolean): void {
-  const p = gnista.point();
+  const p = e8.point();
   const line = lineAt();
-  if (line + 1 < gnista.lineCount() && blank && isHeadingLine(gnista.lineText(line + 1))) {
-    gnista.gotoChar(gnista.lineStart(line + 1));
-    gnista.insert("\n");
+  if (line + 1 < e8.lineCount() && blank && isHeadingLine(e8.lineText(line + 1))) {
+    e8.gotoChar(e8.lineStart(line + 1));
+    e8.insert("\n");
   }
-  gnista.gotoChar(p);
+  e8.gotoChar(p);
 }
 
 /**
@@ -2511,7 +2511,7 @@ function maybeAddBlankAfter(blank: boolean): void {
  * text between them.
  */
 function insertPieces(...pieces: string[]): void {
-  for (const piece of pieces) if (piece !== "") gnista.insert(piece);
+  for (const piece of pieces) if (piece !== "") e8.insert(piece);
 }
 
 /**
@@ -2519,63 +2519,63 @@ function insertPieces(...pieces: string[]): void {
  * stars. `arg` is the raw prefix argument: C-u inserts after the subtree,
  * C-u C-u after the parent's.
  */
-function insertHeading(arg: gnista.PrefixArg, invisibleOk = false): void {
+function insertHeading(arg: e8.PrefixArg, invisibleOk = false): void {
   const parentEnd = Array.isArray(arg) && arg[0] === 16;
   const blank = blankBeforeHeading(parentEnd);
   const all = headings();
   const current = headingIndex(all, lineAt());
   // As org-current-level, from the whole buffer, so a heading above a narrowing counts.
-  const level = gnista.saveRestriction(() => {
-    gnista.widen();
+  const level = e8.saveRestriction(() => {
+    e8.widen();
     const wide = headings();
     const i = headingIndex(wide, lineAt());
     return i === undefined ? undefined : wide[i].level;
   });
   const stars = "*".repeat(level ?? 1);
-  const p = gnista.point();
+  const p = e8.point();
   const respect =
-    gnista.variable("org-insert-heading-respect-content") === true ||
+    e8.variable("org-insert-heading-respect-content") === true ||
     (Array.isArray(arg) && (arg[0] === 4 || arg[0] === 16)) ||
-    (!invisibleOk && gnista.invisibleAt(Math.max(0, p - 1)));
-  const atBol = (): boolean => gnista.point() === gnista.lineStart(lineAt());
+    (!invisibleOk && e8.invisibleAt(Math.max(0, p - 1)));
+  const atBol = (): boolean => e8.point() === e8.lineStart(lineAt());
   if (respect) {
     if (current === undefined) {
-      const from = atBol() && p < gnista.bufferSize() ? p + 1 : p;
-      gnista.gotoChar(all.find((h) => h.start >= from)?.start ?? gnista.bufferSize());
+      const from = atBol() && p < e8.bufferSize() ? p + 1 : p;
+      e8.gotoChar(all.find((h) => h.start >= from)?.start ?? e8.bufferSize());
     } else {
       let i = current;
       if (!invisibleOk) {
         // org-back-to-heading goes up to the first heading that is not
         // folded, leaving point at the last one it tried if none is.
         const lineage = [i, ...ancestors(all, i)];
-        const shown = lineage.find((a) => !gnista.invisibleAt(all[a].start));
+        const shown = lineage.find((a) => !e8.invisibleAt(all[a].start));
         if (shown === undefined) {
           const last = all[lineage[lineage.length - 1]].start;
-          gnista.gotoChar(last);
-          gnista.userError(`Before first headline at position ${last + 1} in buffer ${gnista.bufferName()}`);
+          e8.gotoChar(last);
+          e8.userError(`Before first headline at position ${last + 1} in buffer ${e8.bufferName()}`);
         }
         i = shown;
       }
       if (parentEnd) i = ancestors(all, i)[0] ?? i;
-      gnista.gotoChar(subtreeRegion(all, i)[1]);
+      e8.gotoChar(subtreeRegion(all, i)[1]);
     }
     // At the end of a file with no final newline, the heading gets a line of its own.
-    if (!atBol()) gnista.insert("\n");
-    if (blank && headingIndex(headings(), lineAt(gnista.point() - 1)) === undefined) {
-      gnista.insert("\n");
-      gnista.gotoChar(gnista.point() - 1);
+    if (!atBol()) e8.insert("\n");
+    if (blank && headingIndex(headings(), lineAt(e8.point() - 1)) === undefined) {
+      e8.insert("\n");
+      e8.gotoChar(e8.point() - 1);
     }
-    if (level === undefined && gnista.point() < gnista.bufferSize() && gnista.point() > 0) {
-      if (isHeadingLine(gnista.lineText(lineAt()))) gnista.insert("\n");
-      gnista.gotoChar(gnista.point() - 1);
+    if (level === undefined && e8.point() < e8.bufferSize() && e8.point() > 0) {
+      if (isHeadingLine(e8.lineText(lineAt()))) e8.insert("\n");
+      e8.gotoChar(e8.point() - 1);
     }
     if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
     insertPieces(stars, " ", "\n");
-    gnista.gotoChar(gnista.point() - 1);
+    e8.gotoChar(e8.point() - 1);
     maybeAddBlankAfter(blank);
     if (!invisibleOk) {
       const line = lineAt();
-      if (folded(Math.max(0, gnista.lineStart(line) - 1), "outline")) flag(Math.max(0, gnista.lineStart(line) - 1), gnista.lineEnd(line), false);
+      if (folded(Math.max(0, e8.lineStart(line) - 1), "outline")) flag(Math.max(0, e8.lineStart(line) - 1), e8.lineEnd(line), false);
     }
     return;
   }
@@ -2584,29 +2584,29 @@ function insertHeading(arg: gnista.PrefixArg, invisibleOk = false): void {
   if (h) {
     if (atBol()) {
       if (blank) {
-        gnista.insert("\n");
-        gnista.gotoChar(p);
+        e8.insert("\n");
+        e8.gotoChar(p);
       }
       insertPieces(stars, " \n");
-      gnista.gotoChar(p);
+      e8.gotoChar(p);
       if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
-      gnista.gotoChar(gnista.lineEnd(lineAt()));
+      e8.gotoChar(e8.lineEnd(lineAt()));
       return;
     }
     const titleEnd = h.titleAt + charCount(h.title);
-    if (gnista.variable("org-M-RET-may-split-line") !== false && h.title !== "" && p >= h.titleAt && p <= titleEnd) {
-      const split = gnista.deleteRegion(p, titleEnd);
-      if (/^[ \t]*$/.test(gnista.bufferText(p, gnista.lineEnd(line)))) gnista.deleteRegion(p, gnista.lineEnd(line));
+    if (e8.variable("org-M-RET-may-split-line") !== false && h.title !== "" && p >= h.titleAt && p <= titleEnd) {
+      const split = e8.deleteRegion(p, titleEnd);
+      if (/^[ \t]*$/.test(e8.bufferText(p, e8.lineEnd(line)))) e8.deleteRegion(p, e8.lineEnd(line));
       else alignTags(line);
-      gnista.gotoChar(gnista.lineEnd(line));
-      if (blank) gnista.insert("\n");
+      e8.gotoChar(e8.lineEnd(line));
+      if (blank) e8.insert("\n");
       insertPieces("\n", stars, " ");
       maybeAddBlankAfter(blank);
-      if (/\S/.test(split)) gnista.insert(split);
+      if (/\S/.test(split)) e8.insert(split);
       return;
     }
-    gnista.gotoChar(gnista.lineEnd(line));
-    if (blank) gnista.insert("\n");
+    e8.gotoChar(e8.lineEnd(line));
+    if (blank) e8.insert("\n");
     insertPieces("\n", stars, " ");
     maybeAddBlankAfter(blank);
     return;
@@ -2617,7 +2617,7 @@ function insertHeading(arg: gnista.PrefixArg, invisibleOk = false): void {
     maybeAddBlankAfter(blank);
     return;
   }
-  if (gnista.variable("org-M-RET-may-split-line") === false) gnista.gotoChar(gnista.lineEnd(line));
+  if (e8.variable("org-M-RET-may-split-line") === false) e8.gotoChar(e8.lineEnd(line));
   insertPieces("\n", stars, " ");
   if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
   maybeAddBlankAfter(blank);
@@ -2627,28 +2627,28 @@ function insertHeading(arg: gnista.PrefixArg, invisibleOk = false): void {
  * Inserts a heading with a TODO state, as org-insert-todo-heading does:
  * the state of the heading before it, unless that is done, or the first.
  */
-function insertTodoHeading(arg: gnista.PrefixArg, force: boolean): void {
+function insertTodoHeading(arg: e8.PrefixArg, force: boolean): void {
   if (!force && insertListItem(true)) return;
   insertHeading(force ? [4] : Array.isArray(arg) && arg[0] === 16 ? arg : null);
-  const p = gnista.point();
+  const p = e8.point();
   forwardHeadingSameLevel(-1);
   const previous = parseHeading(lineAt());
-  gnista.gotoChar(p);
+  e8.gotoChar(p);
   const first = todoSets()[0]?.todo[0] ?? "TODO";
   const state =
     (Array.isArray(arg) && arg[0] === 4) || previous?.todo === undefined || isDone(previous.todo) ? first : previous.todo;
   const line = lineAt();
-  const stars = /^\*+ /.exec(gnista.lineText(line));
+  const stars = /^\*+ /.exec(e8.lineText(line));
   if (stars) {
-    gnista.gotoChar(gnista.lineStart(line) + stars[0].length);
-    gnista.insert(`${state} `);
+    e8.gotoChar(e8.lineStart(line) + stars[0].length);
+    e8.insert(`${state} `);
   }
   updateParentTodoStatistics(line);
   // As org-insert-todo-heading logs the new state, when it is treated as a change.
-  if (gnista.variable("org-treat-insert-todo-heading-as-state-change") === true && logHow(state, undefined) !== undefined) storeStateNote(line, state, undefined);
+  if (e8.variable("org-treat-insert-todo-heading-as-state-change") === true && logHow(state, undefined) !== undefined) storeStateNote(line, state, undefined);
 }
 
-const metaReturn = gnista.defineCommand({
+const metaReturn = e8.defineCommand({
   name: "org-meta-return",
   doc:
     "M-RET in Org: insert a heading at the level of the one point is under, or an item in a list.\n\n" +
@@ -2656,13 +2656,13 @@ const metaReturn = gnista.defineCommand({
     "(org-M-RET-may-split-line); at the end, after it.",
   run: () => {
     checkInvisibleEditMaybe();
-    const prefix = gnista.prefixArg();
+    const prefix = e8.prefixArg();
     if (prefix !== null) {
       insertHeading(prefix);
       return;
     }
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) {
-      gnista.call("org-table-wrap-region");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) {
+      e8.call("org-table-wrap-region");
       return;
     }
     if (inItem(lineAt()) !== undefined) insertListItem(false);
@@ -2670,35 +2670,35 @@ const metaReturn = gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-insert-heading",
   doc: "Insert a heading at the level of the one point is under. See org-meta-return.",
-  run: () => insertHeading(gnista.prefixArg()),
+  run: () => insertHeading(e8.prefixArg()),
 });
 
-const respectContent = gnista.defineCommand({
+const respectContent = e8.defineCommand({
   name: "org-insert-heading-respect-content",
   doc: "Insert a heading after the subtree point is in, at its level.",
   run: () => insertHeading([4]),
 });
 
-const todoHeading = gnista.defineCommand({
+const todoHeading = e8.defineCommand({
   name: "org-insert-todo-heading",
   doc: "Insert a heading with the first TODO state, as M-RET does; in a list, an item with a checkbox.",
-  run: () => insertTodoHeading(gnista.prefixArg(), false),
+  run: () => insertTodoHeading(e8.prefixArg(), false),
 });
 
-const todoHeadingRespectContent = gnista.defineCommand({
+const todoHeadingRespectContent = e8.defineCommand({
   name: "org-insert-todo-heading-respect-content",
   doc: "Insert a heading with the first TODO state after the subtree point is in.",
-  run: () => insertTodoHeading(gnista.prefixArg(), true),
+  run: () => insertTodoHeading(e8.prefixArg(), true),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-insert-item",
   doc: "Insert an item in the list point is in, at its level: before the item if point is before its text, else after it.",
   run: () => {
-    insertListItem(Array.isArray(gnista.prefixArg()));
+    insertListItem(Array.isArray(e8.prefixArg()));
   },
 });
 
@@ -2710,7 +2710,7 @@ gnista.defineCommand({
  * line's start, as save-excursion leaves it.
  */
 function changeLevel(h: Heading, by: number): void {
-  if (h.level + by < 1) gnista.userError("Cannot promote to level 0.  UNDO to recover if necessary");
+  if (h.level + by < 1) e8.userError("Cannot promote to level 0.  UNDO to recover if necessary");
   // Org checks folds after promoting, but not after demoting.
   const change = (): void => {
     replaceKeepingPoint(h.start, h.start + h.level + 1, `${"*".repeat(h.level + by)} `);
@@ -2724,19 +2724,19 @@ function changeLevel(h: Heading, by: number): void {
 function fixPositionAfterPromote(): void {
   const h = parseHeading(lineAt());
   if (!h) return;
-  const p = gnista.point();
+  const p = e8.point();
   const starsEnd = h.start + h.level;
   const todoEnd = h.todoAt !== undefined ? h.todoAt + charCount(h.todo ?? "") : undefined;
   if (p !== starsEnd && p !== todoEnd) return;
-  if (p === gnista.lineEnd(lineAt())) gnista.insert(" ");
-  else if (gnista.bufferText(p, p + 1) === " ") gnista.gotoChar(p + 1);
+  if (p === e8.lineEnd(lineAt())) e8.insert(" ");
+  else if (e8.bufferText(p, p + 1) === " ") e8.gotoChar(p + 1);
 }
 
 function changeSubtreeLevel(by: number): void {
   const [all, i] = backToHeading();
   const end = subtreeRegion(all, i)[1];
   const inside = all.filter((h, k) => k >= i && h.start < end);
-  if (inside.some((h) => h.level + by < 1)) gnista.userError("Cannot promote to level 0.  UNDO to recover if necessary");
+  if (inside.some((h) => h.level + by < 1)) e8.userError("Cannot promote to level 0.  UNDO to recover if necessary");
   for (const h of [...inside].reverse()) changeLevel(parseHeading(h.line) ?? h, by);
   fixPositionAfterPromote();
 }
@@ -2747,25 +2747,25 @@ function changeSubtreeLevel(by: number): void {
  */
 function headingsInRegion(): Heading[] | undefined {
   if (!orgRegionActive()) return undefined;
-  const mark = gnista.mark() ?? gnista.point();
-  const [from, to] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
+  const mark = e8.mark() ?? e8.point();
+  const [from, to] = [Math.min(mark, e8.point()), Math.max(mark, e8.point())];
   return headings().filter((h) => h.start >= from && h.start < to);
 }
 
 /** Whether the active region begins on a heading's line, as org-metaleft and org-metaright check. */
 function regionStartsAtHeading(): boolean {
   if (!orgRegionActive()) return false;
-  const mark = gnista.mark() ?? gnista.point();
-  return parseHeading(lineAt(Math.min(mark, gnista.point()))) !== undefined;
+  const mark = e8.mark() ?? e8.point();
+  return parseHeading(lineAt(Math.min(mark, e8.point()))) !== undefined;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-do-promote",
   doc: "Make the heading point is on one level higher: one star fewer.",
   run: () => {
     const region = headingsInRegion();
     if (region) {
-      gnista.keepMarkActive(() => {
+      e8.keepMarkActive(() => {
         // Forward, as org-map-region goes, so an error stops before the rest.
         for (const h of region) changeLevel(parseHeading(h.line) ?? h, -1);
       });
@@ -2777,13 +2777,13 @@ gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-do-demote",
   doc: "Make the heading point is on one level lower: one star more.",
   run: () => {
     const region = headingsInRegion();
     if (region) {
-      gnista.keepMarkActive(() => {
+      e8.keepMarkActive(() => {
         // Forward, as org-map-region goes, so an error stops before the rest.
         for (const h of region) changeLevel(parseHeading(h.line) ?? h, 1);
       });
@@ -2795,13 +2795,13 @@ gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-promote-subtree",
   doc: "Make the subtree point is in one level higher.",
   run: () => changeSubtreeLevel(-1),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-demote-subtree",
   doc: "Make the subtree point is in one level lower.",
   run: () => changeSubtreeLevel(1),
@@ -2809,12 +2809,12 @@ gnista.defineCommand({
 
 /** Ensures the buffer ends with a newline, so whole lines can move. */
 function endWithNewline(): void {
-  const size = gnista.bufferSize();
-  if (size > 0 && gnista.bufferText(size - 1, size) !== "\n") {
-    const p = gnista.point();
-    gnista.gotoChar(size);
-    gnista.insert("\n");
-    gnista.gotoChar(p);
+  const size = e8.bufferSize();
+  if (size > 0 && e8.bufferText(size - 1, size) !== "\n") {
+    const p = e8.point();
+    e8.gotoChar(size);
+    e8.insert("\n");
+    e8.gotoChar(p);
   }
 }
 
@@ -2823,12 +2823,12 @@ function endWithNewline(): void {
  * it, keeping point's offset into it and folding it again if it was.
  */
 function moveText(start: number, end: number, to: number, refold?: (start: number) => void): void {
-  const offset = gnista.point() - start;
-  const text = gnista.deleteRegion(start, end);
+  const offset = e8.point() - start;
+  const text = e8.deleteRegion(start, end);
   const target = to > start ? to - (end - start) : to;
-  gnista.gotoChar(target);
-  gnista.insert(text);
-  gnista.gotoChar(target + offset);
+  e8.gotoChar(target);
+  e8.insert(text);
+  e8.gotoChar(target + offset);
   refold?.(target);
 }
 
@@ -2864,19 +2864,19 @@ function previousSiblingStart(all: Heading[], pos: number): number | undefined {
 
 /** Moves the subtree at point past arg siblings, back if negative, as org-move-subtree-down does. */
 export function moveSubtree(arg: number): void {
-  const col = gnista.point() - gnista.lineStart(lineAt());
+  const col = e8.point() - e8.lineStart(lineAt());
   const [all, found] = backToHeading(true);
   const i = visibleHeadingIndex(all, all[found].line) ?? found;
   const beg = all[i].start;
-  gnista.gotoChar(beg);
+  e8.gotoChar(beg);
   const wasFolded = folded(all[i].end, "outline");
   const end = subtreeRegion(all, i)[1];
   let at = beg;
   for (let n = Math.abs(arg); n > 0; n--) {
     const next = arg > 0 ? nextSiblingStart(all, at) : previousSiblingStart(all, at);
     if (next === undefined) {
-      gnista.gotoChar(beg);
-      gnista.userError("Cannot move past superior level or buffer limit");
+      e8.gotoChar(beg);
+      e8.userError("Cannot move past superior level or buffer limit");
     }
     at = next;
   }
@@ -2885,25 +2885,25 @@ export function moveSubtree(arg: number): void {
     ins = subtreeRegion(all, firstHeadingFrom(all, at))[1];
     // Over any empty lines back to the end of the text, which gets a newline if it has none.
     let q = ins;
-    while (q > 0 && /[ \t\n\r]/.test(gnista.bufferText(q - 1, q))) q--;
+    while (q > 0 && /[ \t\n\r]/.test(e8.bufferText(q - 1, q))) q--;
     q = Math.min(lineStartOrEnd(lineAt(q) + 1), ins);
-    if (q !== gnista.lineStart(lineAt(q))) {
-      gnista.gotoChar(q);
-      gnista.insert("\n");
+    if (q !== e8.lineStart(lineAt(q))) {
+      e8.gotoChar(q);
+      e8.insert("\n");
       if (q < ins) ins++;
     }
   }
-  const txt = gnista.bufferText(beg, end);
+  const txt = e8.bufferText(beg, end);
   edDelete(beg, end);
   let p = ins > beg ? ins - (end - beg) : ins;
   if (beg > 0) flag(beg - 1, beg, false);
   if (p > 0) flag(p - 1, p, false);
-  if (p !== gnista.lineStart(lineAt(p)) && gnista.bufferText(p, p + 1) === "\n") p++;
+  if (p !== e8.lineStart(lineAt(p)) && e8.bufferText(p, p + 1) === "\n") p++;
   edInsert(p, txt, true);
-  if (gnista.point() !== gnista.lineStart(lineAt())) edInsert(gnista.point(), "\n");
-  gnista.gotoChar(p);
-  while (gnista.point() < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(gnista.point(), gnista.point() + 1))) {
-    gnista.gotoChar(gnista.point() + 1);
+  if (e8.point() !== e8.lineStart(lineAt())) edInsert(e8.point(), "\n");
+  e8.gotoChar(p);
+  while (e8.point() < e8.bufferSize() && /[ \t\n\r]/.test(e8.bufferText(e8.point(), e8.point() + 1))) {
+    e8.gotoChar(e8.point() + 1);
   }
   const fresh = headings();
   const k = headingIndex(fresh, lineAt());
@@ -2917,7 +2917,7 @@ export function moveSubtree(arg: number): void {
     cleanVisibilityAfterMove(fresh, k);
   }
   const line = lineAt();
-  gnista.gotoChar(gnista.lineStart(line) + Math.min(col, gnista.lineEnd(line) - gnista.lineStart(line)));
+  e8.gotoChar(e8.lineStart(line) + Math.min(col, e8.lineEnd(line) - e8.lineStart(line)));
 }
 
 /**
@@ -2933,7 +2933,7 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
     return h?.start === pos ? h.level : 0;
   };
   const before = (pos: number): number => all[firstHeadingFrom(all, pos) - 1]?.start ?? 0;
-  const after = (pos: number): number => all[firstHeadingFrom(all, pos + 1)]?.start ?? gnista.bufferSize();
+  const after = (pos: number): number => all[firstHeadingFrom(all, pos + 1)]?.start ?? e8.bufferSize();
   const previous = (pos: number): [number, boolean] => {
     const level = levelAt(pos);
     let p = before(pos);
@@ -2944,8 +2944,8 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
   const next = (pos: number): [number, boolean] => {
     const level = levelAt(pos);
     let p = after(pos);
-    while (p !== gnista.bufferSize() && levelAt(p) > level) p = after(p);
-    return [p, p !== gnista.bufferSize() && levelAt(p) >= level];
+    while (p !== e8.bufferSize() && levelAt(p) > level) p = after(p);
+    return [p, p !== e8.bufferSize() && levelAt(p) >= level];
   };
   let [from, ok] = previous(all[k].start);
   if (ok) from = previous(from)[0];
@@ -2953,11 +2953,11 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
   [to, ok] = next(to);
   if (ok) [to, ok] = next(to);
   if (ok) [to] = next(to);
-  const end = levelAt(to) > 0 ? gnista.lineEnd(lineAt(to)) : to;
+  const end = levelAt(to) > 0 ? e8.lineEnd(lineAt(to)) : to;
   const re = new RegExp(`^${"\\*".repeat(all[k].level)} `);
   for (const h of all) {
-    if (h.start < from || h.start > end || !re.test(gnista.lineText(h.line))) continue;
-    if (!gnista.invisibleAt(h.start) && gnista.invisibleAt(h.end)) showHeadingLine(h);
+    if (h.start < from || h.start > end || !re.test(e8.lineText(h.line))) continue;
+    if (!e8.invisibleAt(h.start) && e8.invisibleAt(h.end)) showHeadingLine(h);
   }
   hideDrawersIn(lineAt(from), end);
   showEmptyLines("overview", [from, end]);
@@ -2973,43 +2973,43 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
  * that shows; otherwise, as org-cut-subtree calls it, what is really there.
  */
 export function copySubtree(cut: boolean, n: number, visible: boolean): void {
-  const p = gnista.point();
+  const p = e8.point();
   const [all, found] = backToHeading(true);
   let i = found;
   for (const a of [found, ...ancestors(all, found)]) {
     i = a;
-    if (!visible || !gnista.invisibleAt(all[a].start)) break;
+    if (!visible || !e8.invisibleAt(all[a].start)) break;
   }
   let j = i;
   for (let k = 1; k < n; k++) j = sibling(all, j, 1) ?? j;
   const [beg, end] = [all[i].start, subtreeRegion(all, j)[1]];
   if (end <= beg) return;
-  const mark = gnista.mark();
+  const mark = e8.mark();
   // Whether the tree shows folded, so pasting it back can fold it again.
-  const folded = gnista.invisibleAt(all[i].end);
+  const folded = e8.invisibleAt(all[i].end);
   // Point after the mark, as Org passes them in order, so a kill joining
   // an earlier one goes after it.
-  gnista.setMark(beg);
-  gnista.gotoChar(end);
-  gnista.call(cut ? "kill-region" : "kill-ring-save");
-  gnista.setVariable("org-subtree-clip-folded", folded);
-  gnista.setVariable("org-subtree-clip", gnista.currentKill());
+  e8.setMark(beg);
+  e8.gotoChar(end);
+  e8.call(cut ? "kill-region" : "kill-ring-save");
+  e8.setVariable("org-subtree-clip-folded", folded);
+  e8.setVariable("org-subtree-clip", e8.currentKill());
   const moved = (x: number): number => (!cut || x <= beg ? x : x >= end ? x - (end - beg) : beg);
-  gnista.setMark(mark === undefined ? null : moved(mark));
-  gnista.gotoChar(moved(p));
-  gnista.message(`${cut ? "Cut" : "Copied"}: Subtree(s) with ${end - beg} characters`);
+  e8.setMark(mark === undefined ? null : moved(mark));
+  e8.gotoChar(moved(p));
+  e8.message(`${cut ? "Cut" : "Copied"}: Subtree(s) with ${end - beg} characters`);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-cut-subtree",
   doc: "Kill the subtree point is in, so C-c C-x C-y or C-y can put it back.",
-  run: () => copySubtree(true, gnista.prefixNumericValue(), false),
+  run: () => copySubtree(true, e8.prefixNumericValue(), false),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-copy-subtree",
   doc: "Copy the subtree point is in to the kill ring.",
-  run: () => copySubtree(false, gnista.prefixNumericValue(), gnista.calledInteractively()),
+  run: () => copySubtree(false, e8.prefixNumericValue(), e8.calledInteractively()),
 });
 
 /** Whether text is one or more subtrees: it starts with a heading and none after is higher, as org-kill-is-subtree-p says. */
@@ -3030,19 +3030,19 @@ function levelHere(): number {
  * point, as org-paste-subtree does: before the heading point is at the
  * start of, or else before the next visible heading.
  */
-export function pasteSubtree(level: gnista.PrefixArg): void {
-  const txt = gnista.currentKill();
+export function pasteSubtree(level: e8.PrefixArg): void {
+  const txt = e8.currentKill();
   if (!killIsSubtree(txt)) throw new Error("The kill is not a (set of) tree(s).  Use \u2018C-y\u2019 to yank anyway");
-  const visible = !gnista.invisibleAt(gnista.point());
+  const visible = !e8.invisibleAt(e8.point());
   const old = /^(\*+) /m.exec(txt)?.[1].length ?? -1;
   const c4 = Array.isArray(level) && level[0] === 4;
   const c16 = Array.isArray(level) && level[0] === 16;
   const line = lineAt();
-  const text = gnista.lineText(line);
-  const atBol = gnista.point() === gnista.lineStart(line);
+  const text = e8.lineText(line);
+  const atBol = e8.point() === e8.lineStart(line);
   let indicator: number | undefined;
   let force: number | undefined;
-  if ((level === null || c4 || c16) && /^\*+[ \t]*$/.test(text) && gnista.bufferText(gnista.point(), gnista.point() + 1) !== "*") {
+  if ((level === null || c4 || c16) && /^\*+[ \t]*$/.test(text) && e8.bufferText(e8.point(), e8.point() + 1) !== "*") {
     indicator = (/^\*+/.exec(text) as RegExpExecArray)[0].length;
     force = indicator;
   } else if (c4) force = levelHere();
@@ -3054,31 +3054,31 @@ export function pasteSubtree(level: gnista.PrefixArg): void {
   const next = shown.find((h) => h.line > line)?.level ?? 1;
   const fresh = force ?? Math.max(c16 ? prev + 1 : 0, prev, next);
   let shift = old === -1 || fresh === -1 || old === fresh ? 0 : fresh - old;
-  if (indicator !== undefined) gnista.deleteRegion(gnista.lineStart(line), lineStartOrEnd(line + 1));
+  if (indicator !== undefined) e8.deleteRegion(e8.lineStart(line), lineStartOrEnd(line + 1));
   const here = lineAt();
-  if (!(gnista.point() === gnista.lineStart(here) && parseHeading(here) && !c4 && !c16)) {
+  if (!(e8.point() === e8.lineStart(here) && parseHeading(here) && !c4 && !c16)) {
     if (c4) {
       const i = headingIndex(headings(), here);
-      if (i !== undefined) gnista.gotoChar(subtreeEnd(headings(), i));
+      if (i !== undefined) e8.gotoChar(subtreeEnd(headings(), i));
     }
     const after = headings().filter(visible_).find((h) => h.line > lineAt());
-    gnista.gotoChar(after ? after.start : gnista.bufferSize());
-    if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
+    e8.gotoChar(after ? after.start : e8.bufferSize());
+    if (e8.point() !== e8.lineStart(lineAt())) e8.insert("\n");
   }
-  let beg = gnista.point();
+  let beg = e8.point();
   // Org combines the paste's changes into one, after which its fold checks
   // change nothing here.
   withoutFoldChecks(() => {
-    gnista.insert(txt);
-    if (!txt.endsWith("\n")) gnista.insert("\n");
+    e8.insert(txt);
+    if (!txt.endsWith("\n")) e8.insert("\n");
   });
-  const end = gnista.point();
-  gnista.gotoChar(beg);
-  while (gnista.point() < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(gnista.point(), gnista.point() + 1))) {
-    gnista.gotoChar(gnista.point() + 1);
+  const end = e8.point();
+  e8.gotoChar(beg);
+  while (e8.point() < e8.bufferSize() && /[ \t\n\r]/.test(e8.bufferText(e8.point(), e8.point() + 1))) {
+    e8.gotoChar(e8.point() + 1);
   }
-  beg = gnista.point();
-  if (gnista.invisibleAt(beg) && visible) showHeadingLine(parseHeading(lineAt(beg)) as Heading);
+  beg = e8.point();
+  if (e8.invisibleAt(beg) && visible) showHeadingLine(parseHeading(lineAt(beg)) as Heading);
   const endMark = marker(end);
   while (shift !== 0) {
     for (const h of headings().filter((x) => x.start >= beg && x.start < endMark.pos).reverse()) {
@@ -3087,10 +3087,10 @@ export function pasteSubtree(level: gnista.PrefixArg): void {
     shift += shift > 0 ? -1 : 1;
   }
   dropMarker(endMark);
-  gnista.gotoChar(beg);
-  gnista.message(`Clipboard pasted as level ${fresh} subtree`);
+  e8.gotoChar(beg);
+  e8.message(`Clipboard pasted as level ${fresh} subtree`);
   // A tree folded when it was killed or copied comes back folded.
-  if (gnista.variable("org-subtree-clip") === gnista.currentKill() && gnista.variable("org-subtree-clip-folded") === true) {
+  if (e8.variable("org-subtree-clip") === e8.currentKill() && e8.variable("org-subtree-clip-folded") === true) {
     foldSubtree(lineAt());
   }
 }
@@ -3101,21 +3101,21 @@ function foldSubtree(line: number): void {
   const i = headingIndex(all, line);
   if (i === undefined) return;
   const next = subtreeRegion(all, i)[1];
-  const end = next >= gnista.bufferSize() ? gnista.bufferSize() : next - 1;
+  const end = next >= e8.bufferSize() ? e8.bufferSize() : next - 1;
   if (end > all[i].end) flag(all[i].end, end, true);
 }
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-subtree-clip",
   doc: "The last subtree org-cut-subtree or org-copy-subtree put on the kill ring.",
   value: null,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-subtree-clip-folded",
   doc: "Whether the subtree in org-subtree-clip was folded when it was cut or copied.",
   value: false,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-yank-folded-subtrees",
   doc: "Whether C-y folds the subtrees it yanks, unless folding would hide text after them.",
   value: true,
@@ -3125,52 +3125,52 @@ gnista.defineVariable({
  * Yanks, as org-yank does: a kill that is a set of subtrees, yanked at the
  * start of a line, comes in folded, unless folding would hide text after it.
  */
-function orgYank(arg: gnista.PrefixArg): void {
-  gnista.setThisCommand("yank");
+function orgYank(arg: e8.PrefixArg): void {
+  e8.setThisCommand("yank");
   if (arg !== null) {
-    gnista.callWithPrefix(arg, "yank");
+    e8.callWithPrefix(arg, "yank");
     return;
   }
-  const p = gnista.point();
-  const ls = gnista.lineStart(lineAt());
+  const p = e8.point();
+  const ls = e8.lineStart(lineAt());
   // As org-kill-is-subtree-p does, an empty kill ring is no subtree.
   let kill = "";
   try {
-    kill = gnista.currentKill();
+    kill = e8.currentKill();
   } catch {
     kill = "";
   }
   const subtreep =
     killIsSubtree(kill) &&
-    (p === ls || (/^[ \t]*$/.test(gnista.bufferText(p, gnista.lineEnd(lineAt()))) && /^\*+$/.test(gnista.bufferText(ls, p))));
-  if (!subtreep || gnista.variable("org-yank-folded-subtrees") !== true) {
-    gnista.call("yank");
+    (p === ls || (/^[ \t]*$/.test(e8.bufferText(p, e8.lineEnd(lineAt()))) && /^\*+$/.test(e8.bufferText(ls, p))));
+  if (!subtreep || e8.variable("org-yank-folded-subtrees") !== true) {
+    e8.call("yank");
     return;
   }
   const beg = p;
-  gnista.call("yank");
-  const end = gnista.point();
-  gnista.gotoChar(beg);
+  e8.call("yank");
+  const end = e8.point();
+  e8.gotoChar(beg);
   const swallows = (): boolean => {
     let q = beg;
     while (q < end && !parseHeading(lineAt(q))) q = lineStartOrEnd(lineAt(q) + 1);
     const level = parseHeading(lineAt(Math.min(q, end)))?.level ?? 0;
     let r = end;
-    while (r < gnista.bufferSize() && /[ \t\r\n\v\f]/.test(gnista.bufferText(r, r + 1))) r++;
-    if (r >= gnista.bufferSize()) return false;
-    const h = r === gnista.lineStart(lineAt(r)) ? parseHeading(lineAt(r)) : undefined;
+    while (r < e8.bufferSize() && /[ \t\r\n\v\f]/.test(e8.bufferText(r, r + 1))) r++;
+    if (r >= e8.bufferSize()) return false;
+    const h = r === e8.lineStart(lineAt(r)) ? parseHeading(lineAt(r)) : undefined;
     return !(h && h.level <= level);
   };
-  if (beg === gnista.lineStart(lineAt(beg))) {
-    if (swallows()) gnista.message("Inserted text not folded because that would swallow text");
+  if (beg === e8.lineStart(lineAt(beg))) {
+    if (swallows()) e8.message("Inserted text not folded because that would swallow text");
     else {
       let q = beg;
       if (!parseHeading(lineAt(q))) {
         while (q < end && !parseHeading(lineAt(q))) q = lineStartOrEnd(lineAt(q) + 1);
         q = Math.min(q, end);
       }
-      while (q < end && q === gnista.lineStart(lineAt(q)) && parseHeading(lineAt(q))) {
-        gnista.gotoChar(q);
+      while (q < end && q === e8.lineStart(lineAt(q)) && parseHeading(lineAt(q))) {
+        e8.gotoChar(q);
         foldSubtree(lineAt(q));
         showEmptyLines("folded");
         const all = headings();
@@ -3181,60 +3181,60 @@ function orgYank(arg: gnista.PrefixArg): void {
     }
   }
   let r = end;
-  while (r < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(r, r + 1))) r++;
-  gnista.gotoChar(gnista.lineStart(lineAt(r)));
-  gnista.pushMark(beg);
+  while (r < e8.bufferSize() && /[ \t\n\r]/.test(e8.bufferText(r, r + 1))) r++;
+  e8.gotoChar(e8.lineStart(lineAt(r)));
+  e8.pushMark(beg);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-yank",
   doc:
     "C-y in Org: yank, folding the subtrees yanked at the start of a line, as org-yank-folded-subtrees says, " +
     "unless that would hide text after them.",
-  run: () => orgYank(gnista.prefixArg()),
+  run: () => orgYank(e8.prefixArg()),
 });
 
 function visible_(h: Heading): boolean {
   return visible(h);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-paste-subtree",
   doc: "Paste the last kill as a subtree, its levels changed to fit the headings around point.",
-  run: () => pasteSubtree(gnista.prefixArg()),
+  run: () => pasteSubtree(e8.prefixArg()),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-fix-tags-on-the-fly",
   doc: "Align the tags of the heading point is on, if point is before them, as typing on a heading does.",
   run: () => {
     const line = lineAt();
-    const m = /^\*+ (?:.*[ \t])?(:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u.exec(gnista.lineText(line));
-    if (m && gnista.point() < gnista.lineStart(line) + charCount(gnista.lineText(line).slice(0, m[0].length - m[1].length - (/[ \t]*$/.exec(m[0])?.[0].length ?? 0)))) {
+    const m = /^\*+ (?:.*[ \t])?(:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u.exec(e8.lineText(line));
+    if (m && e8.point() < e8.lineStart(line) + charCount(e8.lineText(line).slice(0, m[0].length - m[1].length - (/[ \t]*$/.exec(m[0])?.[0].length ?? 0)))) {
       alignTags(line);
     }
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-paste-special",
   doc: "Paste a subtree at the right level, or in a table, the fields last cut or copied from one.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-paste-rectangle");
-    else gnista.callWithPrefix(gnista.prefixArg(), "org-paste-subtree");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-paste-rectangle");
+    else e8.callWithPrefix(e8.prefixArg(), "org-paste-subtree");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-cut-special",
   doc: "Cut the subtree point is in, or in a table, blank the field at point or the fields in the region.",
-  run: () => gnista.callInteractively(/^[ \t]*\|/.test(gnista.lineText(lineAt())) ? "org-table-cut-region" : "org-cut-subtree"),
+  run: () => e8.callInteractively(/^[ \t]*\|/.test(e8.lineText(lineAt())) ? "org-table-cut-region" : "org-cut-subtree"),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-copy-special",
   doc: "Copy the subtree point is in, or in a table, the field at point or the fields in the region.",
-  run: () => gnista.callInteractively(/^[ \t]*\|/.test(gnista.lineText(lineAt())) ? "org-table-copy-region" : "org-copy-subtree"),
+  run: () => e8.callInteractively(/^[ \t]*\|/.test(e8.lineText(lineAt())) ? "org-table-copy-region" : "org-copy-subtree"),
 });
 
 // Commands: TODO states, priorities and tags
@@ -3252,15 +3252,15 @@ export function setTodo(h: Heading, state: string | undefined): void {
 /** Replaces a heading's TODO keyword and the spaces around it, as org-todo does, so point there moves past the new one. */
 function replaceTodoKeyword(h: Heading, state: string | undefined): void {
   const from = h.start + h.level;
-  const rest = gnista.bufferText(from, h.end);
+  const rest = e8.bufferText(from, h.end);
   const kw = h.todo === undefined ? undefined : new RegExp(`^ +${escapeRegExp(h.todo)}(?: +|[ \t]*$)`).exec(rest);
   const old = kw ? kw[0] : (/^ */.exec(rest)?.[0] ?? "");
-  const p = marker(gnista.point());
+  const p = marker(e8.point());
   withoutFoldChecks(() => {
     edDelete(from, from + charCount(old));
     edInsert(from, state === undefined ? " " : ` ${state} `, true);
   });
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -3273,14 +3273,14 @@ function fixPositionAfterTodo(line: number): void {
   const fresh = parseHeading(line);
   if (!fresh) return;
   const end = fresh.todoAt !== undefined ? fresh.todoAt + charCount(fresh.todo ?? "") : fresh.start + fresh.level;
-  const after = gnista.bufferText(end, gnista.lineEnd(line));
+  const after = e8.bufferText(end, e8.lineEnd(line));
   if (!/^ /.test(after) || /^ *:/.test(after)) return;
   // just-one-space
   const spaces = /^[ \t]*/.exec(after)?.[0].length ?? 0;
   if (spaces > 1) {
-    const p = marker(gnista.point());
+    const p = marker(e8.point());
     edDelete(end + 1, end + spaces);
-    gnista.gotoChar(p.pos);
+    e8.gotoChar(p.pos);
     dropMarker(p);
   }
 }
@@ -3312,7 +3312,7 @@ function todo(direction: number, state?: string): void {
   const next = state === undefined ? nextState(before, direction) : state === "" ? undefined : state;
   replaceTodoKeyword(h, next);
   if (parseHeading(h.line)?.tagsAt !== undefined) alignTagsAway(h.line);
-  const logDone = gnista.variable("org-log-done");
+  const logDone = e8.variable("org-log-done");
   const dolog = logHow(next, before);
   // As org-todo: CLOSED goes when the state does, or goes back to not done; it comes when done.
   if (todoSets().some((s) => s.logs.length > 0) || (logDone !== null && logDone !== false)) {
@@ -3324,7 +3324,7 @@ function todo(direction: number, state?: string): void {
   let note: [string, string | undefined] | undefined;
   if (isDone(next) && !isDone(before)) note = autoRepeat(h.line, before, next as string);
   if (!note && next !== undefined && dolog !== undefined) note = [next, before];
-  gnista.runHooks("org-after-todo-state-change-hook");
+  e8.runHooks("org-after-todo-state-change-hook");
   fixPositionAfterTodo(h.line);
   // Org stores the note from post-command-hook, after the command.
   if (note) storeStateNote(h.line, note[0], note[1]);
@@ -3338,48 +3338,48 @@ function todo(direction: number, state?: string): void {
 function fastTodoSelection(current: string | undefined): string | undefined {
   const sets = todoSets();
   const keyed = sets.flatMap((s) => s.keys);
-  const field = 3 + 1 + 3 + Math.max(...keyed.map(([k]) => gnista.stringWidth(k)));
+  const field = 3 + 1 + 3 + Math.max(...keyed.map(([k]) => e8.stringWidth(k)));
   const name = " *Org todo*";
-  gnista.getBufferCreate(name);
-  return gnista.saveWindowExcursion(() => {
-    const below = gnista.splitWindow(undefined, "below");
-    gnista.selectWindow(below);
-    gnista.call("switch-to-buffer", name);
-    const perRow = Math.floor(((gnista.windowSize()?.width ?? 80) - 4) / field);
-    gnista.withCurrentBuffer(name, () => {
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        gnista.deleteRegion(0, gnista.bufferSize());
+  e8.getBufferCreate(name);
+  return e8.saveWindowExcursion(() => {
+    const below = e8.splitWindow(undefined, "below");
+    e8.selectWindow(below);
+    e8.call("switch-to-buffer", name);
+    const perRow = Math.floor(((e8.windowSize()?.width ?? 80) - 4) / field);
+    e8.withCurrentBuffer(name, () => {
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        e8.deleteRegion(0, e8.bufferSize());
         let n = 0;
         for (const set of sets) {
           if (n !== 0) {
             n = 0;
-            gnista.insert("\n");
+            e8.insert("\n");
           }
-          gnista.insert("{ ");
+          e8.insert("{ ");
           set.keys.forEach(([kw, key], j) => {
-            if (n === 0) gnista.insert("  ");
-            const at = gnista.point() + 4;
-            gnista.insert(`[${key ?? ""}] ${kw}${" ".repeat(Math.max(0, field - 4 - charCount(kw)))}`);
-            gnista.putTextProperty(at, at + charCount(kw), "face", isDone(kw) ? "org-done" : "org-todo");
+            if (n === 0) e8.insert("  ");
+            const at = e8.point() + 4;
+            e8.insert(`[${key ?? ""}] ${kw}${" ".repeat(Math.max(0, field - 4 - charCount(kw)))}`);
+            e8.putTextProperty(at, at + charCount(kw), "face", isDone(kw) ? "org-done" : "org-todo");
             n++;
             if (n === perRow && j < set.keys.length - 1) {
-              gnista.insert("\n");
+              e8.insert("\n");
               n = 0;
             }
           });
           n = 0;
-          gnista.insert("}\n");
+          e8.insert("}\n");
         }
-        gnista.gotoChar(0);
+        e8.gotoChar(0);
       });
     });
-    gnista.call("shrink-window-if-larger-than-buffer");
-    const key = gnista.readKey("[a-z..]:Set [SPC]:clear");
+    e8.call("shrink-window-if-larger-than-buffer");
+    const key = e8.readKey("[a-z..]:Set [SPC]:clear");
     if (key === "SPC" || key === " ") return undefined;
     // A key of the current state's sequence wins over another sequence's.
     const own = sets.find((s) => current !== undefined && s.keys.some(([k]) => k === current));
     const found = own?.keys.find(([, k]) => k === key) ?? keyed.find(([, k]) => k === key);
-    if (found === undefined || key === "C-g") gnista.signal("quit", "Quit");
+    if (found === undefined || key === "C-g") e8.signal("quit", "Quit");
     return found[0];
   });
 }
@@ -3395,8 +3395,8 @@ function autoRepeat(line: number, last: string | undefined, done: string): [stri
   const end = entryEnd(all, headingIndex(all, line) as number);
   const repeating = /<[0-9]{4}-[0-9][0-9]-[0-9][0-9] [^>\n]*?([.+]?\+([0-9]+)[hdwmy](?:\/[0-9]+[hdwmy])?)/;
   let found = false;
-  for (let l = line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
-    const m = repeating.exec(gnista.lineText(l));
+  for (let l = line + 1; l < e8.lineCount() && e8.lineStart(l) < end; l++) {
+    const m = repeating.exec(e8.lineText(l));
     if (m) {
       found = Number(m[2]) !== 0;
       break;
@@ -3406,16 +3406,16 @@ function autoRepeat(line: number, last: string | undefined, done: string): [stri
   // Back to the first state of its sequence, or to none.
   const set = todoSets().find((t) => last !== undefined && (t.todo.includes(last) || t.done.includes(last)));
   const to = set ? set.todo[0] ?? set.done[0] : undefined;
-  const p = marker(gnista.point());
-  gnista.gotoChar(h.start);
+  const p = marker(e8.point());
+  e8.gotoChar(h.start);
   replaceTodoKeyword(parseHeading(line) as Heading, to);
   if (parseHeading(line)?.tagsAt !== undefined) alignTagsAway(line);
   updateParentTodoStatistics(line);
   setPlanning(line, "CLOSED", undefined);
-  const log = gnista.variable("org-log-repeat");
+  const log = e8.variable("org-log-repeat");
   if (log) entryPut(line, "LAST_REPEAT", `[${formatTimestamp(today(true), true)}]`);
   repeatEntry(parseHeading(line) as Heading);
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
   return log ? [done, last ?? ""] : undefined;
 }
@@ -3430,22 +3430,22 @@ function updateParentTodoStatistics(line: number): void {
   const i = headingIndex(all, line);
   if (i === undefined) return;
   const parent = ancestors(all, i)[0];
-  if (parent === undefined || !HAS_COOKIE.test(gnista.lineText(all[parent].line))) return;
+  if (parent === undefined || !HAS_COOKIE.test(e8.lineText(all[parent].line))) return;
   if (mapRegionStart && all[parent].start < mapRegionStart.pos) return;
   const level = all[i].level;
   const end = subtreeRegion(all, parent)[1];
   const children: Heading[] = [];
   for (let k = parent + 1; k < all.length && all[k].start < end; k++) if (all[k].level === level) children.push(all[k]);
-  const p = marker(gnista.point());
+  const p = marker(e8.point());
   withoutFoldChecks(() => {
     writeCookies(all[parent].line, children.filter((h) => isDone(h.todo)).length, children.filter((h) => h.todo !== undefined).length);
   });
   if (parseHeading(all[parent].line)?.tagsAt !== undefined) alignTagsAway(all[parent].line);
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
 }
 
-const todoCommand = gnista.defineCommand({
+const todoCommand = e8.defineCommand({
   name: "org-todo",
   doc:
     "Change the TODO state of the heading point is under to the next one: none, TODO, DONE and back to none.\n\n" +
@@ -3453,9 +3453,9 @@ const todoCommand = gnista.defineCommand({
     "date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do. With the region active, " +
     "every heading in it changes (org-loop-over-headlines-in-active-region).",
   run: () => {
-    const arg = gnista.prefixArg();
+    const arg = e8.prefixArg();
     // A number picks that state; with fast-access keys, a key does, as org-use-fast-todo-selection says.
-    const fast = gnista.variable("org-use-fast-todo-selection");
+    const fast = e8.variable("org-use-fast-todo-selection");
     const change = () => {
       if (typeof arg === "number" && arg > 0) {
         const kw = allKeywords()[arg - 1];
@@ -3481,23 +3481,23 @@ let mapRegionStart: Marker | undefined;
  * Returns whether it applied.
  */
 function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
-  const mark = gnista.mark();
-  if (!orgRegionActive() || mark === undefined || gnista.variable("org-loop-over-headlines-in-active-region") !== true) return false;
-  const [rb, re] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
-  if (todoQuirk && gnista.invisibleAt(gnista.point())) {
+  const mark = e8.mark();
+  if (!orgRegionActive() || mark === undefined || e8.variable("org-loop-over-headlines-in-active-region") !== true) return false;
+  const [rb, re] = [Math.min(mark, e8.point()), Math.max(mark, e8.point())];
+  if (todoQuirk && e8.invisibleAt(e8.point())) {
     // org-todo gives org-map-entries (when (org-invisible-p) (org-end-of-subtree
     // nil t)) to skip with, which runs once, there and then: point goes to the
     // end of the hidden subtree, and that position skips every heading.
     const all = headings();
     const i = headingIndex(all, lineAt());
-    gnista.gotoChar(i === undefined ? gnista.bufferSize() : subtreeRegion(all, i)[1]);
+    e8.gotoChar(i === undefined ? e8.bufferSize() : subtreeRegion(all, i)[1]);
     return true;
   }
   const outer = mapRegionStart;
   mapRegionStart = marker(rb);
-  const atHeadingStart = re === gnista.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
-  const end = marker(atHeadingStart ? re : (headings().find((h) => h.start > re)?.start ?? gnista.bufferSize()));
-  const origin = marker(gnista.point());
+  const atHeadingStart = re === e8.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
+  const end = marker(atHeadingStart ? re : (headings().find((h) => h.start > re)?.start ?? e8.bufferSize()));
+  const origin = marker(e8.point());
   try {
     let at = marker(rb);
     for (;;) {
@@ -3505,13 +3505,13 @@ function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
       if (!h) break;
       dropMarker(at);
       at = marker(h.end);
-      if (gnista.invisibleAt(h.start)) continue;
-      gnista.gotoChar(h.start);
+      if (e8.invisibleAt(h.start)) continue;
+      e8.gotoChar(h.start);
       body();
     }
     dropMarker(at);
   } finally {
-    gnista.gotoChar(origin.pos);
+    e8.gotoChar(origin.pos);
     dropMarker(origin);
     dropMarker(end);
     dropMarker(mapRegionStart);
@@ -3520,7 +3520,7 @@ function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
   return true;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-todo-set",
   doc: "Set the TODO state of the heading point is under, or remove it with an empty state.",
   params: [{ name: "state", prompt: "TODO state: " }],
@@ -3531,12 +3531,12 @@ gnista.defineCommand({
 function priority(direction: number): void {
   const [all, i] = backToHeading();
   const h = all[i];
-  const highest = String(gnista.variable("org-priority-highest") ?? "A").charCodeAt(0);
-  const lowest = String(gnista.variable("org-priority-lowest") ?? "C").charCodeAt(0);
-  const fallback = String(gnista.variable("org-priority-default") ?? "B").charCodeAt(0);
-  const text = gnista.lineText(h.line);
+  const highest = String(e8.variable("org-priority-highest") ?? "A").charCodeAt(0);
+  const lowest = String(e8.variable("org-priority-lowest") ?? "C").charCodeAt(0);
+  const fallback = String(e8.variable("org-priority-default") ?? "B").charCodeAt(0);
+  const text = e8.lineText(h.line);
   const cookie = /^.*?(\[#([A-Z0-9]+)\] ?)/.exec(text);
-  const again = gnista.lastCommand() === gnista.thisCommand();
+  const again = e8.lastCommand() === e8.thisCommand();
   let next: number;
   if (cookie) next = cookie[2].charCodeAt(0) - direction;
   else next = again ? (direction > 0 ? lowest : highest) : fallback;
@@ -3545,7 +3545,7 @@ function priority(direction: number): void {
     if (!cookie && !again) throw new Error("The default can not be set, see \u2018org-priority-default\u2019 why");
     remove = true;
   }
-  const p = marker(gnista.point());
+  const p = marker(e8.point());
   if (cookie) {
     const start = h.start + charCount(cookie[0].slice(0, cookie[0].length - cookie[1].length));
     if (remove) edDelete(start, start + charCount(cookie[1]));
@@ -3555,31 +3555,31 @@ function priority(direction: number): void {
     }
   } else if (remove) {
     dropMarker(p);
-    gnista.userError("No priority cookie found in line");
+    e8.userError("No priority cookie found in line");
   } else if (h.todoAt !== undefined) {
     edInsert(h.todoAt + charCount(h.todo ?? ""), ` [#${String.fromCharCode(next)}]`);
   } else {
     edInsert(h.titleAt, `[#${String.fromCharCode(next)}] `);
   }
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
   if (parseHeading(h.line)?.tagsAt !== undefined) alignTagsAway(h.line);
-  gnista.message(remove ? "Priority removed" : `Priority of current item set to ${String.fromCharCode(next)}`);
+  e8.message(remove ? "Priority removed" : `Priority of current item set to ${String.fromCharCode(next)}`);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-priority-up",
   doc: "Raise the priority of the heading point is under: none starts at the default, and above the highest is none.",
   run: () => priority(1),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-priority-down",
   doc: "Lower the priority of the heading point is under: none starts at the default, and below the lowest is none.",
   run: () => priority(-1),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-priority",
   doc: "Set the priority of the heading point is under to a letter, or remove it with SPC or an empty answer.",
   params: [{ name: "priority", prompt: "Priority A-C, SPC to remove: " }],
@@ -3589,50 +3589,50 @@ gnista.defineCommand({
     const letter = answer.trim().toUpperCase();
     if (h.priorityAt !== undefined) {
       const end = h.priorityAt + 4;
-      replaceText(h.priorityAt, letter === "" ? (gnista.bufferText(end, end + 1) === " " ? end + 1 : end) : end, letter === "" ? "" : `[#${letter}]`);
+      replaceText(h.priorityAt, letter === "" ? (e8.bufferText(end, end + 1) === " " ? end + 1 : end) : end, letter === "" ? "" : `[#${letter}]`);
     } else if (letter !== "") {
       const at = h.todoAt !== undefined ? h.todoAt + charCount(h.todo ?? "") + 1 : h.start + h.level + 1;
       replaceText(Math.min(at, h.end), Math.min(at, h.end), at > h.end ? ` [#${letter}]` : `[#${letter}] `);
     }
     if (letter === "") {
-      if (h.priorityAt !== undefined) gnista.message("Priority removed");
-    } else gnista.message(`Priority of current item set to ${letter}`);
+      if (h.priorityAt !== undefined) e8.message("Priority removed");
+    } else e8.message(`Priority of current item set to ${letter}`);
   },
 });
 
 /** Puts a heading's tags at org-tags-column, or a space after the title if it is too long. */
 export function alignTags(line: number): void {
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const m = /^\*+ (?:.*[ \t])?(:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u.exec(text);
   if (!m) return;
-  const ls = gnista.lineStart(line);
+  const ls = e8.lineStart(line);
   const tagsIndex = m[0].length - m[1].length - (/[ \t]*$/.exec(m[0])?.[0].length ?? 0);
   const tagsStart = ls + charCount(text.slice(0, tagsIndex));
   const blankIndex = text.slice(0, tagsIndex).replace(/[ \t]+$/, "").length;
   const blankStart = ls + charCount(text.slice(0, blankIndex));
-  const column = Number(gnista.variable("org-tags-column") ?? -77);
-  const blankColumn = gnista.stringWidth(text.slice(0, blankIndex));
-  const want = Math.max(column >= 0 ? column : -column - gnista.stringWidth(m[1]), blankColumn + 1);
-  const current = gnista.stringWidth(text.slice(0, tagsIndex));
+  const column = Number(e8.variable("org-tags-column") ?? -77);
+  const blankColumn = e8.stringWidth(text.slice(0, blankIndex));
+  const want = Math.max(column >= 0 ? column : -column - e8.stringWidth(m[1]), blankColumn + 1);
+  const current = e8.stringWidth(text.slice(0, tagsIndex));
   if (want === current) return;
   // As org--align-tags-here does: point in the blanks keeps its column,
   // and elsewhere it moves as a marker does.
-  const p = gnista.point();
+  const p = e8.point();
   const inBlank = lineAt(p) === line && p > blankStart && p <= tagsStart;
   const origin = marker(p);
   edDelete(blankStart, tagsStart);
   edInsert(blankStart, " ".repeat(want - blankColumn));
-  if (inBlank) gnista.gotoChar(Math.min(ls + (p - ls), gnista.lineEnd(line)));
-  else gnista.gotoChar(origin.pos);
+  if (inBlank) e8.gotoChar(Math.min(ls + (p - ls), e8.lineEnd(line)));
+  else e8.gotoChar(origin.pos);
   dropMarker(origin);
 }
 
 /** Aligns a heading's tags with point at the heading, as Org does inside save-excursion, so point moves as a marker. */
 function alignTagsAway(line: number): void {
-  const p = marker(gnista.point());
-  gnista.gotoChar(gnista.lineStart(line));
+  const p = marker(e8.point());
+  e8.gotoChar(e8.lineStart(line));
   alignTags(line);
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -3642,36 +3642,36 @@ function setTags(tags: string[]): void {
   const h = all[i];
   if (tags.join(":") === h.tags.join(":")) return;
   // The tags go, and the spaces before them, or trailing spaces if there are none.
-  const text = gnista.lineText(h.line);
+  const text = e8.lineText(h.line);
   const before = text.slice(0, h.tagsAt !== undefined ? indexOf(h.line, text, h.tagsAt) : text.length).replace(/[ \t]+$/, "");
   replaceText(h.start + charCount(before), h.end, "");
-  if (!parseHeading(h.line)) replaceText(gnista.lineEnd(h.line), gnista.lineEnd(h.line), " ");
+  if (!parseHeading(h.line)) replaceText(e8.lineEnd(h.line), e8.lineEnd(h.line), " ");
   if (tags.length === 0) return;
-  const end = gnista.lineEnd(h.line);
+  const end = e8.lineEnd(h.line);
   replaceText(end, end, ` :${tags.join(":")}:`);
   alignTags(h.line);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-set-tags",
   doc: "Give the heading point is under these tags, written as :work:home: or work home; empty removes them.",
   params: [{ name: "tags", prompt: "Tags: ", history: "org-tags-history" }],
   run: (answer: string) => setTags(answer.split(/[:\s,]+/).filter((t) => t !== "")),
 });
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-tag-alist",
   doc:
     'The tags to offer, as [tag, key] lists, a key a character, or [":startgroup"] and [":endgroup"] around tags ' +
     'of which a heading has only one, and [":newline"]. With keys, C-c C-q picks tags by them.',
   value: [],
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-use-fast-tag-selection",
   doc: "Whether C-c C-q picks tags by single keys: auto when org-tag-alist gives keys, t always, nil never.",
   value: "auto",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-fast-tag-selection-single-key",
   doc: "Whether picking a tag by its key in fast tag selection finishes at once.",
   value: false,
@@ -3693,11 +3693,11 @@ function inheritedTags(all: Heading[], i: number): string[] {
  * a key toggles its tag, keeping one tag of a group; SPC clears them, TAB
  * types one, RET accepts and C-g quits. Returns the tags, or undefined.
  */
-function fastTagSelection(current: string[], inherited: string[], table: gnista.Value[][]): string[] | undefined {
+function fastTagSelection(current: string[], inherited: string[], table: e8.Value[][]): string[] | undefined {
   type Entry = { tag?: string; key?: string; special?: string };
   const entries: Entry[] = table.map((e) => (typeof e[0] === "string" && e[0].startsWith(":") ? { special: e[0] } : { tag: String(e[0]), key: e[1] === undefined || e[1] === null ? undefined : String(e[1]) }));
   const tags = entries.filter((e) => e.tag !== undefined);
-  const field = 3 + 1 + 3 + Math.max(0, ...tags.map((e) => gnista.stringWidth(e.tag!)));
+  const field = 3 + 1 + 3 + Math.max(0, ...tags.map((e) => e8.stringWidth(e.tag!)));
   // Tags without keys get their first letters, or the next free key, as Org assigns them.
   const pool = [..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*+-=<>,.?/;|"];
   const used = new Set(tags.map((e) => e.key).filter((k): k is string => k !== undefined));
@@ -3709,15 +3709,15 @@ function fastTagSelection(current: string[], inherited: string[], table: gnista.
   }
   const groups: string[][] = [];
   let tagsNow = [...current];
-  let single = gnista.variable("org-fast-tag-selection-single-key") === true;
+  let single = e8.variable("org-fast-tag-selection-single-key") === true;
   const name = " *Org tags*";
   const draw = () => {
-    gnista.letBind({ "inhibit-read-only": true }, () => {
-      gnista.deleteRegion(0, gnista.bufferSize());
+    e8.letBind({ "inhibit-read-only": true }, () => {
+      e8.deleteRegion(0, e8.bufferSize());
       const put = (text: string, face?: string) => {
-        const at = gnista.point();
-        gnista.insert(text);
-        if (face) gnista.putTextProperty(at, gnista.point(), "face", face);
+        const at = e8.point();
+        e8.insert(text);
+        if (face) e8.putTextProperty(at, e8.point(), "face", face);
       };
       put(`${"Inherited:".padEnd(12)}`);
       put(inherited.join(" "), "org-done");
@@ -3725,12 +3725,12 @@ function fastTagSelection(current: string[], inherited: string[], table: gnista.
       put(tagsNow.join(" "), "org-todo");
       put("\n");
       // The third line says when the next key finishes, as org-fast-tag-show-exit.
-      if (single) put(`${" ".repeat(Math.max(0, (gnista.windowSize()?.width ?? 80) - 19))} Next change exits`, "org-warning");
+      if (single) put(`${" ".repeat(Math.max(0, (e8.windowSize()?.width ?? 80) - 19))} Next change exits`, "org-warning");
       put("\n");
       let n = 0;
       let inGroup = false;
       groups.length = 0;
-      const perRow = Math.max(1, Math.floor(((gnista.windowSize()?.width ?? 80) - 4) / field));
+      const perRow = Math.max(1, Math.floor(((e8.windowSize()?.width ?? 80) - 4) / field));
       for (const e of entries) {
         if (e.special === ":startgroup") {
           groups.push([]);
@@ -3763,7 +3763,7 @@ function fastTagSelection(current: string[], inherited: string[], table: gnista.
         }
       }
       put("\n");
-      gnista.gotoChar(0);
+      e8.gotoChar(0);
     });
   };
   /** Adds a tag or takes it away; adding one takes away the others of its group, as org--add-or-remove-tag. */
@@ -3778,23 +3778,23 @@ function fastTagSelection(current: string[], inherited: string[], table: gnista.
     const order = tags.map((e) => e.tag!);
     tagsNow.sort((a, b) => (order.indexOf(a) < 0 ? 1e6 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 1e6 : order.indexOf(b)));
   };
-  return gnista.saveWindowExcursion(() => {
-    gnista.call("switch-to-buffer-other-window", name);
+  return e8.saveWindowExcursion(() => {
+    e8.call("switch-to-buffer-other-window", name);
     try {
       for (;;) {
         draw();
-        gnista.call("shrink-window-if-larger-than-buffer");
-        const key = gnista.readKey(`[a-z..]:toggle [SPC]:clear [RET]:accept [TAB]:edit [!] ${groups.length === 0 ? "no " : ""}groups [C-c]:${single ? "single" : "multi"}`);
+        e8.call("shrink-window-if-larger-than-buffer");
+        const key = e8.readKey(`[a-z..]:toggle [SPC]:clear [RET]:accept [TAB]:edit [!] ${groups.length === 0 ? "no " : ""}groups [C-c]:${single ? "single" : "multi"}`);
         let changed = false;
         if (key === "RET") return tagsNow;
-        if (key === "C-g" || (key === "q" && !tags.some((e) => e.key === "q"))) gnista.signal("quit", "Quit");
+        if (key === "C-g" || (key === "q" && !tags.some((e) => e.key === "q"))) e8.signal("quit", "Quit");
         if (key === "C-c") single = !single;
         else if (key === "SPC") {
           tagsNow = [];
           changed = true;
         } else if (key === "TAB") {
           const known = [...new Set([...tags.map((e) => e.tag!), ...headings().flatMap((h) => h.tags)])];
-          const typed = gnista.completingRead("Tag: ", known).trim();
+          const typed = e8.completingRead("Tag: ", known).trim();
           if (typed !== "") toggle(typed);
           changed = true;
         } else {
@@ -3808,40 +3808,40 @@ function fastTagSelection(current: string[], inherited: string[], table: gnista.
       }
     } finally {
       // The window goes; the buffer stays, as Org leaves it.
-      for (const w of gnista.windowList()) if (gnista.windowBuffer(w) === name && gnista.windowList().length > 1) gnista.deleteWindow(w);
+      for (const w of e8.windowList()) if (e8.windowBuffer(w) === name && e8.windowList().length > 1) e8.deleteWindow(w);
     }
   });
 }
 
-const setTagsCommand = gnista.defineCommand({
+const setTagsCommand = e8.defineCommand({
   name: "org-set-tags-command",
   doc:
     "Set the tags of the heading point is under. With keys in org-tag-alist, pick them by their keys in " +
     "*Org tags*; else type them, as :work:home: or work home, empty for none. With C-u C-u, type them anyway.",
   run: () => {
     const [all, i] = backToHeading();
-    const table = gnista.variable("org-tag-alist");
-    const fast = gnista.variable("org-use-fast-tag-selection");
+    const table = e8.variable("org-tag-alist");
+    const fast = e8.variable("org-use-fast-tag-selection");
     const keyed = Array.isArray(table) && table.some((e) => Array.isArray(e) && e[1] !== undefined && e[1] !== null && !String(e[0]).startsWith(":"));
-    const arg = gnista.prefixArg();
+    const arg = e8.prefixArg();
     const typed = Array.isArray(arg) && arg[0] === 16;
     if (!typed && Array.isArray(table) && table.length > 0 && (fast === true || (fast === "auto" && keyed))) {
-      const chosen = fastTagSelection(all[i].tags, inheritedTags(all, i), table as gnista.Value[][]);
+      const chosen = fastTagSelection(all[i].tags, inheritedTags(all, i), table as e8.Value[][]);
       if (chosen !== undefined) setTags(chosen);
       return;
     }
-    const answer = gnista.readString("Tags: ", { history: "org-tags-history" });
+    const answer = e8.readString("Tags: ", { history: "org-tags-history" });
     setTags(answer.split(/[:\s,]+/).filter((t) => t !== ""));
   },
 });
 
-gnista.defineVariable({ name: "org-tags-history", doc: "Tags answered to org-set-tags-command, newest first.", value: [] });
+e8.defineVariable({ name: "org-tags-history", doc: "Tags answered to org-set-tags-command, newest first.", value: [] });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-align-tags",
   doc: "Put the tags of the heading point is under at org-tags-column; with a prefix argument, every heading's.",
   run: () => {
-    if (gnista.prefixArg() !== null) {
+    if (e8.prefixArg() !== null) {
       for (const h of headings()) if (h.tags.length > 0) alignTags(h.line);
       return;
     }
@@ -3864,8 +3864,8 @@ export interface DateTime {
 }
 
 export function today(withTime = false): DateTime {
-  // Tests fix the day with gnista--today, as "YYYY-MM-DD".
-  const fixed = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(gnista.variable("gnista--today") ?? ""));
+  // Tests fix the day with e8--today, as "YYYY-MM-DD".
+  const fixed = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(e8.variable("e8--today") ?? ""));
   if (fixed) return { year: Number(fixed[1]), month: Number(fixed[2]), day: Number(fixed[3]), ...(withTime ? { hour: 12, minute: 0 } : {}) };
   const now = new Date();
   const d: DateTime = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
@@ -3917,7 +3917,7 @@ interface Timestamp {
 const TS = /([<[])(\d{4})-(\d{2})-(\d{2})((?: +[^\]+0-9>\r\n -]+)?)((?: +(\d{1,2}):(\d{2}))?)((?:-(\d{1,2}):(\d{2}))?)([^\]>\n]*)([>\]])/g;
 
 function timestampsOn(line: number): Timestamp[] {
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const found: Timestamp[] = [];
   for (const m of allMatches(TS, text)) {
     const i = m.index ?? 0;
@@ -3944,7 +3944,7 @@ function timestampsOn(line: number): Timestamp[] {
 
 /** Whether point is in or just after a timestamp, as org-at-timestamp-p with lax says. */
 function timestampHere(): boolean {
-  const p = gnista.point();
+  const p = e8.point();
   return tsMatches(lineAt()).some((ts) => ts.start <= p && p <= ts.end);
 }
 
@@ -3970,7 +3970,7 @@ interface TsMatch {
 
 /** The timestamps on a line, matched as Org's org-ts-regexp3 matches them. */
 function tsMatches(line: number): TsMatch[] {
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const re =
     /[[<](\d{4})-(\d{2})-(\d{2})(?:( *)([^\]+0-9>\r\n -]+))?(?:( )(\d{1,2}):(\d{2}))?[^\]>\n]{0,16}[\]>]/g;
   const out: TsMatch[] = [];
@@ -4094,21 +4094,21 @@ function modifyTsExtra(extra: string, pos: number, n: number, step: number): str
  * between active and inactive.
  */
 function changeTimestamp(n: number, what?: string, updown = true): void {
-  const origin = gnista.point();
+  const origin = e8.point();
   const ts = tsMatches(lineAt()).find((t) => t.start <= origin && origin <= t.end);
-  if (!ts) gnista.userError("Not at a timestamp");
+  if (!ts) e8.userError("Not at a timestamp");
   const category = timestampCategory(ts, origin);
   if (what === undefined && category === "bracket") {
     const swap: { [c: string]: string } = { "[": "<", "]": ">", "<": "[", ">": "]" };
     replaceText(ts.start, ts.start + 1, swap[ts.text[0]]);
     replaceText(ts.end - 1, ts.end, swap[ts.text[ts.text.length - 1]]);
-    gnista.message(`Timestamp is now ${ts.text[0] === "[" ? "" : "in"}active`);
+    e8.message(`Timestamp is now ${ts.text[0] === "[" ? "" : "in"}active`);
     return;
   }
   const field = what ?? category;
   const inactive = ts.text[0] === "[";
-  gnista.deleteRegion(ts.start, ts.end);
-  gnista.gotoChar(ts.start);
+  e8.deleteRegion(ts.start, ts.end);
+  e8.gotoChar(ts.start);
   const extra = /((?:-[012][0-9]:[0-5][0-9])?(?: +[.+]?-?[-+][0-9]+[hdwmy](?:\/[0-9]+[hdwmy])?)*)[\]>]/.exec(ts.text)?.[1] ?? "";
   const withTime = /^.{10}.*?[0-9]+:[0-9][0-9]/.test(ts.text);
   const parsed = /(\d{4})-(\d{2})-(\d{2})(?: +[^\]+0-9>\r\n -]+)?(?: +(\d{1,2}):(\d{2}))?/.exec(ts.text);
@@ -4119,9 +4119,9 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
     hour: Number(parsed?.[4] ?? 0),
     minute: Number(parsed?.[5] ?? 0),
   };
-  let step = Math.max(Number((gnista.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[1] ?? 5), 1);
+  let step = Math.max(Number((e8.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[1] ?? 5), 1);
   let increment = n;
-  if (updown && field === "minute" && gnista.prefixArg() === null) {
+  if (updown && field === "minute" && e8.prefixArg() === null) {
     increment = step * Math.sign(n);
     const rem = (d.minute ?? 0) % step;
     if (rem !== 0) d.minute = (d.minute ?? 0) + (n > 0 ? -rem : step - rem);
@@ -4140,7 +4140,7 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
   const [open, close] = inactive ? ["[", "]"] : ["<", ">"];
   // As org-insert-timestamp does, before markers: a mark that was in the
   // old timestamp ends up after the new one.
-  gnista.insertBeforeMarkers(`${open}${formatTimestamp(date, withTime)}${tail}${close}`);
+  e8.insertBeforeMarkers(`${open}${formatTimestamp(date, withTime)}${tail}${close}`);
   const fresh = tsMatches(lineAt(ts.start)).find((t) => t.start === ts.start);
   let target = origin;
   if (fresh) {
@@ -4150,7 +4150,7 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
     else if (typeof category === "number") target = Math.min(fresh.end - 1, origin);
     else if (category === "after") target = fresh.end;
   }
-  gnista.gotoChar(target);
+  e8.gotoChar(target);
 }
 
 for (const [name, n, what, doc] of [
@@ -4159,7 +4159,7 @@ for (const [name, n, what, doc] of [
   ["org-timestamp-up-day", 1, "day", "Move the timestamp point is on a day later."],
   ["org-timestamp-down-day", -1, "day", "Move the timestamp point is on a day earlier."],
 ] as [string, number, string | undefined, string][]) {
-  gnista.defineCommand({ name, doc, run: () => changeTimestamp(n * gnista.prefixNumericValue(), what) });
+  e8.defineCommand({ name, doc, run: () => changeTimestamp(n * e8.prefixNumericValue(), what) });
 }
 
 /**
@@ -4205,7 +4205,7 @@ function parseDate(input: string, withTime = false): DateTime {
     d.minute = time[1];
   } else if (withTime) {
     const now = today(true);
-    const step = Number((gnista.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[0] ?? 0) || 1;
+    const step = Number((e8.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[0] ?? 0) || 1;
     d.hour = now.hour;
     d.minute = Math.round((now.minute ?? 0) / step) * step;
     d = normalize(d);
@@ -4214,19 +4214,19 @@ function parseDate(input: string, withTime = false): DateTime {
 }
 
 function insertTimestamp(input: string, active: boolean): void {
-  const withTime = Array.isArray(gnista.prefixArg());
+  const withTime = Array.isArray(e8.prefixArg());
   const date = parseDate(input, withTime);
   const text = active ? `<${formatTimestamp(date)}>` : `[${formatTimestamp(date)}]`;
-  const p = gnista.point();
+  const p = e8.point();
   const ts = tsMatches(lineAt()).find((t) => t.start <= p && p <= t.end);
   if (ts) {
-    gnista.deleteRegion(ts.start, ts.end);
-    gnista.gotoChar(ts.start);
+    e8.deleteRegion(ts.start, ts.end);
+    e8.gotoChar(ts.start);
   }
-  gnista.insert(text);
+  e8.insert(text);
 }
 
-const timestamp = gnista.defineCommand({
+const timestamp = e8.defineCommand({
   name: "org-timestamp",
   doc:
     "Insert an active timestamp, such as <2026-10-28 Wed>, for a date read in the minibuffer; on a timestamp, change it.\n\n" +
@@ -4236,56 +4236,56 @@ const timestamp = gnista.defineCommand({
   run: (input) => insertTimestamp(input, true),
 });
 
-const inactiveTimestamp = gnista.defineCommand({
+const inactiveTimestamp = e8.defineCommand({
   name: "org-timestamp-inactive",
   doc: "Insert an inactive timestamp, such as [2026-10-28 Wed], which the agenda leaves out. See org-timestamp.",
   params: [{ name: "date", prompt: "Date: ", history: "org-read-date-history" }],
   run: (input) => insertTimestamp(input, false),
 });
 
-gnista.defineVariable({ name: "org-read-date-history", doc: "Dates answered to Org's date prompt, newest first.", value: [] });
+e8.defineVariable({ name: "org-read-date-history", doc: "Dates answered to Org's date prompt, newest first.", value: [] });
 
 /** Sets or, with undefined, removes a planning keyword's timestamp on the line after a heading. */
 function setPlanning(headingLine: number, keyword: string, ts: string | undefined): void {
   const next = headingLine + 1;
-  const planning = next < gnista.lineCount() && /^[ \t]*(SCHEDULED|DEADLINE|CLOSED):/.test(gnista.lineText(next));
+  const planning = next < e8.lineCount() && /^[ \t]*(SCHEDULED|DEADLINE|CLOSED):/.test(e8.lineText(next));
   if (!planning) {
     if (ts === undefined) return;
-    const end = gnista.lineEnd(headingLine);
+    const end = e8.lineEnd(headingLine);
     replaceText(end, end, `\n${keyword}: ${ts}`);
     return;
   }
-  const text = gnista.lineText(next);
+  const text = e8.lineText(next);
   const re = new RegExp(`${keyword}: *[<[][^>\\]\\n]*[>\\]]`);
   let updated: string;
   if (re.test(text)) updated = ts === undefined ? text.replace(re, "") : text.replace(re, `${keyword}: ${ts}`);
   else updated = ts === undefined ? text : `${text.trimEnd()} ${keyword}: ${ts}`;
   updated = updated.replace(/[ \t]{2,}/g, " ").replace(/^[ \t]+|[ \t]+$/g, "");
   if (updated === text) return;
-  const ls = gnista.lineStart(next);
-  if (updated === "") replaceText(ls - 1, gnista.lineEnd(next), "");
-  else replaceText(ls, gnista.lineEnd(next), updated);
+  const ls = e8.lineStart(next);
+  if (updated === "") replaceText(ls - 1, e8.lineEnd(next), "");
+  else replaceText(ls, e8.lineEnd(next), updated);
 }
 
 function plan(keyword: string, input: string): void {
   const [all, i] = backToHeading();
-  if (Array.isArray(gnista.prefixArg())) {
+  if (Array.isArray(e8.prefixArg())) {
     setPlanning(all[i].line, keyword, undefined);
-    gnista.message(`Item is no longer ${keyword === "DEADLINE" ? "due" : "scheduled"}.`);
+    e8.message(`Item is no longer ${keyword === "DEADLINE" ? "due" : "scheduled"}.`);
     return;
   }
   const date = parseDate(input);
   setPlanning(all[i].line, keyword, `<${formatTimestamp(date)}>`);
 }
 
-const schedule = gnista.defineCommand({
+const schedule = e8.defineCommand({
   name: "org-schedule",
   doc: "Schedule the heading point is under for a date read as org-timestamp reads it. With C-u, unschedule it.",
   params: [{ name: "date", prompt: "Date: ", history: "org-read-date-history" }],
   run: (input) => plan("SCHEDULED", input),
 });
 
-const deadline = gnista.defineCommand({
+const deadline = e8.defineCommand({
   name: "org-deadline",
   doc: "Give the heading point is under a deadline, read as org-timestamp reads it. With C-u, remove it.",
   params: [{ name: "date", prompt: "Date: ", history: "org-read-date-history" }],
@@ -4301,10 +4301,10 @@ function repeatEntry(h: Heading): boolean {
   const all = headings();
   const end = entryEnd(all, headingIndex(all, h.line) as number);
   let repeated = false;
-  for (let line = h.line + 1; line < gnista.lineCount() && gnista.lineStart(line) < end; line++) {
+  for (let line = h.line + 1; line < e8.lineCount() && e8.lineStart(line) < end; line++) {
     if (repeatTimestampsOn(line)) repeated = true;
   }
-  if (repeated) gnista.message(`Entry repeats: ${gnista.lineText(h.line + 1).trim()}`);
+  if (repeated) e8.message(`Entry repeats: ${e8.lineText(h.line + 1).trim()}`);
   return repeated;
 }
 
@@ -4341,15 +4341,15 @@ function repeatTimestampsOn(line: number): boolean {
 // Imenu, as org.el's org-imenu-get-tree: headings to org-imenu-depth, a
 // heading with headings under it a submenu of them.
 
-gnista.defineVariable({ name: "org-imenu-depth", doc: "How deep in the outline M-x imenu lists headings.", value: 2 });
+e8.defineVariable({ name: "org-imenu-depth", doc: "How deep in the outline M-x imenu lists headings.", value: 2 });
 
 /** A heading's text as Imenu lists it: no TODO, priority or tags, links as they read. */
 const imenuTitle = (h: Heading): string => h.title.replace(/\[\[([^\]]*)\](?:\[([^\]]*)\])?\]/g, (_m, link: string, desc?: string) => desc ?? link);
 
 type ImenuItem = [string, number | ImenuItem[]];
 
-const orgImenuGetTree = gnista.defun("org-imenu-get-tree", () => {
-  const depth = Number(gnista.variable("org-imenu-depth") ?? 2);
+const orgImenuGetTree = e8.defun("org-imenu-get-tree", () => {
+  const depth = Number(e8.variable("org-imenu-depth") ?? 2);
   const subs: ImenuItem[][] = Array.from({ length: depth + 1 }, () => []);
   let lastLevel = 0;
   for (const h of [...headings()].reverse()) {
@@ -4363,7 +4363,7 @@ const orgImenuGetTree = gnista.defun("org-imenu-get-tree", () => {
     }
     lastLevel = h.level;
   }
-  return (subs[1] ?? []) as unknown as gnista.Value;
+  return (subs[1] ?? []) as unknown as e8.Value;
 });
 
 /**
@@ -4376,7 +4376,7 @@ function showAncestors(pos: number): void {
   let i = headingIndex(all, lineAt(pos));
   if (i === undefined) return;
   // Not at a heading, its entry shows, as org-fold-show-entry.
-  if (all[i]!.start !== gnista.lineBeginningPosition(pos)) flag(all[i]!.end, entryEnd(all, i), false);
+  if (all[i]!.start !== e8.lineBeginningPosition(pos)) flag(all[i]!.end, entryEnd(all, i), false);
   while (i !== undefined) {
     const h = all[i]!;
     flag(Math.max(0, h.start - 1), h.end, false);
@@ -4386,8 +4386,8 @@ function showAncestors(pos: number): void {
   }
 }
 
-gnista.addHook("imenu-after-jump-hook", () => {
-  if (gnista.derivedModeP("org-mode")) showAncestors(gnista.point());
+e8.addHook("imenu-after-jump-hook", () => {
+  if (e8.derivedModeP("org-mode")) showAncestors(e8.point());
 });
 
 /** What a link type does, as org-link-set-parameters keeps it: following it. */
@@ -4412,22 +4412,22 @@ function openLink(link: Link): void {
   const file = /^file:(.*)$/.exec(path)?.[1] ?? (/^(?:\/|~\/|\.\.?\/)/.test(path) ? path : undefined);
   if (file !== undefined) {
     const [name, search] = file.split("::");
-    const dir = (gnista.bufferFileName() ?? "").replace(/[^/]*$/, "");
+    const dir = (e8.bufferFileName() ?? "").replace(/[^/]*$/, "");
     const full = /^[/~]/.test(name) ? name : dir + name;
-    gnista.call("find-file", full);
+    e8.call("find-file", full);
     if (search) {
-      if (/^\d+$/.test(search)) gnista.gotoChar(gnista.lineStart(Number(search) - 1));
+      if (/^\d+$/.test(search)) e8.gotoChar(e8.lineStart(Number(search) - 1));
       else jump(searchInBuffer(search));
     }
     return;
   }
   if (/^[a-z][a-z0-9+.-]*:/i.test(path) && !/^(id|file):/.test(path)) {
-    throw new Error(`Gnista cannot open ${path.split(":")[0]} links yet: ${path}`);
+    throw new Error(`E8 cannot open ${path.split(":")[0]} links yet: ${path}`);
   }
   jump(searchInBuffer(path));
 }
 
-const openAtPoint = gnista.defineCommand({
+const openAtPoint = e8.defineCommand({
   name: "org-open-at-point",
   doc:
     "Follow the link point is on: [[*Heading]], [[#custom-id]], [[target]] and [[Heading]] within the buffer, " +
@@ -4448,24 +4448,24 @@ function openAtPoint_(): void {
   }
   const all = headings();
   const i = headingIndex(all, lineAt());
-  if (i === undefined) gnista.userError("No link found");
+  if (i === undefined) e8.userError("No link found");
   const h = all[i];
-  const p = gnista.point();
+  const p = e8.point();
   if (lineAt() === h.line && h.tagsAt !== undefined && p >= h.tagsAt && p < h.end) {
-    throw new Error("Gnista cannot show the agenda for a tag yet");
+    throw new Error("E8 cannot show the agenda for a tag yet");
   }
-  const end = all[i + 1]?.start ?? gnista.bufferSize();
+  const end = all[i + 1]?.start ?? e8.bufferSize();
   const { links, last } = linksIn(h.start, end);
   if (links.length === 0) {
-    gnista.message("No links");
+    e8.message("No links");
     return;
   }
-  if (links.length > 1) throw new Error("Gnista cannot choose between an entry's links yet");
+  if (links.length > 1) throw new Error("E8 cannot choose between an entry's links yet");
   // Org searches on from point to the end of the buffer, and when the link
   // is not there, goes where the last link it found in the entry starts.
-  const rest = gnista.bufferText(p, gnista.bufferSize());
+  const rest = e8.bufferText(p, e8.bufferSize());
   const at = rest.indexOf(links[0]);
-  gnista.gotoChar(at < 0 ? last : p + charCount(rest.slice(0, at)));
+  e8.gotoChar(at < 0 ? last : p + charCount(rest.slice(0, at)));
   openAtPoint_();
 }
 
@@ -4476,8 +4476,8 @@ function openAtPoint_(): void {
 function linksIn(from: number, to: number): { links: string[]; last: number } {
   const out: string[] = [];
   let last = from;
-  for (let l = lineAt(from); l < gnista.lineCount() && gnista.lineStart(l) < to; l++) {
-    const text = gnista.lineText(l);
+  for (let l = lineAt(from); l < e8.lineCount() && e8.lineStart(l) < to; l++) {
+    const text = e8.lineText(l);
     const found = [LINK, ANGLE_LINK, PLAIN_LINK]
       .flatMap((re) => allMatches(re, text).map((m) => ({ index: m.index ?? 0, text: m[0] })))
       .sort((a, b) => a.index - b.index);
@@ -4492,7 +4492,7 @@ function linksIn(from: number, to: number): { links: string[]; last: number } {
   return { links: out, last };
 }
 
-const insertLink = gnista.defineCommand({
+const insertLink = e8.defineCommand({
   name: "org-insert-link",
   doc: "Insert a link as [[link][description]], or [[link]] without a description; on a link, replace it.",
   params: [
@@ -4505,21 +4505,21 @@ const insertLink = gnista.defineCommand({
     const text = description.trim() === "" ? `[[${escaped}]]` : `[[${escaped}][${description.trim()}]]`;
     const link = linkHere();
     if (link) {
-      gnista.deleteRegion(link.start, link.end);
-      gnista.gotoChar(link.start);
+      e8.deleteRegion(link.start, link.end);
+      e8.gotoChar(link.start);
     }
-    gnista.insert(text);
+    e8.insert(text);
   },
 });
 
-gnista.defineVariable({ name: "org-link-history", doc: "Links answered to org-insert-link, newest first.", value: [] });
+e8.defineVariable({ name: "org-link-history", doc: "Links answered to org-insert-link, newest first.", value: [] });
 
-const mouseFollow = gnista.defineCommand({
+const mouseFollow = e8.defineCommand({
   name: "org-mouse-follow-link",
   doc: "Move point where the mouse was clicked, and follow the link there if there is one, as mouse-1 does on Org links.",
   run: () => {
-    gnista.call("mouse-set-point");
-    if (!gnista.derivedModeP("org-mode")) return;
+    e8.call("mouse-set-point");
+    if (!e8.derivedModeP("org-mode")) return;
     const link = linkHere();
     if (link) openLink(link);
   },
@@ -4534,16 +4534,16 @@ const mouseFollow = gnista.defineCommand({
 const BLANKING_COMMANDS = ["org-cycle", "org-return", "org-shifttab", "org-ctrl-c-ctrl-c"];
 
 function fixTagsOnTheFly(): void {
-  gnista.call("org-fix-tags-on-the-fly");
+  e8.call("org-fix-tags-on-the-fly");
 }
 
 /** Deletes n characters forward, or back if n is negative, as delete-char does from Lisp: without killing them. */
 function deleteChars(n: number, backward = false): void {
   const command = (n < 0) !== backward ? "delete-backward-char" : "delete-char";
-  for (let i = 0; i < Math.abs(n); i++) gnista.call(command);
+  for (let i = 0; i < Math.abs(n); i++) e8.call(command);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-self-insert-command",
   doc:
     "Insert the character typed, as self-insert-command does, keeping a table aligned.\n\n" +
@@ -4552,20 +4552,20 @@ gnista.defineCommand({
     "On a heading, the tags are aligned again.",
   run: () => {
     if (speedCommand()) return;
-    gnista.call("org-fold-check-before-invisible-edit-maybe");
-    if (gnista.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
-      if (gnista.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(gnista.lastCommand() ?? "")) {
+    e8.call("org-fold-check-before-invisible-edit-maybe");
+    if (e8.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
+      if (e8.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(e8.lastCommand() ?? "")) {
         blankField();
       }
       if (/^[^|\n]*  \|/.test(restOfLine())) {
-        gnista.call("self-insert-command");
+        e8.call("self-insert-command");
         const rest = restOfLine();
-        const bar = gnista.point() + charCount(rest.slice(0, rest.indexOf("|")));
-        gnista.saveExcursion(() => edDelete(bar - 2, bar - 1));
+        const bar = e8.point() + charCount(rest.slice(0, rest.indexOf("|")));
+        e8.saveExcursion(() => edDelete(bar - 2, bar - 1));
         return;
       }
     }
-    gnista.callWithPrefix(gnista.prefixArg(), "self-insert-command");
+    e8.callWithPrefix(e8.prefixArg(), "self-insert-command");
     fixTagsOnTheFly();
   },
 });
@@ -4573,12 +4573,12 @@ gnista.defineCommand({
 // Speed commands, as org-keys.el has them: at the start of a heading, with
 // org-use-speed-commands on, a key runs a command rather than typing.
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-use-speed-commands",
   doc: "Whether single keys at the start of a heading run org-speed-commands' commands rather than typing.",
   value: false,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-speed-commands",
   doc:
     "The speed commands: [key, command] lists, or [key, [function, ...arguments]] for a function to call; a list of " +
@@ -4636,21 +4636,21 @@ gnista.defineVariable({
   ],
 });
 
-gnista.defun("org-speed-move-safe", (command: gnista.Value) => {
+e8.defun("org-speed-move-safe", (command: e8.Value) => {
   // Moves, but only to a heading, as org-speed-move-safe: else back, with an error.
-  const pos = gnista.point();
-  gnista.callInteractively(String(command) as gnista.CommandName);
-  if (!(gnista.point() === gnista.lineStart(lineAt()) && parseHeading(lineAt()) !== undefined)) {
-    gnista.gotoChar(pos);
-    gnista.signal("error", `Boundary reached while executing ${String(command)}`);
+  const pos = e8.point();
+  e8.callInteractively(String(command) as e8.CommandName);
+  if (!(e8.point() === e8.lineStart(lineAt()) && parseHeading(lineAt()) !== undefined)) {
+    e8.gotoChar(pos);
+    e8.signal("error", `Boundary reached while executing ${String(command)}`);
   }
 });
-gnista.defun("org-speed-refile-goto", () => gnista.callWithPrefix([4], "org-refile"));
-gnista.defun("org-speed-insert-heading", () => {
-  gnista.gotoChar(gnista.point() + 1);
-  gnista.callInteractively("org-insert-heading-respect-content");
+e8.defun("org-speed-refile-goto", () => e8.callWithPrefix([4], "org-refile"));
+e8.defun("org-speed-insert-heading", () => {
+  e8.gotoChar(e8.point() + 1);
+  e8.callInteractively("org-insert-heading-respect-content");
 });
-gnista.defun("org-speed-priority", (letter: gnista.Value) => gnista.call("org-priority", String(letter)));
+e8.defun("org-speed-priority", (letter: e8.Value) => e8.call("org-priority", String(letter)));
 
 /**
  * Runs the speed command for the key typed, at the start of a heading, as
@@ -4658,56 +4658,56 @@ gnista.defun("org-speed-priority", (letter: gnista.Value) => gnista.call("org-pr
  * did.
  */
 function speedCommand(): boolean {
-  if (gnista.variable("org-use-speed-commands") !== true) return false;
-  if (!(gnista.point() === gnista.lineStart(lineAt()) && /^\*+ /.test(gnista.lineText(lineAt())))) return false;
-  const keys = gnista.thisCommandKeys();
+  if (e8.variable("org-use-speed-commands") !== true) return false;
+  if (!(e8.point() === e8.lineStart(lineAt()) && /^\*+ /.test(e8.lineText(lineAt())))) return false;
+  const keys = e8.thisCommandKeys();
   const key = keys === "SPC" ? " " : keys;
-  const commands = gnista.variable("org-speed-commands");
-  const entry = Array.isArray(commands) ? commands.find((e) => Array.isArray(e) && e.length > 1 && e[0] === key) as gnista.Value[] | undefined : undefined;
+  const commands = e8.variable("org-speed-commands");
+  const entry = Array.isArray(commands) ? commands.find((e) => Array.isArray(e) && e.length > 1 && e[0] === key) as e8.Value[] | undefined : undefined;
   if (entry === undefined) return false;
   const action = entry[1];
   if (Array.isArray(action)) {
-    gnista.funcall(String(action[0]), action.slice(1));
+    e8.funcall(String(action[0]), action.slice(1));
     return true;
   }
   const name = String(action);
-  if (!gnista.commandNames().includes(name)) gnista.userError(`Gnista does not have ${name} yet`);
-  gnista.callInteractively(name as gnista.CommandName);
+  if (!e8.commandNames().includes(name)) e8.userError(`E8 does not have ${name} yet`);
+  e8.callInteractively(name as e8.CommandName);
   return true;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-speed-command-help",
   doc: "Show the speed commands, the keys that run commands at the start of a heading.",
   run: () => {
-    if (gnista.variable("org-use-speed-commands") !== true) gnista.userError("Speed commands are not activated, customize `org-use-speed-commands'");
-    const commands = gnista.variable("org-speed-commands");
+    if (e8.variable("org-use-speed-commands") !== true) e8.userError("Speed commands are not activated, customize `org-use-speed-commands'");
+    const commands = e8.variable("org-speed-commands");
     let text = "Speed commands\n==============\n";
     for (const e of Array.isArray(commands) ? commands : []) {
       if (!Array.isArray(e)) continue;
       if (e.length === 1) text += `\n${String(e[0])}\n${"-".repeat(String(e[0]).length)}\n`;
       else text += `${String(e[0]).padEnd(4)}${Array.isArray(e[1]) ? `(${e[1].map(String).join(" ")})` : String(e[1])}\n`;
     }
-    gnista.getBufferCreate("*Help*");
-    gnista.withCurrentBuffer("*Help*", () => {
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        gnista.deleteRegion(0, gnista.bufferSize());
-        gnista.insert(text);
+    e8.getBufferCreate("*Help*");
+    e8.withCurrentBuffer("*Help*", () => {
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        e8.deleteRegion(0, e8.bufferSize());
+        e8.insert(text);
       });
-      gnista.gotoChar(0);
+      e8.gotoChar(0);
     });
-    gnista.call("display-buffer", "*Help*");
+    e8.call("display-buffer", "*Help*");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-toggle-comment",
   doc: "Make the heading point is under a comment, with COMMENT after its state and priority, or take that away.",
   run: () => {
     const [all, i] = backToHeading();
     const h = all[i];
     const at = h.titleAt;
-    const title = gnista.bufferText(at, h.end);
+    const title = e8.bufferText(at, h.end);
     if (/^COMMENT(?:[ \t]|$)/.test(title)) {
       const m = /^COMMENT[ \t]*/.exec(title)!;
       replaceText(at, at + m[0].length, "");
@@ -4715,21 +4715,21 @@ gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-display-outline-path",
   doc: "Say where point is in the outline: its heading and the ones above it.",
   run: () => {
     const all = headings();
     const i = headingIndex(all, lineAt());
     if (i === undefined) {
-      gnista.message("");
+      e8.message("");
       return;
     }
-    gnista.message([...ancestors(all, i).reverse(), i].map((k) => all[k].title).join("/"));
+    e8.message([...ancestors(all, i).reverse(), i].map((k) => all[k].title).join("/"));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-set-effort",
   doc: "Set the Effort property of the entry point is in, as 0:30 or 1h.",
   params: [{ name: "value", prompt: "Effort: " }],
@@ -4741,7 +4741,7 @@ gnista.defineCommand({
 
 /** Deletes the character after point, putting a space back before the field's bar in a table, as org-delete-char does. */
 function orgDeleteChar(n: number): void {
-  if (n !== 1 || charAt(gnista.point()) === "|" || /^[ \t]*$/.test(beforeOnLine()) || !atTable()) {
+  if (n !== 1 || charAt(e8.point()) === "|" || /^[ \t]*$/.test(beforeOnLine()) || !atTable()) {
     deleteChars(n);
     fixTagsOnTheFly();
     return;
@@ -4750,26 +4750,26 @@ function orgDeleteChar(n: number): void {
   if (m) {
     const update = needsAlign();
     const noalign = /^.*?  \|/.test(restOfLine());
-    const p = gnista.point();
+    const p = e8.point();
     const end = p + charCount(m[0]);
     edDelete(p, p + 1);
     // Org goes back two characters from the match's end as it was. Org's
     // after-change functions save and restore the match data as markers,
     // though, which cannot be past the end of the buffer.
-    gnista.saveExcursion(() => edInsert(Math.min(end, gnista.bufferSize()) - 2, " "));
+    e8.saveExcursion(() => edInsert(Math.min(end, e8.bufferSize()) - 2, " "));
     if (noalign && !update) markAligned();
   } else deleteChars(n);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-delete-backward-char",
   doc: "Delete the character before point, as delete-backward-char does, keeping a table's field as wide as it was.",
   run: () => {
-    gnista.call("org-fold-check-before-invisible-edit-maybe");
-    const p = gnista.point();
+    e8.call("org-fold-check-before-invisible-edit-maybe");
+    const p = e8.point();
     if (
-      gnista.prefixNumericValue() === 1 &&
-      gnista.variable("overwrite-mode") !== true &&
+      e8.prefixNumericValue() === 1 &&
+      e8.variable("overwrite-mode") !== true &&
       !orgRegionActive() &&
       p > 0 &&
       charAt(p - 1) !== "|" &&
@@ -4777,57 +4777,57 @@ gnista.defineCommand({
       restOfLine().includes("|") &&
       atTable()
     ) {
-      gnista.gotoChar(p - 1);
+      e8.gotoChar(p - 1);
       orgDeleteChar(1);
       return;
     }
-    deleteChars(gnista.prefixNumericValue(), true);
+    deleteChars(e8.prefixNumericValue(), true);
     fixTagsOnTheFly();
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-delete-char",
   doc: "Delete the character after point, as delete-char does, keeping a table's field as wide as it was.",
   run: () => {
-    gnista.call("org-fold-check-before-invisible-edit-maybe");
-    orgDeleteChar(gnista.prefixNumericValue());
+    e8.call("org-fold-check-before-invisible-edit-maybe");
+    orgDeleteChar(e8.prefixNumericValue());
   },
 });
 
 // Commands that depend on where point is, as Org's keys do
 
-const metaLeft = gnista.defineCommand({
+const metaLeft = e8.defineCommand({
   name: "org-metaleft",
   doc: "M-<left> in Org: promote a heading, outdent an item, move a table column left, or move back a word.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-column-left");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-move-column-left");
     else if (regionStartsAtHeading() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
-      gnista.call("org-do-promote");
+      e8.call("org-do-promote");
     } else if (itemHere()) {
       if (hiddenBelow("items")) hiddenTreeError();
-      gnista.call("org-outdent-item");
+      e8.call("org-outdent-item");
     }
-    else gnista.callWithPrefix(gnista.prefixArg(), "backward-word");
+    else e8.callWithPrefix(e8.prefixArg(), "backward-word");
   },
 });
 
-const metaRight = gnista.defineCommand({
+const metaRight = e8.defineCommand({
   name: "org-metaright",
   doc: "M-<right> in Org: demote a heading, indent an item, move a table column right, or move forward a word.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-column-right");
-    else if (DRAWER_RE.test(gnista.lineText(lineAt()))) gnista.call("org-indent-drawer");
-    else if (atBlock()) gnista.call("org-indent-block");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-move-column-right");
+    else if (DRAWER_RE.test(e8.lineText(lineAt()))) e8.call("org-indent-drawer");
+    else if (atBlock()) e8.call("org-indent-block");
     else if (regionStartsAtHeading() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
-      gnista.call("org-do-demote");
+      e8.call("org-do-demote");
     } else if (itemHere()) {
       if (hiddenBelow("items")) hiddenTreeError();
-      gnista.call("org-indent-item");
+      e8.call("org-indent-item");
     }
-    else gnista.callWithPrefix(gnista.prefixArg(), "forward-word");
+    else e8.callWithPrefix(e8.prefixArg(), "forward-word");
   },
 });
 
@@ -4838,8 +4838,8 @@ function transposeRegions(a: number, b: number, c: number, d: number): void {
   // As transpose-regions does, an empty region next to the other changes nothing.
   if ((r1[0] === r1[1] || r2[0] === r2[1]) && r1[1] === r2[0]) return;
   if (r1[1] > r2[0]) throw new Error("Transposed regions overlap");
-  const t1 = gnista.bufferText(r1[0], r1[1]);
-  const t2 = gnista.bufferText(r2[0], r2[1]);
+  const t1 = e8.bufferText(r1[0], r1[1]);
+  const t2 = e8.bufferText(r2[0], r2[1]);
   edDelete(r2[0], r2[1]);
   edInsert(r2[0], t1);
   edDelete(r1[0], r1[1]);
@@ -4853,9 +4853,9 @@ function transposeRegions(a: number, b: number, c: number, d: number): void {
  * Returns whether it applied.
  */
 function metaRegion(up: boolean): boolean {
-  const mark = gnista.mark();
+  const mark = e8.mark();
   if (!orgRegionActive() || mark === undefined) return false;
-  const pt = gnista.point();
+  const pt = e8.point();
   const [rb, re] = [Math.min(mark, pt), Math.max(mark, pt)];
   if (parseHeading(lineAt(rb))) {
     const origin = marker(pt);
@@ -4866,138 +4866,138 @@ function metaRegion(up: boolean): boolean {
         all.some((h) => h.level < level && h.start >= from && h.start + h.level + 1 <= to);
       if (up) {
         const end = marker(Math.max(rb, re - 1));
-        const before = all.filter((h) => h.level === level && h.start < gnista.lineStart(lineAt(rb))).at(-1);
-        if ((level > 1 && higher(rb === gnista.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), end.pos)) || !before) {
+        const before = all.filter((h) => h.level === level && h.start < e8.lineStart(lineAt(rb))).at(-1);
+        if ((level > 1 && higher(rb === e8.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), end.pos)) || !before) {
           dropMarker(end);
-          gnista.userError("Cannot move past superior level or buffer limit");
+          e8.userError("Cannot move past superior level or buffer limit");
         }
-        gnista.gotoChar(before.start);
-        while (gnista.point() < end.pos) gnista.keepMarkActive(() => moveSubtree(1));
+        e8.gotoChar(before.start);
+        while (e8.point() < end.pos) e8.keepMarkActive(() => moveSubtree(1));
         dropMarker(end);
       } else {
         const beg = marker(rb);
         const after = all.find((h) => h.level === level && h.start >= re && h.start + h.level + 1 > re);
-        if ((level > 1 && higher(rb === gnista.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), re)) || !after) {
+        if ((level > 1 && higher(rb === e8.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), re)) || !after) {
           dropMarker(beg);
-          gnista.userError("Cannot move past superior level or buffer limit");
+          e8.userError("Cannot move past superior level or buffer limit");
         }
-        gnista.gotoChar(after.start);
-        while (gnista.point() > beg.pos) gnista.keepMarkActive(() => moveSubtree(-1));
+        e8.gotoChar(after.start);
+        while (e8.point() > beg.pos) e8.keepMarkActive(() => moveSubtree(-1));
         dropMarker(beg);
       }
     } finally {
-      gnista.gotoChar(origin.pos);
+      e8.gotoChar(origin.pos);
       dropMarker(origin);
     }
     return true;
   }
-  const a = gnista.lineStart(lineAt(rb));
-  const atBol = (x: number): boolean => x === gnista.lineStart(lineAt(x));
-  const b = atBol(re) && re > 0 ? re - 1 : gnista.lineEnd(lineAt(re));
+  const a = e8.lineStart(lineAt(rb));
+  const atBol = (x: number): boolean => x === e8.lineStart(lineAt(x));
+  const b = atBol(re) && re > 0 ? re - 1 : e8.lineEnd(lineAt(re));
   const swap = pt < mark;
-  gnista.keepMarkActive(() => transposeRegionLines(up, a, b));
-  if (swap) gnista.call("exchange-point-and-mark");
+  e8.keepMarkActive(() => transposeRegionLines(up, a, b));
+  if (swap) e8.call("exchange-point-and-mark");
   return true;
 }
 
 /** The region case of org-metaup and org-metadown: the region's lines and the line before or after swap places. */
 function transposeRegionLines(up: boolean, a: number, b: number): void {
-  const atBol = (x: number): boolean => x === gnista.lineStart(lineAt(x));
+  const atBol = (x: number): boolean => x === e8.lineStart(lineAt(x));
   if (up) {
     const prev = Math.max(0, lineAt(a) - 1);
     // On the first line, move-beginning-of-line and move-end-of-line with 0 both stay at its start.
-    const [c, d] = lineAt(a) === 0 ? [0, 0] : [gnista.lineStart(prev), gnista.lineEnd(prev)];
+    const [c, d] = lineAt(a) === 0 ? [0, 0] : [e8.lineStart(prev), e8.lineEnd(prev)];
     transposeRegions(a, b, c, d);
-    gnista.setMark(c);
-    gnista.gotoChar(c + (b - a));
+    e8.setMark(c);
+    e8.gotoChar(c + (b - a));
   } else {
     const next = atBol(b) ? lineAt(b) : lineAt(b) + 1;
-    const [c, d] = next < gnista.lineCount() ? [gnista.lineStart(next), gnista.lineEnd(next)] : [gnista.bufferSize(), gnista.bufferSize()];
+    const [c, d] = next < e8.lineCount() ? [e8.lineStart(next), e8.lineEnd(next)] : [e8.bufferSize(), e8.bufferSize()];
     transposeRegions(a, b, c, d);
-    gnista.setMark(1 + a + (d - c));
-    gnista.gotoChar(1 + a + (d - c) + (b - a));
+    e8.setMark(1 + a + (d - c));
+    e8.gotoChar(1 + a + (d - c) + (b - a));
   }
 }
 
 /**
  * In a source block, M-<up> and M-<down> are Babel's first, from
  * org-metaup-hook and org-metadown-hook: they load the block into a session
- * or go to its session. Gnista has no Babel sessions, so this fails as Org
+ * or go to its session. E8 has no Babel sessions, so this fails as Org
  * does for a language without them.
  */
 function babelSessionHook(action: "load" | "pop"): void {
-  const el = elementAt(gnista.point());
+  const el = elementAt(e8.point());
   if (el?.type !== "src-block") return;
-  const header = gnista.lineText(lineAt(el.begin));
+  const header = e8.lineText(lineAt(el.begin));
   const lang = /^[ \t]*#\+begin_src[ \t]+([^ \t:]\S*)/i.exec(header)?.[1] ?? "nil";
   if (action === "load") throw new Error(`No org-babel-load-session function for ${lang}!`);
   if (!/:session/.test(header)) throw new Error("This block is not using a session!");
   throw new Error(`No org-babel-initiate-session function for ${lang}!`);
 }
 
-const metaUp = gnista.defineCommand({
+const metaUp = e8.defineCommand({
   name: "org-metaup",
   doc: "M-<up> in Org: move a subtree, an item or a table row up past the one before it.",
   run: () => {
     babelSessionHook("load");
     if (metaRegion(true)) return;
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-row-up");
-    else if (headingHere()) gnista.call("org-move-subtree-up");
-    else if (itemHere()) gnista.call("org-move-item-up");
-    else gnista.call("org-drag-element-backward");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-move-row-up");
+    else if (headingHere()) e8.call("org-move-subtree-up");
+    else if (itemHere()) e8.call("org-move-item-up");
+    else e8.call("org-drag-element-backward");
   },
 });
 
-const metaDown = gnista.defineCommand({
+const metaDown = e8.defineCommand({
   name: "org-metadown",
   doc: "M-<down> in Org: move a subtree, an item or a table row down past the one after it.",
   run: () => {
     babelSessionHook("pop");
     if (metaRegion(false)) return;
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-row-down");
-    else if (headingHere()) gnista.call("org-move-subtree-down");
-    else if (itemHere()) gnista.call("org-move-item-down");
-    else gnista.call("org-drag-element-forward");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-move-row-down");
+    else if (headingHere()) e8.call("org-move-subtree-down");
+    else if (itemHere()) e8.call("org-move-item-down");
+    else e8.call("org-drag-element-forward");
   },
 });
 
-const shiftMetaLeft = gnista.defineCommand({
+const shiftMetaLeft = e8.defineCommand({
   name: "org-shiftmetaleft",
   doc: "M-S-<left> in Org: promote a subtree, outdent an item with its children, or delete a table column.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-delete-column");
-    else if (headingHere()) gnista.call("org-promote-subtree");
-    else if (itemHere()) gnista.call("org-outdent-item-tree");
-    else gnista.userError("This command is active in special context like tables, headlines or items");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-delete-column");
+    else if (headingHere()) e8.call("org-promote-subtree");
+    else if (itemHere()) e8.call("org-outdent-item-tree");
+    else e8.userError("This command is active in special context like tables, headlines or items");
   },
 });
 
-const shiftMetaRight = gnista.defineCommand({
+const shiftMetaRight = e8.defineCommand({
   name: "org-shiftmetaright",
   doc: "M-S-<right> in Org: demote a subtree, indent an item with its children, or insert a table column.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-insert-column");
-    else if (headingHere()) gnista.call("org-demote-subtree");
-    else if (itemHere()) gnista.call("org-indent-item-tree");
-    else gnista.userError("This command is active in special context like tables, headlines or items");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-insert-column");
+    else if (headingHere()) e8.call("org-demote-subtree");
+    else if (itemHere()) e8.call("org-indent-item-tree");
+    else e8.userError("This command is active in special context like tables, headlines or items");
   },
 });
 
-const shiftMetaUp = gnista.defineCommand({
+const shiftMetaUp = e8.defineCommand({
   name: "org-shiftmetaup",
   doc: "M-S-<up> in Org: delete the table row point is on, or drag the line up.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-kill-row");
-    else gnista.callWithPrefix(gnista.prefixArg(), "org-drag-line-backward");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-kill-row");
+    else e8.callWithPrefix(e8.prefixArg(), "org-drag-line-backward");
   },
 });
 
-const shiftMetaDown = gnista.defineCommand({
+const shiftMetaDown = e8.defineCommand({
   name: "org-shiftmetadown",
   doc: "M-S-<down> in Org: insert a table row above the one point is on, or drag the line down.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-insert-row");
-    else gnista.callWithPrefix(gnista.prefixArg(), "org-drag-line-forward");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-insert-row");
+    else e8.callWithPrefix(e8.prefixArg(), "org-drag-line-forward");
   },
 });
 
@@ -5012,19 +5012,19 @@ function transposeLinesWithFolds(): void {
   const mover = (n: number): void => {
     if (n > 0) {
       let short = forwardLine(n);
-      if (gnista.point() === 0 || gnista.bufferText(gnista.point() - 1, gnista.point()) !== "\n") short++;
+      if (e8.point() === 0 || e8.bufferText(e8.point() - 1, e8.point()) !== "\n") short++;
       // Through newline, which amalgamates undo as self-insert-command does.
       if (short > 0) {
-        gnista.undoAutoAmalgamate();
-        gnista.insert("\n".repeat(short));
+        e8.undoAutoAmalgamate();
+        e8.insert("\n".repeat(short));
       }
     } else forwardLine(n);
   };
   const aux = (x: number): [number, number] => {
     mover(x);
-    const a = gnista.point();
+    const a = e8.point();
     mover(-x);
-    return [a, gnista.point()];
+    return [a, e8.point()];
   };
   const pos1 = aux(-1);
   const pos2 = aux(1);
@@ -5033,18 +5033,18 @@ function transposeLinesWithFolds(): void {
   if (a[0] > b[0]) [a, b] = [b, a];
   if (a[1] > b[0]) throw new Error("Don’t have two things to transpose");
   const lenA = a[1] - a[0];
-  const textB = gnista.bufferText(b[0], b[1]);
+  const textB = e8.bufferText(b[0], b[1]);
   const end = marker(pos2[0]);
   const boundary = marker(b[0]);
-  const wasModified = gnista.bufferModified();
-  const mark = gnista.mark();
+  const wasModified = e8.bufferModified();
+  const mark = e8.mark();
   // What to undo: insertions as [start, end], deletions as [position, text].
   const undo: ([number, number] | [number, string])[] = [];
   // Each step is recorded before it is made, so one whose fold check fails is undone too.
   try {
     undo.push([a[1], a[1] + charCount(textB)]);
     edInsert(a[1], textB, true);
-    const textA = gnista.bufferText(a[0], a[0] + lenA);
+    const textA = e8.bufferText(a[0], a[0] + lenA);
     undo.push([a[0], textA]);
     edDelete(a[0], a[0] + lenA);
     const at = boundary.pos;
@@ -5052,20 +5052,20 @@ function transposeLinesWithFolds(): void {
     edInsert(at, textA);
     undo.push([at + lenA, textB]);
     edDelete(at + lenA, at + lenA + charCount(textB));
-    gnista.gotoChar(end.pos);
+    e8.gotoChar(end.pos);
   } catch (e) {
     for (const step of undo.reverse()) {
       if (typeof step[1] === "number") {
-        gnista.gotoChar(step[0]);
+        e8.gotoChar(step[0]);
         edDelete(step[0], step[1]);
       } else {
         edInsert(step[0], step[1]);
-        gnista.gotoChar(step[0]);
+        e8.gotoChar(step[0]);
       }
     }
-    if (!wasModified) gnista.setBufferModified(false);
+    if (!wasModified) e8.setBufferModified(false);
     // Undoing puts the mark back too, as Emacs's undo restores markers.
-    if (mark !== undefined) gnista.setMark(mark);
+    if (mark !== undefined) e8.setMark(mark);
     throw e;
   } finally {
     dropMarker(end);
@@ -5077,7 +5077,7 @@ function transposeLinesWithFolds(): void {
 function dragLine(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) {
     // As Org does with current-column and org-move-to-column: hidden link text takes no columns.
-    const column = gnista.currentColumn();
+    const column = e8.currentColumn();
     if (n > 0) {
       forwardLine(1);
       transposeLinesWithFolds();
@@ -5086,18 +5086,18 @@ function dragLine(n: number): void {
       transposeLinesWithFolds();
       forwardLine(-2);
     }
-    gnista.moveToColumn(column);
+    e8.moveToColumn(column);
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-drag-line-forward",
   doc: "Drag the line at point down past the next line, or as many lines as the prefix argument says.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => dragLine(arg),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-drag-line-backward",
   doc: "Drag the line at point up past the line before it, or as many lines as the prefix argument says.",
   params: [{ name: "arg", kind: "count" }],
@@ -5106,7 +5106,7 @@ gnista.defineCommand({
 
 /**
  * What S-<left> and S-<right> do on a property, as
- * org-property-next-allowed-value does. Gnista has no allowed values for
+ * org-property-next-allowed-value does. E8 has no allowed values for
  * properties yet, so this is Org's error when none are defined.
  */
 function nextAllowedValue(): never {
@@ -5122,17 +5122,17 @@ function nextAllowedValue(): never {
 function hiddenBelow(what: "headlines" | "items"): boolean {
   if (orgRegionActive()) return false;
   let l = lineAt() + 1;
-  while (l < gnista.lineCount() && gnista.invisibleAt(gnista.lineStart(l) - 1)) l++;
+  while (l < e8.lineCount() && e8.invisibleAt(e8.lineStart(l) - 1)) l++;
   const end = lineStartOrEnd(l);
-  for (let k = lineAt() + 1; k < gnista.lineCount() && gnista.lineStart(k) < end; k++) {
-    const text = gnista.lineText(k);
-    if ((what === "headlines" ? /^\*+ /.test(text) : ITEM_RE.test(text)) && gnista.invisibleAt(gnista.lineStart(k))) return true;
+  for (let k = lineAt() + 1; k < e8.lineCount() && e8.lineStart(k) < end; k++) {
+    const text = e8.lineText(k);
+    if ((what === "headlines" ? /^\*+ /.test(text) : ITEM_RE.test(text)) && e8.invisibleAt(e8.lineStart(k))) return true;
   }
   return false;
 }
 
 function hiddenTreeError(): never {
-  gnista.userError("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
+  e8.userError("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
 }
 
 /**
@@ -5140,67 +5140,67 @@ function hiddenTreeError(): never {
  * table row does, and the parser, which sees the whole buffer, puts point in a table.
  */
 function atTableP(): boolean {
-  if (!/^[ \t]*\|/.test(gnista.lineText(lineAt()))) return false;
-  const p = gnista.point();
-  return gnista.saveRestriction(() => {
-    gnista.widen();
+  if (!/^[ \t]*\|/.test(e8.lineText(lineAt()))) return false;
+  const p = e8.point();
+  return e8.saveRestriction(() => {
+    e8.widen();
     for (let e = elementAt(p); e; e = e.parent) if (e.type === "table") return true;
     return false;
   });
 }
 
-const shiftUp = gnista.defineCommand({
+const shiftUp = e8.defineCommand({
   name: "org-shiftup",
   doc: "S-<up> in Org: make a timestamp later, raise a heading's priority, or move to the previous item.",
   run: () => {
-    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-up");
-    else if (headingHere()) gnista.call("org-priority-up");
-    else if (itemHere()) gnista.call("org-previous-item");
-    else if (atTableP()) gnista.call("org-table-move-cell-up");
+    if (timestampHere()) e8.callWithPrefix(e8.prefixArg(), "org-timestamp-up");
+    else if (headingHere()) e8.call("org-priority-up");
+    else if (itemHere()) e8.call("org-previous-item");
+    else if (atTableP()) e8.call("org-table-move-cell-up");
     else shiftSelectError();
   },
 });
 
-const shiftDown = gnista.defineCommand({
+const shiftDown = e8.defineCommand({
   name: "org-shiftdown",
   doc: "S-<down> in Org: make a timestamp earlier, lower a heading's priority, or move to the next item.",
   run: () => {
-    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-down");
-    else if (headingHere()) gnista.call("org-priority-down");
-    else if (itemHere()) gnista.call("org-next-item");
-    else if (atTableP()) gnista.call("org-table-move-cell-down");
+    if (timestampHere()) e8.callWithPrefix(e8.prefixArg(), "org-timestamp-down");
+    else if (headingHere()) e8.call("org-priority-down");
+    else if (itemHere()) e8.call("org-next-item");
+    else if (atTableP()) e8.call("org-table-move-cell-down");
     else shiftSelectError();
   },
 });
 
-const shiftRight = gnista.defineCommand({
+const shiftRight = e8.defineCommand({
   name: "org-shiftright",
   doc: "S-<right> in Org: move a timestamp a day on, change a heading to its next TODO state, or change list bullets.",
   run: () => {
-    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-up-day");
+    if (timestampHere()) e8.callWithPrefix(e8.prefixArg(), "org-timestamp-up-day");
     // org-todo, which loops over the headings in an active region.
     else if (headingHere()) {
       if (!forEachHeadingInRegion(() => todo(1), true)) todo(1);
     }
     else if (itemLine(lineAt())) cycleListBullet();
-    else if (elementAt(gnista.point())?.type === "node-property") nextAllowedValue();
-    else if (atTableP()) gnista.call("org-table-move-cell-right");
+    else if (elementAt(e8.point())?.type === "node-property") nextAllowedValue();
+    else if (atTableP()) e8.call("org-table-move-cell-right");
     else shiftSelectError();
   },
 });
 
-const shiftLeft = gnista.defineCommand({
+const shiftLeft = e8.defineCommand({
   name: "org-shiftleft",
   doc: "S-<left> in Org: move a timestamp a day back, change a heading to its previous TODO state, or change list bullets.",
   run: () => {
-    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-down-day");
+    if (timestampHere()) e8.callWithPrefix(e8.prefixArg(), "org-timestamp-down-day");
     // org-todo, which loops over the headings in an active region.
     else if (headingHere()) {
       if (!forEachHeadingInRegion(() => todo(-1), true)) todo(-1);
     }
     else if (itemLine(lineAt())) cycleListBullet("previous");
-    else if (elementAt(gnista.point())?.type === "node-property") nextAllowedValue();
-    else if (atTableP()) gnista.call("org-table-move-cell-left");
+    else if (elementAt(e8.point())?.type === "node-property") nextAllowedValue();
+    else if (atTableP()) e8.call("org-table-move-cell-left");
     else shiftSelectError();
   },
 });
@@ -5212,8 +5212,8 @@ function nothingUseful(): never {
 /** The statistics cookie point is in on its line, if any. */
 function cookieHere(): boolean {
   const line = lineAt();
-  const text = gnista.lineText(line);
-  const p = gnista.point();
+  const text = e8.lineText(line);
+  const p = e8.point();
   return allMatches(COOKIE, text).some((m) => {
     const start = at(line, text, m.index ?? 0);
     return start <= p && p <= start + charCount(m[0]);
@@ -5221,12 +5221,12 @@ function cookieHere(): boolean {
 }
 
 /** C-c C-c on an item's first line, as org-ctrl-c-ctrl-c does: toggles its checkbox, or repairs the list. */
-function ctrlCCtrlCItem(line: number, arg: gnista.PrefixArg): void {
+function ctrlCCtrlCItem(line: number, arg: e8.PrefixArg): void {
   const struct = listStruct(line);
   const old = copyStruct(struct);
   const parents = parentsAlist(struct);
   const prevs = prevsAlist(struct);
-  const item = getItem(struct, gnista.lineStart(line));
+  const item = getItem(struct, e8.lineStart(line));
   const box = item.checkbox;
   const c4 = Array.isArray(arg) && arg[0] === 4;
   const c16 = Array.isArray(arg) && arg[0] === 16;
@@ -5237,8 +5237,8 @@ function ctrlCCtrlCItem(line: number, arg: gnista.PrefixArg): void {
   fixInd(struct, parents);
   fixBox(struct, parents);
   if (box && sameStruct(struct, old)) {
-    if (c16) gnista.message("Checkboxes already reset");
-    else gnista.userError(`Cannot toggle this checkbox: ${box === "[X]" ? "all subitems checked" : "unchecked subitems"}`);
+    if (c16) e8.message("Checkboxes already reset");
+    else e8.userError(`Cannot toggle this checkbox: ${box === "[X]" ? "all subitems checked" : "unchecked subitems"}`);
     return;
   }
   applyStruct(struct, old);
@@ -5254,37 +5254,37 @@ function cookieEndsTitleBeforePoint(): boolean {
   const h = parseHeading(lineAt());
   if (!h || h.title === "") return false;
   const titleEnd = h.titleAt + charCount(h.title);
-  if (gnista.point() <= titleEnd) return false;
+  if (e8.point() <= titleEnd) return false;
   return new RegExp(`(?:${COOKIE.source})$`).test(h.title);
 }
 
-const ctrlCCtrlC = gnista.defineCommand({
+const ctrlCCtrlC = e8.defineCommand({
   name: "org-ctrl-c-ctrl-c",
   doc:
     "C-c C-c in Org: tick or untick a checkbox, align a table, update a statistics cookie, set a heading's tags, " +
     "fix a timestamp, or re-read the buffer's #+ settings on a #+ line.",
   run: () => {
     const line = lineAt();
-    const text = gnista.lineText(line);
+    const text = e8.lineText(line);
     if (/^[ \t]*$/.test(text)) nothingUseful();
-    if (elementAt(gnista.point())?.type === "table") {
+    if (elementAt(e8.point())?.type === "table") {
       // At the table's start, Org recalculates every row and does not align.
-      gnista.call("org-table-recalculate");
+      e8.call("org-table-recalculate");
       return;
     }
     if (/^[ \t]*\|/.test(text)) {
-      gnista.call("org-table-maybe-eval-formula");
-      gnista.call("org-table-align");
+      e8.call("org-table-maybe-eval-formula");
+      e8.call("org-table-align");
       return;
     }
     if (/^#\+\S*:/.test(text)) {
       storeTodoSets();
-      gnista.call("font-lock-flush");
-      gnista.message("Local setup has been refreshed");
+      e8.call("font-lock-flush");
+      e8.message("Local setup has been refreshed");
       return;
     }
     if (cookieHere() || cookieEndsTitleBeforePoint()) {
-      gnista.call("org-update-statistics-cookies");
+      e8.call("org-update-statistics-cookies");
       return;
     }
     if (timestampHere()) {
@@ -5294,29 +5294,29 @@ const ctrlCCtrlC = gnista.defineCommand({
     if (headingHere()) {
       // With the region active, Org sets the tags of each heading that starts
       // in it, which may be none.
-      const region = gnista.variable("org-loop-over-headlines-in-active-region") === true ? headingsInRegion() : undefined;
+      const region = e8.variable("org-loop-over-headlines-in-active-region") === true ? headingsInRegion() : undefined;
       if (region && region.length === 0) return;
-      if (region) gnista.gotoChar(region[0].start);
-      gnista.callInteractively("org-set-tags-command");
+      if (region) e8.gotoChar(region[0].start);
+      e8.callInteractively("org-set-tags-command");
       return;
     }
     if (itemLine(line)) {
-      ctrlCCtrlCItem(line, gnista.prefixArg());
+      ctrlCCtrlCItem(line, e8.prefixArg());
       return;
     }
     nothingUseful();
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-toggle-checkbox",
   doc:
     "Tick or untick the checkbox of the item point is on, or of the items in the region or under the heading. " +
     "With C-u, add a checkbox to the item, or remove its checkbox.",
-  run: () => toggleCheckbox(gnista.prefixArg()),
+  run: () => toggleCheckbox(e8.prefixArg()),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-update-statistics-cookies",
   doc: "Bring the statistics cookies, such as [1/3], of the heading or item point is in up to date.",
   run: () => {
@@ -5326,31 +5326,31 @@ gnista.defineCommand({
     }
     // Point goes back where it was, kept by a marker, as in Org: inside a
     // cookie that changed, that is the cookie's start.
-    const pos = marker(gnista.point());
+    const pos = marker(e8.point());
     const all = headings();
     updateHeadingCookies(all, headingIndex(all, lineAt()) as number);
-    gnista.gotoChar(pos.pos);
+    e8.gotoChar(pos.pos);
     dropMarker(pos);
   },
 });
 
-const ctrlCMinus = gnista.defineCommand({
+const ctrlCMinus = e8.defineCommand({
   name: "org-ctrl-c-minus",
   doc: "C-c - in Org: insert a table rule, change a list's bullets, or turn the line into an item.",
   run: () => {
     const line = lineAt();
-    if (/^[ \t]*\|/.test(gnista.lineText(line))) gnista.callWithPrefix(gnista.prefixArg(), "org-table-insert-hline");
-    else if (orgRegionActive()) gnista.call("org-toggle-item");
+    if (/^[ \t]*\|/.test(e8.lineText(line))) e8.callWithPrefix(e8.prefixArg(), "org-table-insert-hline");
+    else if (orgRegionActive()) e8.call("org-toggle-item");
     else if (inItem(line) !== undefined) cycleListBullet();
-    else gnista.call("org-toggle-item");
+    else e8.call("org-toggle-item");
   },
 });
 
 /** Replaces text as replace-match does under save-excursion: point inside it goes to its start. */
 function replaceKeepingPoint(start: number, end: number, text: string): void {
-  const p = marker(gnista.point());
+  const p = marker(e8.point());
   edReplace(start, end, text);
-  gnista.gotoChar(p.pos);
+  e8.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -5358,18 +5358,18 @@ function replaceKeepingPoint(start: number, end: number, text: string): void {
 function deleteMetadata(line: number): void {
   const h = parseHeading(line);
   if (!h) return;
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   if (h.tagsAt !== undefined) {
     const before = text.slice(0, indexOf(line, text, h.tagsAt)).trimEnd();
-    edDelete(gnista.lineStart(line) + charCount(before), h.end);
+    edDelete(e8.lineStart(line) + charCount(before), h.end);
     // As org-set-tags does, a heading that was only tags keeps its space.
-    if (!parseHeading(line)) replaceText(gnista.lineEnd(line), gnista.lineEnd(line), " ");
+    if (!parseHeading(line)) replaceText(e8.lineEnd(line), e8.lineEnd(line), " ");
   }
   const all = headings();
   const i = headingIndex(all, line) as number;
   let meta = endOfMetaData(all[i]);
-  while (meta < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(meta, meta + 1))) meta++;
-  if (meta < gnista.bufferSize()) meta = gnista.lineStart(lineAt(meta));
+  while (meta < e8.bufferSize() && /[ \t\n\r]/.test(e8.bufferText(meta, meta + 1))) meta++;
+  if (meta < e8.bufferSize()) meta = e8.lineStart(lineAt(meta));
   const next = lineStartOrEnd(line + 1);
   if (meta > next) edDelete(next, meta);
 }
@@ -5381,8 +5381,8 @@ function deleteMetadata(line: number): void {
  */
 function shiftText(ind: number, end: Marker): void {
   let min = 1000;
-  for (let l = lineAt(); l < gnista.lineCount() && gnista.lineStart(l) < end.pos; l++) {
-    const text = gnista.lineText(l);
+  for (let l = lineAt(); l < e8.lineCount() && e8.lineStart(l) < end.pos; l++) {
+    const text = e8.lineText(l);
     if (/^[ \t]*$/.test(text) || /^\*+ /.test(text)) continue;
     const i = textIndentation(text);
     if (i === 0) {
@@ -5392,53 +5392,53 @@ function shiftText(ind: number, end: Marker): void {
     min = Math.min(min, i);
   }
   const delta = ind - min;
-  while (gnista.point() < end.pos) {
+  while (e8.point() < end.pos) {
     const line = lineAt();
-    const text = gnista.lineText(line);
+    const text = e8.lineText(line);
     if (!/^[ \t]*$/.test(text) && !/^\*+ /.test(text)) indentLineTo(line, textIndentation(text) + delta);
-    if (line + 1 >= gnista.lineCount()) {
-      gnista.gotoChar(gnista.bufferSize());
+    if (line + 1 >= e8.lineCount()) {
+      e8.gotoChar(e8.bufferSize());
       break;
     }
-    gnista.gotoChar(gnista.lineStart(line + 1));
+    e8.gotoChar(e8.lineStart(line + 1));
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-toggle-item",
   doc:
     "Turn the line, or the lines of the region, into list items; headings into items, their text into the " +
     "items' text; or items back into plain lines.",
   run: () => {
-    const mark = gnista.mark();
+    const mark = e8.mark();
     const region = orgRegionActive() && mark !== undefined;
     let beg: number;
     let end: Marker;
     if (region) {
-      const [rb, re] = [Math.min(mark as number, gnista.point()), Math.max(mark as number, gnista.point())];
+      const [rb, re] = [Math.min(mark as number, e8.point()), Math.max(mark as number, e8.point())];
       let q = rb;
-      while (q < gnista.bufferSize() && /[ \r\t\n]/.test(gnista.bufferText(q, q + 1))) q++;
-      beg = gnista.lineStart(lineAt(q));
+      while (q < e8.bufferSize() && /[ \r\t\n]/.test(e8.bufferText(q, q + 1))) q++;
+      beg = e8.lineStart(lineAt(q));
       end = marker(re);
     } else {
-      beg = gnista.lineStart(lineAt());
-      end = marker(gnista.lineEnd(lineAt()));
+      beg = e8.lineStart(lineAt());
+      end = marker(e8.lineEnd(lineAt()));
     }
-    const origin = marker(gnista.point());
+    const origin = marker(e8.point());
     try {
-      gnista.gotoChar(beg);
+      e8.gotoChar(beg);
       if (itemLine(lineAt())) {
-        while (gnista.point() < end.pos) {
+        while (e8.point() < end.pos) {
           const line = lineAt();
           const parts = itemLine(line) ? itemParts(line) : undefined;
           if (parts) edDelete(parts.bulletAt, parts.bulletAt + charCount(/^\S+[ \t]*/.exec(parts.bullet)?.[0] ?? ""));
-          if (line + 1 >= gnista.lineCount()) break;
-          gnista.gotoChar(gnista.lineStart(line + 1));
+          if (line + 1 >= e8.lineCount()) break;
+          e8.gotoChar(e8.lineStart(line + 1));
         }
       } else if (parseHeading(lineAt())) {
         deleteMetadata(lineAt());
         let refLevel = (parseHeading(lineAt()) as Heading).level;
-        while (gnista.point() < end.pos) {
+        while (e8.point() < end.pos) {
           const line = lineAt();
           const h = parseHeading(line);
           if (!h) break;
@@ -5448,7 +5448,7 @@ gnista.defineCommand({
           // The stars and TODO state go; the title stays.
           const fresh = parseHeading(line) as Heading;
           const titleAt = fresh.title === "" && fresh.priorityAt === undefined ? fresh.end : (fresh.priorityAt ?? fresh.titleAt);
-          const ls = gnista.lineStart(line);
+          const ls = e8.lineStart(line);
           // Org checks folds after each change, and the line is neither a
           // heading nor an item between these two.
           edDelete(ls, titleAt);
@@ -5457,105 +5457,105 @@ gnista.defineCommand({
           if (h.todo !== undefined) {
             const struct = listStruct(line);
             const old = copyStruct(struct);
-            getItem(struct, gnista.lineStart(line)).checkbox = isDone(h.todo) ? "[X]" : "[ ]";
+            getItem(struct, e8.lineStart(line)).checkbox = isDone(h.todo) ? "[X]" : "[ ]";
             writeStruct(struct, parentsAlist(struct), old);
           }
-          const sectionEnd = headings().find((x) => x.line > line)?.start ?? gnista.bufferSize();
-          if (line + 1 >= gnista.lineCount()) {
-            gnista.gotoChar(gnista.bufferSize());
+          const sectionEnd = headings().find((x) => x.line > line)?.start ?? e8.bufferSize();
+          if (line + 1 >= e8.lineCount()) {
+            e8.gotoChar(e8.bufferSize());
             break;
           }
-          gnista.gotoChar(gnista.lineStart(line + 1));
+          e8.gotoChar(e8.lineStart(line + 1));
           const limit = marker(Math.min(end.pos, sectionEnd));
           shiftText(2 * (delta + 1), limit);
           dropMarker(limit);
         }
       } else {
-        while (gnista.point() < end.pos) {
+        while (e8.point() < end.pos) {
           const line = lineAt();
-          const text = gnista.lineText(line);
+          const text = e8.lineText(line);
           const m = /^([ \t]*)(\S)/.exec(text);
           if (m && !isHeadingLine(text) && !itemLine(line)) {
-            const ls = gnista.lineStart(line);
+            const ls = e8.lineStart(line);
             replaceKeepingPoint(ls, ls + charCount(m[0]), `${m[1]}- ${m[2]}`);
           }
-          if (line + 1 >= gnista.lineCount()) break;
-          gnista.gotoChar(gnista.lineStart(line + 1));
+          if (line + 1 >= e8.lineCount()) break;
+          e8.gotoChar(e8.lineStart(line + 1));
         }
       }
     } finally {
-      gnista.gotoChar(origin.pos);
+      e8.gotoChar(origin.pos);
       dropMarker(origin);
       dropMarker(end);
     }
   },
 });
 
-const ctrlCStar = gnista.defineCommand({
+const ctrlCStar = e8.defineCommand({
   name: "org-ctrl-c-star",
   doc: "C-c * in Org: recalculate a table, or turn the line into a heading as org-toggle-heading does.",
   run: () => {
-    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-recalculate");
-    else gnista.callWithPrefix(gnista.prefixArg(), "org-toggle-heading");
+    if (/^[ \t]*\|/.test(e8.lineText(lineAt()))) e8.call("org-table-recalculate");
+    else e8.callWithPrefix(e8.prefixArg(), "org-toggle-heading");
   },
 });
 
-const toggleHeading = gnista.defineCommand({
+const toggleHeading = e8.defineCommand({
   name: "org-toggle-heading",
   doc:
     "Turn lines into headings, or headings into plain text, as org-toggle-heading does.\n\n" +
     "Starting at a heading, take the stars off every heading in the region, or on the line. Starting at an item, " +
     "turn the lists in the region into headings, checkboxes into TODO states. Otherwise make every line of text a " +
     "heading, a level below the one it is under; with a number, at that level; with C-u, only the first line.",
-  run: () => orgToggleHeading(gnista.prefixArg()),
+  run: () => orgToggleHeading(e8.prefixArg()),
 });
 
 /** Whether a line is a comment, as org-at-comment-p says. */
 function commentLine(line: number): boolean {
-  return /^[ \t]*#(?: |$)/.test(gnista.lineText(line));
+  return /^[ \t]*#(?: |$)/.test(e8.lineText(line));
 }
 
-function orgToggleHeading(nstars: gnista.PrefixArg): void {
+function orgToggleHeading(nstars: e8.PrefixArg): void {
   // The start of the first line that is not blank or a comment, from pos's.
   const skipBlanks = (pos: number): number => {
     let line = lineAt(pos);
-    while (line < gnista.lineCount() - 1 && commentLine(line)) line++;
-    let q = line === lineAt(pos) ? pos : gnista.lineStart(line);
-    while (q < gnista.bufferSize() && /[ \r\t\n]/.test(gnista.bufferText(q, q + 1))) q++;
-    return gnista.lineStart(lineAt(q));
+    while (line < e8.lineCount() - 1 && commentLine(line)) line++;
+    let q = line === lineAt(pos) ? pos : e8.lineStart(line);
+    while (q < e8.bufferSize() && /[ \r\t\n]/.test(e8.bufferText(q, q + 1))) q++;
+    return e8.lineStart(lineAt(q));
   };
   if (nstars != null && itemLine(lineAt())) {
     // As org-mark-element does when called from code: the region is the item.
-    const el = elementAt(gnista.point());
-    gnista.gotoChar(gnista.lineEnd(lineAt()));
+    const el = elementAt(e8.point());
+    e8.gotoChar(e8.lineEnd(lineAt()));
     if (el) {
-      gnista.pushMark(Math.min(gnista.bufferSize(), el.end), { activate: true });
-      gnista.gotoChar(el.begin);
+      e8.pushMark(Math.min(e8.bufferSize(), el.end), { activate: true });
+      e8.gotoChar(el.begin);
     }
   }
-  const mark = gnista.mark();
+  const mark = e8.mark();
   const region = orgRegionActive() && mark !== undefined;
   let beg: number;
   let end: Marker;
   if (region) {
-    const [rb, re] = [Math.min(mark as number, gnista.point()), Math.max(mark as number, gnista.point())];
+    const [rb, re] = [Math.min(mark as number, e8.point()), Math.max(mark as number, e8.point())];
     beg = skipBlanks(rb);
-    end = marker(re === gnista.lineStart(lineAt(re)) ? re : gnista.lineEnd(lineAt(re)));
+    end = marker(re === e8.lineStart(lineAt(re)) ? re : e8.lineEnd(lineAt(re)));
   } else {
-    beg = skipBlanks(gnista.lineStart(lineAt()));
-    end = marker(gnista.lineEnd(lineAt()));
+    beg = skipBlanks(e8.lineStart(lineAt()));
+    end = marker(e8.lineEnd(lineAt()));
   }
-  const origin = marker(gnista.point());
+  const origin = marker(e8.point());
   let toggled = false;
   let p = beg;
   const forwardLine = (): void => {
     const l = lineAt(p);
-    p = l + 1 < gnista.lineCount() ? gnista.lineStart(l + 1) : gnista.bufferSize();
+    p = l + 1 < e8.lineCount() ? e8.lineStart(l + 1) : e8.bufferSize();
   };
   try {
     if (parseHeading(lineAt(beg))) {
       while (p < end.pos) {
-        const m = /^\*+ /.exec(gnista.lineText(lineAt(p)));
+        const m = /^\*+ /.exec(e8.lineText(lineAt(p)));
         if (parseHeading(lineAt(p)) && m) {
           edReplace(p, p + m[0].length, "");
           toggled = true;
@@ -5576,12 +5576,12 @@ function orgToggleHeading(nstars: gnista.PrefixArg): void {
       const i = headingIndex(all, lineAt(beg));
       const count = typeof nstars === "number" ? nstars : i === undefined ? 0 : all[i].level;
       const stars = "*".repeat(count);
-      const add = nstars != null ? "" : stars === "" ? "*" : gnista.variable("org-odd-levels-only") === true ? "**" : "*";
+      const add = nstars != null ? "" : stars === "" ? "*" : e8.variable("org-odd-levels-only") === true ? "**" : "*";
       const rpl = `${stars}${add} `;
-      const limit = Array.isArray(nstars) && nstars[0] === 4 ? marker(gnista.lineEnd(lineAt(beg))) : end;
+      const limit = Array.isArray(nstars) && nstars[0] === 4 ? marker(e8.lineEnd(lineAt(beg))) : end;
       while (p < limit.pos) {
         const line = lineAt(p);
-        const m = /^([ \t]*)(\S)/.exec(gnista.lineText(line));
+        const m = /^([ \t]*)(\S)/.exec(e8.lineText(line));
         if (!parseHeading(line) && !itemLine(line) && !commentLine(line) && m) {
           edReplace(p, p + charCount(m[0]), rpl + m[2]);
           toggled = true;
@@ -5591,11 +5591,11 @@ function orgToggleHeading(nstars: gnista.PrefixArg): void {
       if (limit !== end) dropMarker(limit);
     }
   } finally {
-    gnista.gotoChar(origin.pos);
+    e8.gotoChar(origin.pos);
     dropMarker(origin);
     dropMarker(end);
   }
-  if (!toggled) gnista.message("Cannot toggle heading from here");
+  if (!toggled) e8.message("Cannot toggle heading from here");
 }
 
 /**
@@ -5638,17 +5638,17 @@ function listToSubtree(pos: number, limit: number): number {
   // Each item's heading, without its stars, then the lines of text under it.
   const entries: { depth: number; title: string; body: string }[] = [];
   let blanks = 0;
-  for (let l = lineAt(pos); l < gnista.lineCount() && gnista.lineStart(l) < bottom; l++) {
-    const text = gnista.lineText(l);
-    const item = items.find((e) => e.pos === gnista.lineStart(l));
+  for (let l = lineAt(pos); l < e8.lineCount() && e8.lineStart(l) < bottom; l++) {
+    const text = e8.lineText(l);
+    const item = items.find((e) => e.pos === e8.lineStart(l));
     if (item) {
       // Org reads the list narrowed to the limit, so a line it cuts is read as far as it goes.
-      const lineEnd = Math.min(gnista.lineEnd(l), limit);
+      const lineEnd = Math.min(e8.lineEnd(l), limit);
       const parts = itemParts(l) as ItemParts;
       const within = parts.matchEnd <= lineEnd;
       const box = parts.checkbox === undefined || !within ? "" : `${parts.checkbox === "[X]" ? done : todo} `;
       const tag = item.tag !== undefined && within ? ` ${item.tag} ` : "";
-      const title = within ? gnista.bufferText(parts.matchEnd, lineEnd) : "";
+      const title = within ? e8.bufferText(parts.matchEnd, lineEnd) : "";
       entries.push({ depth: depth(item), title: box + tag + interpretTimestamps(title), body: "" });
       blanks = 0;
     } else if (/^[ \t]*$/.test(text)) blanks++;
@@ -5663,7 +5663,7 @@ function listToSubtree(pos: number, limit: number): number {
   const level = above === undefined ? 1 : all[above].level + 1;
   // org-blank-before-new-entry's "auto": a blank line before the heading above means one between these.
   const previous = [...all].reverse().find((h) => h.start < pos);
-  const blank = previous !== undefined && previous.start > 0 && /^[ \t]*$/.test(gnista.lineText(previous.line - 1));
+  const blank = previous !== undefined && previous.start > 0 && /^[ \t]*$/.test(e8.lineText(previous.line - 1));
   const text = entries.map((e) => `${"*".repeat(level + e.depth - 1)} ${e.title}${e.body}`).join(blank ? "\n\n" : "\n");
   edInsert(pos, `${text}\n`);
   return pos + charCount(text) + 1;
@@ -5671,7 +5671,7 @@ function listToSubtree(pos: number, limit: number): number {
 
 // Structure templates, as org-insert-structure-template
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-structure-template-alist",
   doc:
     'The kinds of block C-c C-, offers, each a key and a block type: ["s", "src"] makes #+begin_src and #+end_src. ' +
@@ -5692,7 +5692,7 @@ gnista.defineVariable({
 
 /** org-structure-template-alist, as pairs of a key and a block type. */
 export function structureTemplates(): [string, string][] {
-  const alist = gnista.variable("org-structure-template-alist");
+  const alist = e8.variable("org-structure-template-alist");
   if (!Array.isArray(alist)) return [];
   return alist.filter((e): e is [string, string] => Array.isArray(e) && typeof e[0] === "string" && typeof e[1] === "string");
 }
@@ -5713,71 +5713,71 @@ function readStructureType(): string {
   const menu = templates.map(([key, type]) => `[${key}] ${type}`).join("  ");
   let typed = "";
   for (;;) {
-    const key = gnista.readKey(`${menu}  [TAB] write the type\nKey: ${typed}`);
+    const key = e8.readKey(`${menu}  [TAB] write the type\nKey: ${typed}`);
     if (typed === "" && key === "TAB") {
-      const type = gnista.readString("Structure type: ");
-      if (type === "") gnista.userError("Empty structure type");
+      const type = e8.readString("Structure type: ");
+      if (type === "") e8.userError("Empty structure type");
       return type;
     }
     const exact = templates.find(([k]) => k === typed);
     if (exact && (key === "TAB" || key === "RET" || key === "SPC")) return exact[1];
-    if ([...key].length !== 1) gnista.userError("No such template");
+    if ([...key].length !== 1) e8.userError("No such template");
     typed += key;
     const starting = templates.filter(([k]) => k.startsWith(typed));
-    if (starting.length === 0) gnista.userError("No such template");
+    if (starting.length === 0) e8.userError("No such template");
     if (starting.length === 1 && starting[0][0] === typed) return starting[0][1];
   }
 }
 
 /** Puts a block around the region, or an empty one at point, as org-insert-structure-template. */
 export function insertStructureTemplate(type: string): void {
-  if (type === "") throw gnista.signal("error", `Invalid structure type: "${type}"`);
+  if (type === "") throw e8.signal("error", `Invalid structure type: "${type}"`);
   const region = orgRegionActive();
-  const regionStart = region ? Math.min(gnista.point(), gnista.mark() as number) : 0;
-  const regionEnd = region ? marker(Math.max(gnista.point(), gnista.mark() as number)) : undefined;
+  const regionStart = region ? Math.min(e8.point(), e8.mark() as number) : 0;
+  const regionEnd = region ? marker(Math.max(e8.point(), e8.mark() as number)) : undefined;
   const extended = /^(src|export)$/i.test(type);
   const verbatim = /^(example|export|src|comment)/i.test(type);
   const up = upcaseBlock(type);
   const first = type.split(/\s+/).find((w) => w !== "") ?? "";
-  if (region) gnista.gotoChar(regionStart);
-  const column = gnista.currentIndentation();
-  const bol = gnista.lineStart(lineAt());
-  if (/^[ \t]*$/.test(gnista.bufferText(bol, gnista.point()))) gnista.gotoChar(bol);
-  else gnista.insert("\n");
-  const start = gnista.point();
-  gnista.indentTo(column);
-  gnista.insert(`#+${up ? "BEGIN" : "begin"}_${type}${extended ? " " : ""}\n`);
+  if (region) e8.gotoChar(regionStart);
+  const column = e8.currentIndentation();
+  const bol = e8.lineStart(lineAt());
+  if (/^[ \t]*$/.test(e8.bufferText(bol, e8.point()))) e8.gotoChar(bol);
+  else e8.insert("\n");
+  const start = e8.point();
+  e8.indentTo(column);
+  e8.insert(`#+${up ? "BEGIN" : "begin"}_${type}${extended ? " " : ""}\n`);
   if (regionEnd) {
     // As org-escape-code-in-region: a comma before lines Org would read as its own.
     if (verbatim) {
       let line = lineAt();
-      while (gnista.lineStart(line) < regionEnd.pos && line < gnista.lineCount()) {
-        const text = gnista.lineText(line);
+      while (e8.lineStart(line) < regionEnd.pos && line < e8.lineCount()) {
+        const text = e8.lineText(line);
         const m = /^[ \t]*(?=,*(?:\*|#\+))/.exec(text);
-        if (m) edInsert(gnista.lineStart(line) + charCount(m[0]), ",");
+        if (m) edInsert(e8.lineStart(line) + charCount(m[0]), ",");
         line++;
       }
     }
-    gnista.gotoChar(regionEnd.pos);
+    e8.gotoChar(regionEnd.pos);
     dropMarker(regionEnd);
-    gnista.skipCharsBackward(" \r\t\n");
-    gnista.gotoChar(gnista.lineEnd(lineAt()));
+    e8.skipCharsBackward(" \r\t\n");
+    e8.gotoChar(e8.lineEnd(lineAt()));
   }
-  if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
-  gnista.indentTo(column);
-  gnista.insert(`#+${up ? "END" : "end"}_${first}`);
-  if (gnista.lookingAt("[ \t]*$")) gnista.deleteRegion(gnista.point(), gnista.matchEnd(0)!);
-  else gnista.insert("\n");
-  if (gnista.point() === gnista.bufferSize() && gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
-  gnista.gotoChar(start);
-  if (extended) gnista.gotoChar(gnista.lineEnd(lineAt()));
+  if (e8.point() !== e8.lineStart(lineAt())) e8.insert("\n");
+  e8.indentTo(column);
+  e8.insert(`#+${up ? "END" : "end"}_${first}`);
+  if (e8.lookingAt("[ \t]*$")) e8.deleteRegion(e8.point(), e8.matchEnd(0)!);
+  else e8.insert("\n");
+  if (e8.point() === e8.bufferSize() && e8.point() !== e8.lineStart(lineAt())) e8.insert("\n");
+  e8.gotoChar(start);
+  if (extended) e8.gotoChar(e8.lineEnd(lineAt()));
   else {
     forwardLine(1);
-    gnista.skipCharsForward(" \t");
+    e8.skipCharsForward(" \t");
   }
 }
 
-const insertStructureTemplateCommand = gnista.defineCommand({
+const insertStructureTemplateCommand = e8.defineCommand({
   name: "org-insert-structure-template",
   doc:
     "Insert a block, #+begin_TYPE and #+end_TYPE, around the region if it is active. Asks for its type by the key " +
@@ -5787,7 +5787,7 @@ const insertStructureTemplateCommand = gnista.defineCommand({
 
 // The mode
 
-const keys: { [keys: string]: gnista.CommandName | gnista.DefinedCommand } = {
+const keys: { [keys: string]: e8.CommandName | e8.DefinedCommand } = {
   "C-c C-,": insertStructureTemplateCommand,
   TAB: cycle,
   "S-TAB": shiftTab,
@@ -5845,7 +5845,7 @@ const keys: { [keys: string]: gnista.CommandName | gnista.DefinedCommand } = {
   "<mouse-1>": mouseFollow,
 };
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "org-mode",
   modeName: "Org",
   parent: "outline-mode",
@@ -5860,22 +5860,22 @@ gnista.defineMajorMode({
     "link and C-c C-o follows it. Lines starting with | are tables: TAB moves between fields and aligns them.",
   bindings: keys,
   setup: () => {
-    gnista.setVariable("outline-regexp", "\\*+ ");
-    gnista.setVariable("imenu-create-index-function", orgImenuGetTree);
-    gnista.addToInvisibilitySpec("org-hide-drawer", { ellipsis: true });
-    gnista.addToInvisibilitySpec("org-hide-block", { ellipsis: true });
-    gnista.addToInvisibilitySpec("org-link");
+    e8.setVariable("outline-regexp", "\\*+ ");
+    e8.setVariable("imenu-create-index-function", orgImenuGetTree);
+    e8.addToInvisibilitySpec("org-hide-drawer", { ellipsis: true });
+    e8.addToInvisibilitySpec("org-hide-block", { ellipsis: true });
+    e8.addToInvisibilitySpec("org-link");
     storeTodoSets();
-    if (gnista.variable("org-startup-truncated") === true) gnista.setVariable("truncate-lines", true);
+    if (e8.variable("org-startup-truncated") === true) e8.setVariable("truncate-lines", true);
     // A folded heading ends in org-ellipsis, through the buffer's display table, as org-mode sets it up.
-    const ellipsis = gnista.variable("org-ellipsis");
+    const ellipsis = e8.variable("org-ellipsis");
     if (typeof ellipsis === "string" && ellipsis !== "") {
-      const table = gnista.makeCharTable("display-table");
-      gnista.setCharTableExtraSlot(table, 4, gnista.propertize(ellipsis, { face: "org-ellipsis" }));
-      gnista.setVariable("buffer-display-table", table);
+      const table = e8.makeCharTable("display-table");
+      e8.setCharTableExtraSlot(table, 4, e8.propertize(ellipsis, { face: "org-ellipsis" }));
+      e8.setVariable("buffer-display-table", table);
     }
     // As org-mode turns org-indent-mode on, from the variable or a #+STARTUP: line.
-    let indented = gnista.variable("org-startup-indented") === true;
+    let indented = e8.variable("org-startup-indented") === true;
     for (const [, , text] of keywordLines()) {
       const m = /^#\+STARTUP:(.*)$/i.exec(text);
       for (const word of m ? m[1].trim().split(/\s+/) : []) {
@@ -5883,22 +5883,22 @@ gnista.defineMajorMode({
         else if (word === "noindent") indented = false;
       }
     }
-    if (indented) gnista.callWithPrefix(1, "org-indent-mode");
-    gnista.addHook("jit-lock-functions", fontify, { local: true });
-    gnista.addHook("after-change-functions", foldsAfterChange, { local: true });
-    gnista.addHook("after-change-functions", headingsAfterChange, { local: true });
+    if (indented) e8.callWithPrefix(1, "org-indent-mode");
+    e8.addHook("jit-lock-functions", fontify, { local: true });
+    e8.addHook("after-change-functions", foldsAfterChange, { local: true });
+    e8.addHook("after-change-functions", headingsAfterChange, { local: true });
     startupVisibility();
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-force-self-insert",
   doc: "Insert the character typed, as self-insert-command does, without the table handling of org-self-insert-command.",
-  run: () => gnista.callWithPrefix(gnista.prefixArg(), "self-insert-command"),
+  run: () => e8.callWithPrefix(e8.prefixArg(), "self-insert-command"),
 });
-gnista.bindKey("|", "org-force-self-insert", "org-mode-map");
+e8.bindKey("|", "org-force-self-insert", "org-mode-map");
 
-gnista.remapCommand("org-mode-map", "self-insert-command", "org-self-insert-command");
-gnista.remapCommand("org-mode-map", "delete-backward-char", "org-delete-backward-char");
-gnista.remapCommand("org-mode-map", "delete-char", "org-delete-char");
-gnista.remapCommand("org-mode-map", "move-end-of-line", "org-end-of-line");
+e8.remapCommand("org-mode-map", "self-insert-command", "org-self-insert-command");
+e8.remapCommand("org-mode-map", "delete-backward-char", "org-delete-backward-char");
+e8.remapCommand("org-mode-map", "delete-char", "org-delete-char");
+e8.remapCommand("org-mode-map", "move-end-of-line", "org-end-of-line");

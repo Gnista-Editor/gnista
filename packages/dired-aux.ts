@@ -4,7 +4,7 @@
 // whose text matches, and searching them.
 //
 // Copyright (C) 1985-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -17,7 +17,7 @@ import {
 } from "dired";
 import { matchesInFiles } from "xref";
 
-const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
+const defvar = (name: string, value: e8.Value, doc: string) => e8.defineVariable({ name, value, doc });
 defvar("dired-keep-marker-symlink", "Y", "The mark symbolic links get, or true for the mark the file had, or nil for none.");
 defvar("dired-keep-marker-relsymlink", "S", "The mark relative symbolic links get, or true for the mark the file had, or nil for none.");
 defvar("dired-keep-marker-hardlink", "H", "The mark hard links get, or true for the mark the file had, or nil for none.");
@@ -29,7 +29,7 @@ defvar("dired-compress-directory-default-suffix", ".tar.gz", "The suffix Z gives
 
 /** The mark a keep-marker variable gives a new file made from `from`. */
 const keptMark = (variable: string) => (from: string): string | undefined => {
-  const keep = gnista.variable(variable);
+  const keep = e8.variable(variable);
   return typeof keep === "string" ? keep : keep === true ? markOf(from) : undefined;
 };
 
@@ -43,8 +43,8 @@ export function shellQuoteArgument(arg: string): string {
 
 /** Makes `link` a link to `file` by the shortest relative name, as dired-make-relative-symlink. */
 export function makeRelativeSymlink(file: string, link: string, okIfExists = false): void {
-  const file1 = gnista.expandFileName(file);
-  const file2 = gnista.expandFileName(link);
+  const file1 = e8.expandFileName(file);
+  const file2 = e8.expandFileName(link);
   // The longest leading directory the two names share.
   let index = 0;
   for (;;) {
@@ -60,26 +60,26 @@ export function makeRelativeSymlink(file: string, link: string, okIfExists = fal
     const ups = [...file2.slice(index)].filter((c) => c === "/").length;
     name1 = "../".repeat(ups) + file1.slice(index);
   }
-  gnista.makeSymbolicLink(gnista.directoryFileName(name1), file2, okIfExists);
+  e8.makeSymbolicLink(e8.directoryFileName(name1), file2, okIfExists);
 }
 
-const symlink: Creator = (from, to) => gnista.makeSymbolicLink(from, to, true);
+const symlink: Creator = (from, to) => e8.makeSymbolicLink(from, to, true);
 const relsymlink: Creator = (from, to) => makeRelativeSymlink(from, to, true);
-const hardlink: Creator = (from, to) => gnista.addNameToFile(from, to, true);
+const hardlink: Creator = (from, to) => e8.addNameToFile(from, to, true);
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-symlink",
   doc:
     "Make symbolic links to the marked files, or the one on this line: a new name for one, a directory for several, " +
     "where links of the same names are made. The links name the files absolutely; Y makes relative ones.",
   run: () => doCreateFiles("Symlink", "Symlink", symlink, keptMark("dired-keep-marker-symlink"), true),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-relsymlink",
   doc: "Make relative symbolic links to the marked files, or the one on this line, as foo -> ../bar/foo rather than an absolute name.",
   run: () => doCreateFiles("RelSymLink", "RelSymLink", relsymlink, keptMark("dired-keep-marker-relsymlink")),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-hardlink",
   doc: "Give the marked files, or the one on this line, other names, as hard links: a new name for one, a directory for several.",
   run: () => doCreateFiles("Hardlink", "Hardlink", hardlink, keptMark("dired-keep-marker-hardlink"), true),
@@ -89,16 +89,16 @@ gnista.defineCommand({
 
 /** Renames a file and the buffers visiting it, as dired-rename-file. */
 export const diredRenameFile: Creator = (from, to) => {
-  gnista.renameFile(from, to, { okIfExists: true });
-  for (const b of gnista.bufferList()) {
-    gnista.withCurrentBuffer(b, () => {
-      if (gnista.bufferFileName() === from) gnista.setVisitedFileName(to, { alongWithFile: true });
+  e8.renameFile(from, to, { okIfExists: true });
+  for (const b of e8.bufferList()) {
+    e8.withCurrentBuffer(b, () => {
+      if (e8.bufferFileName() === from) e8.setVisitedFileName(to, { alongWithFile: true });
     });
   }
   removeEntry(from);
 };
 
-const copy: Creator = (from, to) => gnista.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
+const copy: Creator = (from, to) => e8.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
 
 /**
  * Makes a new file from each marked file whose name matches `regexp`, named
@@ -106,18 +106,18 @@ const copy: Creator = (from, to) => gnista.copyFile(from, to, { okIfExists: true
  * dired-do-create-files-regexp. With `wholeName`, the regexp matches the
  * whole file name, else the part after the directory.
  */
-function createFilesRegexp(creator: Creator, operation: string, arg: gnista.PrefixArg | null, regexp: string, newname: string, wholeName: boolean, marker: (from: string) => string | undefined): void {
+function createFilesRegexp(creator: Creator, operation: string, arg: e8.PrefixArg | null, regexp: string, newname: string, wholeName: boolean, marker: (from: string) => string | undefined): void {
   requireDired();
   const { files } = markedFiles(arg, MARKER, false, "No files specified");
   const ask = makeQuery();
   const replaced = (name: string) => stringReplaceMatch(regexp, name, newname);
   createFiles(operation, files, (from) => {
-    const relative = gnista.fileNameNondirectory(from);
+    const relative = e8.fileNameNondirectory(from);
     const fromName = wholeName ? from : relative;
     const newName = replaced(fromName);
     if (newName === undefined) return undefined;
-    const to = wholeName ? newName : gnista.expandFileName(newName, gnista.fileNameDirectory(from));
-    const shown = wholeName ? to : gnista.fileNameNondirectory(to);
+    const to = wholeName ? newName : e8.expandFileName(newName, e8.fileNameDirectory(from));
+    const shown = wholeName ? to : e8.fileNameNondirectory(to);
     return ask(`${operation} \u2018${wholeName ? from : relative}\u2019 to \u2018${shown}\u2019?`) ? to : undefined;
   }, creator, marker);
 }
@@ -128,24 +128,24 @@ function createFilesRegexp(creator: Creator, operation: string, arg: gnista.Pref
  * undefined if it does not match.
  */
 export function stringReplaceMatch(regexp: string, string: string, newtext: string): string | undefined {
-  if (gnista.stringMatch(regexp, string) === undefined) return undefined;
+  if (e8.stringMatch(regexp, string) === undefined) return undefined;
   const chars = [...string];
   const group = (n: number): string => {
-    const start = gnista.matchBeginning(n);
-    return start === undefined ? "" : chars.slice(start, gnista.matchEnd(n)).join("");
+    const start = e8.matchBeginning(n);
+    return start === undefined ? "" : chars.slice(start, e8.matchEnd(n)).join("");
   };
   const replacement = newtext.replace(/\\([&\d\\])/g, (_, c: string) => (c === "&" ? group(0) : c === "\\" ? "\\" : group(Number(c))));
-  return chars.slice(0, gnista.matchBeginning(0)).join("") + replacement + chars.slice(gnista.matchEnd(0)).join("");
+  return chars.slice(0, e8.matchBeginning(0)).join("") + replacement + chars.slice(e8.matchEnd(0)).join("");
 }
 
 /** Asks for a regexp and what to replace it with, as dired-mark-read-regexp: with a zero prefix argument, the whole file name. */
-function readRegexpOperation(operation: string, run: (regexp: string, newname: string, arg: gnista.PrefixArg | null, whole: boolean) => void): void {
-  const raw = gnista.prefixArg();
-  const whole = raw !== null && gnista.prefixNumericValue(raw) === 0;
+function readRegexpOperation(operation: string, run: (regexp: string, newname: string, arg: e8.PrefixArg | null, whole: boolean) => void): void {
+  const raw = e8.prefixArg();
+  const whole = raw !== null && e8.prefixNumericValue(raw) === 0;
   const arg = whole ? null : raw;
   const abs = whole ? "Abs. " : "";
-  const regexp = gnista.readString(`${abs}${operation} from (regexp): `, { history: "dired-regexp-history" });
-  const newname = gnista.readString(`${abs}${operation} ${regexp} to: `);
+  const regexp = e8.readString(`${abs}${operation} from (regexp): `, { history: "dired-regexp-history" });
+  const newname = e8.readString(`${abs}${operation} ${regexp} to: `);
   run(regexp, newname, arg, whole);
 }
 
@@ -156,7 +156,7 @@ for (const [name, operation, creator, keep, doc] of [
   ["dired-do-symlink-regexp", "SymLink", symlink, "dired-keep-marker-symlink", "Symlink the marked files whose names match a regexp to names made from the match."],
   ["dired-do-relsymlink-regexp", "RelSymLink", relsymlink, "dired-keep-marker-relsymlink", "Relative symlink the marked files whose names match a regexp to names made from the match."],
 ] as const) {
-  gnista.defineCommand({
+  e8.defineCommand({
     name,
     doc: `${doc}\n\nThe new name may hold \\\\& and \\\\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.`,
     run: () => {
@@ -172,20 +172,20 @@ for (const [name, operation, creator, keep, doc] of [
 /** Renames each marked file to a name made from the old, asking about each, as dired-rename-non-directory. */
 function renameNonDirectory(basename: (name: string) => string, operation: string): void {
   requireDired();
-  const { files } = markedFiles(gnista.prefixArg());
+  const { files } = markedFiles(e8.prefixArg());
   const ask = makeQuery();
   createFiles(operation, files, (from) => {
-    const to = (gnista.fileNameDirectory(from) ?? "") + basename(gnista.fileNameNondirectory(from));
-    return ask(`${operation} \u2018${gnista.fileNameNondirectory(from)}\u2019 to \u2018${gnista.fileNameNondirectory(to)}\u2019`) ? to : undefined;
+    const to = (e8.fileNameDirectory(from) ?? "") + basename(e8.fileNameNondirectory(from));
+    return ask(`${operation} \u2018${e8.fileNameNondirectory(from)}\u2019 to \u2018${e8.fileNameNondirectory(to)}\u2019`) ? to : undefined;
   }, diredRenameFile, keptMark("dired-keep-marker-rename"));
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-upcase",
   doc: "Rename the marked files, or the next prefix-argument many, to upper case.",
   run: () => renameNonDirectory((n) => n.toUpperCase(), "Rename upcase"),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-downcase",
   doc: "Rename the marked files, or the next prefix-argument many, to lower case.",
   run: () => renameNonDirectory((n) => n.toLowerCase(), "Rename downcase"),
@@ -195,29 +195,29 @@ gnista.defineCommand({
 
 /** The buffer visiting a file, as get-file-buffer. */
 function fileBuffer(file: string): string | undefined {
-  return gnista.bufferList().find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName() === file));
+  return e8.bufferList().find((b) => e8.withCurrentBuffer(b, () => e8.bufferFileName() === file));
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-mark-files-containing-regexp",
   doc:
     "Mark the files whose text matches a regexp; with a prefix argument, unmark them. A file a buffer visits is " +
     "searched in its buffer, unless dired-always-read-filesystem says to read it from disk.",
-  params: [{ name: "regexp", prompt: () => `${gnista.prefixArg() !== null ? "Unmark" : "Mark"} files containing (regexp): `, history: "dired-regexp-history" }],
+  params: [{ name: "regexp", prompt: () => `${e8.prefixArg() !== null ? "Unmark" : "Mark"} files containing (regexp): `, history: "dired-regexp-history" }],
   run: (regexp: string) => {
     requireDired();
     const dir = currentDirectory();
     markIf((f) => {
       if (isDot(f.name)) return false;
       const file = dir + f.name;
-      if (!gnista.fileReadableP(file) || gnista.fileDirectoryP(file)) return false;
-      gnista.message(`Checking ${file}`);
+      if (!e8.fileReadableP(file) || e8.fileDirectoryP(file)) return false;
+      e8.message(`Checking ${file}`);
       const buffer = on("dired-always-read-filesystem") ? undefined : fileBuffer(file);
       const text = buffer !== undefined
-        ? gnista.withCurrentBuffer(buffer, () => gnista.bufferSubstringNoProperties(0, gnista.bufferSize()))
-        : gnista.readTextFile(file);
-      return gnista.stringMatch(regexp, text) !== undefined;
-    }, "matching file", gnista.prefixArg() !== null ? " " : MARKER);
+        ? e8.withCurrentBuffer(buffer, () => e8.bufferSubstringNoProperties(0, e8.bufferSize()))
+        : e8.readTextFile(file);
+      return e8.stringMatch(regexp, text) !== undefined;
+    }, "matching file", e8.prefixArg() !== null ? " " : MARKER);
   },
 });
 
@@ -276,30 +276,30 @@ function doShellCommand(command: string, files: string[]): void {
   if (!onEach && !noSubst) throw new Error("You can not combine `*' and `?' substitution marks");
   if (on("dired-confirm-shell-command")) {
     for (const char of ["*", "?"]) {
-      if (needConfirm(command, char) && !gnista.yOrNP(`Confirm--do you mean to use \u2018${char}\u2019 as a wildcard? `)) {
-        gnista.message("Command canceled");
+      if (needConfirm(command, char) && !e8.yOrNP(`Confirm--do you mean to use \u2018${char}\u2019 as a wildcard? `)) {
+        e8.message("Command canceled");
         return;
       }
     }
   }
   const line = shellStuffIt(command, files, onEach);
   // As shell-command, a line ending in & runs in the background.
-  gnista.withCurrentBuffer(gnista.currentBuffer(), () => gnista.call("shell-command", line));
+  e8.withCurrentBuffer(e8.currentBuffer(), () => e8.call("shell-command", line));
 }
 
 /** Reads a command to run on the marked files, as dired-read-shell-command, then runs it. */
 function readAndRunShellCommand(prefix: string, async: boolean): void {
   requireDired();
-  const arg = gnista.prefixArg();
+  const arg = e8.prefixArg();
   const dir = currentDirectory();
   const { files } = markedFiles(arg, MARKER, false, "No files specified");
   const relative = files.map((f) => f.startsWith(dir) ? f.slice(dir.length) : f);
-  let command = gnista.readString(`${prefix} on ${markPrompt(arg, files)}: `, { history: "shell-command-history" });
+  let command = e8.readString(`${prefix} on ${markPrompt(arg, files)}: `, { history: "shell-command-history" });
   if (async && !/&[ \t]*$/.test(command)) command += " &";
   doShellCommand(command, relative);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-shell-command",
   doc:
     "Run a shell command on the marked files, or the one on this line.\n\n" +
@@ -308,23 +308,23 @@ gnista.defineCommand({
     "in the background.",
   run: () => readAndRunShellCommand("!", false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-async-shell-command",
   doc: "Run a shell command on the marked files in the background, as ! does with & on the end.",
   run: () => readAndRunShellCommand("&", true),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-show-file-type",
   doc: "Say what kind of file is on this line, as the file program tells it. With a prefix argument, what a link points to.",
   run: () => {
     requireDired();
     const file = filenameAt();
     if (file === undefined) throw new Error("No file on this line");
-    const name = gnista.fileNameNondirectory(file);
-    const args = gnista.prefixArg() !== null ? ["-L", "--", name] : ["--", name];
-    const { output } = gnista.callProcess(["file", ...args], { directory: currentDirectory() });
-    gnista.message(output.endsWith("\n") ? output.slice(0, -1) : output);
+    const name = e8.fileNameNondirectory(file);
+    const args = e8.prefixArg() !== null ? ["-L", "--", name] : ["--", name];
+    const { output } = e8.callProcess(["file", ...args], { directory: currentDirectory() });
+    e8.message(output.endsWith("\n") ? output.slice(0, -1) : output);
   },
 });
 
@@ -368,25 +368,25 @@ export function fileModesSymbolicToNumber(modes: string, from = 0): number {
 /** The files a change acts on, and their lines listed again afterwards, as dired-do-redisplay. */
 function changeFiles(change: (files: string[]) => void): void {
   requireDired();
-  const { files } = markedFiles(gnista.prefixArg());
+  const { files } = markedFiles(e8.prefixArg());
   change(files);
   readin(true);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-chmod",
   doc: "Change the mode of the marked files, or the one on this line: octal, as 644, or symbolic, as g+w. M-n brings this file's.",
   run: () => {
     changeFiles((files) => {
       const here = filenameAt();
-      const modes = here === undefined ? undefined : gnista.fileAttributes(here)?.modes;
+      const modes = here === undefined ? undefined : e8.fileAttributes(here)?.modes;
       const m = modes && /^.(...)(...)(...)$/.exec(modes);
       const dflt = m ? `u=${m[1]},g=${m[2]},o=${m[3]}`.replace(/-/g, "") : undefined;
-      const input = gnista.readString(`Change mode of ${markPrompt(gnista.prefixArg(), files)} to: `, { default: dflt });
+      const input = e8.readString(`Change mode of ${markPrompt(e8.prefixArg(), files)} to: `, { default: dflt });
       if (input === "") throw new Error("No file mode specified");
       const octal = /^[0-7]+/.test(input) ? parseInt(input, 8) : undefined;
       for (const file of files) {
-        gnista.setFileModes(file, octal ?? fileModesSymbolicToNumber(input, gnista.fileModes(file) ?? 0));
+        e8.setFileModes(file, octal ?? fileModesSymbolicToNumber(input, e8.fileModes(file) ?? 0));
       }
     });
   },
@@ -404,23 +404,23 @@ function doChxxx(attribute: string, program: string, op: "touch" | "chown" | "ch
   changeFiles((files) => {
     const dir = currentDirectory();
     const here = filenameAt();
-    const attrs = here === undefined ? undefined : gnista.fileAttributes(here);
+    const attrs = here === undefined ? undefined : e8.fileAttributes(here);
     let dflt: string | undefined;
     if (attrs && op === "touch") dflt = touchTime(attrs.modified);
     else if (attrs && op === "chown") dflt = attrs.user;
     else if (attrs && op === "chgrp") dflt = attrs.group;
-    const prompt = op === "touch" ? `Change ${attribute} of ${markPrompt(gnista.prefixArg(), files)} to (default now): ` : `Change ${attribute} of ${markPrompt(gnista.prefixArg(), files)} to: `;
-    const value = gnista.readString(prompt, { default: op === "touch" ? undefined : dflt });
+    const prompt = op === "touch" ? `Change ${attribute} of ${markPrompt(e8.prefixArg(), files)} to (default now): ` : `Change ${attribute} of ${markPrompt(e8.prefixArg(), files)} to: `;
+    const value = e8.readString(prompt, { default: op === "touch" ? undefined : dflt });
     const args = value === "" ? [] : op === "touch" ? ["-t", value] : [value];
     const relative = files.map((f) => f.startsWith(dir) ? f.slice(dir.length) : f);
-    const { exit, output } = gnista.callProcess([program, ...args, ...relative], { directory: dir });
-    if (exit !== 0) gnista.message(`${program} ${value}: error${output.trim() === "" ? "" : `: ${output.trim()}`}`);
+    const { exit, output } = e8.callProcess([program, ...args, ...relative], { directory: dir });
+    if (exit !== 0) e8.message(`${program} ${value}: error${output.trim() === "" ? "" : `: ${output.trim()}`}`);
   });
 }
 
-gnista.defineCommand({ name: "dired-do-touch", doc: "Change the times of the marked files, or the one on this line, with touch: to now, or a time written as touch -t takes it.", run: () => doChxxx("Timestamp", String(gnista.variable("dired-touch-program")), "touch") });
-gnista.defineCommand({ name: "dired-do-chown", doc: "Change the owner of the marked files, or the one on this line.", run: () => doChxxx("Owner", String(gnista.variable("dired-chown-program")), "chown") });
-gnista.defineCommand({ name: "dired-do-chgrp", doc: "Change the group of the marked files, or the one on this line.", run: () => doChxxx("Group", "chgrp", "chgrp") });
+e8.defineCommand({ name: "dired-do-touch", doc: "Change the times of the marked files, or the one on this line, with touch: to now, or a time written as touch -t takes it.", run: () => doChxxx("Timestamp", String(e8.variable("dired-touch-program")), "touch") });
+e8.defineCommand({ name: "dired-do-chown", doc: "Change the owner of the marked files, or the one on this line.", run: () => doChxxx("Owner", String(e8.variable("dired-chown-program")), "chown") });
+e8.defineCommand({ name: "dired-do-chgrp", doc: "Change the group of the marked files, or the one on this line.", run: () => doChxxx("Group", "chgrp", "chgrp") });
 
 // Compressing.
 
@@ -446,48 +446,48 @@ const COMPRESS_SUFFIXES: [RegExp, string, string | undefined][] = [
 
 /** Runs a shell command in `dir`, failing with its output if it fails. */
 function runShell(command: string, dir: string): void {
-  const shell = String(gnista.variable("shell-file-name"));
-  const { exit, output } = gnista.callProcess([shell, "-c", command], { directory: dir });
+  const shell = String(e8.variable("shell-file-name"));
+  const { exit, output } = e8.callProcess([shell, "-c", command], { directory: dir });
   if (exit !== 0) throw new Error(`${command}: ${output.trim()}`);
 }
 
 /** Compresses or uncompresses a file, as dired-compress-file: the new file's name, or undefined if nothing changed. */
 export function compressFile(file: string): string | undefined {
-  if (gnista.fileSymlinkP(file) !== undefined) return undefined;
-  const dir = gnista.fileNameDirectory(file) ?? "/";
+  if (e8.fileSymlinkP(file) !== undefined) return undefined;
+  const dir = e8.fileNameDirectory(file) ?? "/";
   const rule = COMPRESS_SUFFIXES.find(([re]) => re.test(file));
   const newname = rule ? file.replace(rule[0], rule[1]) : undefined;
   if (rule && rule[2] !== undefined && newname !== undefined) {
     const command = rule[2];
     if (/%[io]/.test(command)) {
-      const out = gnista.fileNameAsDirectory(newname);
+      const out = e8.fileNameAsDirectory(newname);
       runShell(command.replace("%o", shellQuoteArgument(out)).replace("%i", shellQuoteArgument(file)), dir);
       return out;
     }
-    gnista.message(`Uncompressing ${file}`);
+    e8.message(`Uncompressing ${file}`);
     runShell(`${command} ${shellQuoteArgument(file)}`, dir);
     return newname;
   }
-  if (gnista.fileDirectoryP(file)) {
-    const out = file + String(gnista.variable("dired-compress-directory-default-suffix"));
-    runShell(`tar -cf - ${shellQuoteArgument(gnista.fileNameNondirectory(file))} | gzip -c9 > ${shellQuoteArgument(out)}`, dir);
+  if (e8.fileDirectoryP(file)) {
+    const out = file + String(e8.variable("dired-compress-directory-default-suffix"));
+    runShell(`tar -cf - ${shellQuoteArgument(e8.fileNameNondirectory(file))} | gzip -c9 > ${shellQuoteArgument(out)}`, dir);
     return out;
   }
   const out = newname ?? `${file}.gz`;
-  gnista.message(`Compressing ${file}`);
+  e8.message(`Compressing ${file}`);
   if (newname !== undefined) runShell(`gzip -c9 < ${shellQuoteArgument(file)} > ${shellQuoteArgument(newname)} && rm -f ${shellQuoteArgument(file)}`, dir);
   else runShell(`gzip -f9 ${shellQuoteArgument(file)}`, dir);
   return out;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-compress",
   doc:
     "Compress or uncompress the marked files, or the one on this line: gzip a file, make a directory a .tar.gz, " +
     "and unpack an archive, .tar.gz, .zip and the like.",
   run: () => {
     requireDired();
-    const arg = gnista.prefixArg();
+    const arg = e8.prefixArg();
     const { files } = markedFiles(arg);
     let done = 0;
     const failures: string[] = [];
@@ -495,13 +495,13 @@ gnista.defineCommand({
       try {
         if (compressFile(file) !== undefined) done++;
       } catch (e) {
-        failures.push(gnista.fileNameNondirectory(file));
-        gnista.message(String((e as Error).message ?? e));
+        failures.push(e8.fileNameNondirectory(file));
+        e8.message(String((e as Error).message ?? e));
       }
     }
     readin(true);
-    if (failures.length > 0) gnista.message(`Compress or uncompress: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed (${failures.join(" ")})`);
-    else gnista.message(`Compress or uncompress: ${done} file${done === 1 ? "" : "s"}`);
+    if (failures.length > 0) e8.message(`Compress or uncompress: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed (${failures.join(" ")})`);
+    else e8.message(`Compress or uncompress: ${done} file${done === 1 ? "" : "s"}`);
   },
 });
 
@@ -510,10 +510,10 @@ gnista.defineCommand({
 /** The marked files that are not directories, to search. */
 function searchFiles(): string[] {
   requireDired();
-  return markedFiles(gnista.prefixArg()).files.filter((f) => !gnista.fileDirectoryP(f));
+  return markedFiles(e8.prefixArg()).files.filter((f) => !e8.fileDirectoryP(f));
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-find-regexp",
   doc: "Find the matches of a regexp in the marked files, listing them in an *xref* buffer.",
   params: [{ name: "regexp", prompt: "Search marked files (regexp): ", history: "regexp-history" }],
@@ -521,12 +521,12 @@ gnista.defineCommand({
     const dir = currentDirectory();
     const files = searchFiles().map((f) => f.startsWith(dir) ? f.slice(dir.length) : f);
     const xrefs = matchesInFiles(regexp, files, dir);
-    if (xrefs.length === 0) gnista.userError(`No matches for: ${regexp}`);
-    gnista.funcall("xref-show-xrefs", xrefs);
+    if (xrefs.length === 0) e8.userError(`No matches for: ${regexp}`);
+    e8.funcall("xref-show-xrefs", xrefs);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "dired-do-query-replace-regexp",
   doc: "Replace the matches of a regexp in the marked files, asking about each, as query-replace-regexp does, file by file.",
   params: [
@@ -537,21 +537,21 @@ gnista.defineCommand({
     const files = searchFiles();
     for (const file of files) {
       const buffer = fileBuffer(file);
-      if (buffer !== undefined && gnista.withCurrentBuffer(buffer, () => gnista.bufferModified())) {
+      if (buffer !== undefined && e8.withCurrentBuffer(buffer, () => e8.bufferModified())) {
         throw new Error(`Buffer \u2018${buffer}\u2019 has unsaved changes`);
       }
     }
     for (const file of files) {
-      const text = gnista.readTextFile(file);
-      if (gnista.stringMatch(from, text) === undefined) continue;
-      gnista.call("find-file", file);
-      gnista.gotoChar(0);
-      gnista.call("query-replace-regexp", from, to);
+      const text = e8.readTextFile(file);
+      if (e8.stringMatch(from, text) === undefined) continue;
+      e8.call("find-file", file);
+      e8.gotoChar(0);
+      e8.call("query-replace-regexp", from, to);
     }
   },
 });
 
-const auxBindings: [string, gnista.CommandName][] = [
+const auxBindings: [string, e8.CommandName][] = [
   ["S", "dired-do-symlink"], ["Y", "dired-do-relsymlink"], ["H", "dired-do-hardlink"],
   ["% R", "dired-do-rename-regexp"], ["% r", "dired-do-rename-regexp"], ["% C", "dired-do-copy-regexp"], ["% c", "dired-do-copy-regexp"],
   ["% H", "dired-do-hardlink-regexp"], ["% h", "dired-do-hardlink-regexp"], ["% S", "dired-do-symlink-regexp"], ["% s", "dired-do-symlink-regexp"],
@@ -561,4 +561,4 @@ const auxBindings: [string, gnista.CommandName][] = [
   ["y", "dired-show-file-type"], ["M", "dired-do-chmod"], ["O", "dired-do-chown"], ["G", "dired-do-chgrp"], ["T", "dired-do-touch"],
   ["Z", "dired-do-compress"], ["A", "dired-do-find-regexp"], ["Q", "dired-do-query-replace-regexp"],
 ];
-for (const [keys, command] of auxBindings) gnista.defineKey("dired-mode-map", keys, command);
+for (const [keys, command] of auxBindings) e8.defineKey("dired-mode-map", keys, command);

@@ -1,9 +1,9 @@
 // Mouse commands, after Emacs's mouse.el. Front ends turn presses, clicks
 // and drags into keys such as <down-mouse-1>, <mouse-1> and <drag-mouse-1>,
-// and gnista.lastMouseEvent() says where they happened.
+// and e8.lastMouseEvent() says where they happened.
 
 function lastEvent() {
-  const event = gnista.lastMouseEvent();
+  const event = e8.lastMouseEvent();
   if (event === undefined) {
     throw new Error("This command must be bound to a mouse event");
   }
@@ -12,33 +12,33 @@ function lastEvent() {
 
 /** Selects the event's window and moves point to where the mouse is. */
 function goToEvent(event: { window: number; position?: number }) {
-  gnista.selectWindow(event.window);
+  e8.selectWindow(event.window);
   if (event.position !== undefined) {
-    gnista.gotoChar(event.position);
+    e8.gotoChar(event.position);
   }
 }
 
-const dragRegion = gnista.defineCommand({
+const dragRegion = e8.defineCommand({
   name: "mouse-drag-region",
   doc:
     "Start selecting with the mouse: select the window clicked in and move point there.\n\n" +
     "Dragging then sets the region, with <drag-mouse-1>.",
   run: () => {
     goToEvent(lastEvent());
-    gnista.deactivateMark();
+    e8.deactivateMark();
   },
 });
 
-const setPoint = gnista.defineCommand({
+const setPoint = e8.defineCommand({
   name: "mouse-set-point",
   doc: "Move point to where the mouse was clicked, selecting that window.",
   run: () => {
     goToEvent(lastEvent());
-    gnista.deactivateMark();
+    e8.deactivateMark();
   },
 });
 
-const setRegion = gnista.defineCommand({
+const setRegion = e8.defineCommand({
   name: "mouse-set-region",
   doc:
     "Set the region to the text the mouse was dragged over.\n\n" +
@@ -48,8 +48,8 @@ const setRegion = gnista.defineCommand({
     const start = event.start?.window === event.window ? event.start.position : undefined;
     goToEvent(event);
     if (start !== undefined) {
-      gnista.setMark(start);
-      gnista.activateMark();
+      e8.setMark(start);
+      e8.activateMark();
     }
   },
 });
@@ -61,18 +61,18 @@ function charClass(c: string): string {
   return c;
 }
 
-const selectWord = gnista.defineCommand({
+const selectWord = e8.defineCommand({
   name: "mouse-select-word",
   doc:
     "Select the word double-clicked on, or the run of spaces or the character.\n\n" +
-    "Emacs does this inside mouse-drag-region when it counts two clicks; Gnista binds it to <double-mouse-1>.",
+    "Emacs does this inside mouse-drag-region when it counts two clicks; E8 binds it to <double-mouse-1>.",
   run: () => {
     const event = lastEvent();
     goToEvent(event);
     if (event.position === undefined) return;
-    const line = gnista.lineOf(event.position);
-    const start = gnista.lineStart(line);
-    const chars = Array.from(gnista.lineText(line));
+    const line = e8.lineOf(event.position);
+    const start = e8.lineStart(line);
+    const chars = Array.from(e8.lineText(line));
     let i = event.position - start;
     if (i >= chars.length) return;
     const kind = charClass(chars[i]);
@@ -81,51 +81,51 @@ const selectWord = gnista.defineCommand({
       while (i > 0 && charClass(chars[i - 1]) === kind) i--;
       while (j < chars.length && charClass(chars[j]) === kind) j++;
     }
-    gnista.setMark(start + i);
-    gnista.gotoChar(start + j);
-    gnista.activateMark();
+    e8.setMark(start + i);
+    e8.gotoChar(start + j);
+    e8.activateMark();
   },
 });
 
-const selectLine = gnista.defineCommand({
+const selectLine = e8.defineCommand({
   name: "mouse-select-line",
   doc:
     "Select the line triple-clicked on, with its newline.\n\n" +
-    "Emacs does this inside mouse-drag-region when it counts three clicks; Gnista binds it to <triple-mouse-1>.",
+    "Emacs does this inside mouse-drag-region when it counts three clicks; E8 binds it to <triple-mouse-1>.",
   run: () => {
     const event = lastEvent();
     goToEvent(event);
     if (event.position === undefined) return;
-    const line = gnista.lineOf(event.position);
-    gnista.setMark(gnista.lineStart(line));
-    gnista.gotoChar(line + 1 < gnista.lineCount() ? gnista.lineStart(line + 1) : gnista.lineEnd(line));
-    gnista.activateMark();
+    const line = e8.lineOf(event.position);
+    e8.setMark(e8.lineStart(line));
+    e8.gotoChar(line + 1 < e8.lineCount() ? e8.lineStart(line + 1) : e8.lineEnd(line));
+    e8.activateMark();
   },
 });
 
-const extendRegion = gnista.defineCommand({
+const extendRegion = e8.defineCommand({
   name: "mouse-extend-region",
   doc:
     "Extend the region to where the mouse was clicked, setting the mark at point first if the region is not active.\n\n" +
-    "Emacs binds S-<down-mouse-1> to a menu of fonts; Gnista binds S-<mouse-1> to this, as most editors do.",
+    "Emacs binds S-<down-mouse-1> to a menu of fonts; E8 binds S-<mouse-1> to this, as most editors do.",
   run: () => {
     const event = lastEvent();
-    if (event.window !== gnista.selectedWindow()) {
+    if (event.window !== e8.selectedWindow()) {
       goToEvent(event);
       return;
     }
-    if (!gnista.regionActive()) {
-      gnista.pushMark(gnista.point());
+    if (!e8.regionActive()) {
+      e8.pushMark(e8.point());
     }
     goToEvent(event);
-    gnista.activateMark();
+    e8.activateMark();
   },
 });
 
-gnista.bindKey("<down-mouse-1>", dragRegion);
-gnista.bindKey("<mouse-1>", setPoint);
-gnista.bindKey("<drag-mouse-1>", setRegion);
-gnista.bindKey("<double-mouse-1>", selectWord);
-gnista.bindKey("<triple-mouse-1>", selectLine);
-gnista.bindKey("S-<mouse-1>", extendRegion);
-gnista.bindKey("S-<down-mouse-1>", "ignore");
+e8.bindKey("<down-mouse-1>", dragRegion);
+e8.bindKey("<mouse-1>", setPoint);
+e8.bindKey("<drag-mouse-1>", setRegion);
+e8.bindKey("<double-mouse-1>", selectWord);
+e8.bindKey("<triple-mouse-1>", selectLine);
+e8.bindKey("S-<mouse-1>", extendRegion);
+e8.bindKey("S-<down-mouse-1>", "ignore");

@@ -1,12 +1,12 @@
-# Gnista's chores. Cargo does the building; these put the steps together.
+# E8's chores. Cargo does the building; these put the steps together.
 #
-#   make app                  Gnista.app, optimised, on V8 (the default engine)
+#   make app                  E8.app, optimised, on V8 (the default engine)
 #   make app ENGINE=quickjs   on QuickJS: a smaller app, about 41 MB against 97
 #   make check                every test and clippy, on V8 and on QuickJS
 #   make tidy                 delete the build's day-old leftover object files
 #
-# make app builds target/Gnista.app; open it, or copy it to /Applications.
-# In a git worktree it builds Gnista.app in the worktree's own folder
+# make app builds target/E8.app; open it, or copy it to /Applications.
+# In a git worktree it builds E8.app in the worktree's own folder
 # instead, so each branch has an app of its own to open and the main
 # checkout's stays as it was, though the worktree builds in the main
 # checkout's target (.claude/hooks/share-target.sh).
@@ -16,9 +16,9 @@ VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 # A worktree's git directory is not the repository's own.
 WORKTREE := $(shell [ "$$(git rev-parse --git-dir 2>/dev/null)" != "$$(git rev-parse --git-common-dir 2>/dev/null)" ] && echo yes)
 ifeq ($(WORKTREE),yes)
-APP     ?= Gnista.app
+APP     ?= E8.app
 else
-APP     ?= target/Gnista.app
+APP     ?= target/E8.app
 endif
 
 ifeq ($(ENGINE),v8)
@@ -36,13 +36,13 @@ QUICKJS_FEATURES := --no-default-features --features quickjs
 .PHONY: app clean-app check tidy
 
 app:
-	cargo build --release -p gnista-gui -p gnista-mcp $(FEATURES)
+	cargo build --release -p e8-gui -p e8-mcp $(FEATURES)
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
-	cp target/release/gnista-gui $(APP)/Contents/MacOS/
+	cp target/release/e8-gui $(APP)/Contents/MacOS/
 	# Beside it, so agent-shell's agents can use this editor (ADR 0061).
-	cp target/release/gnista-mcp $(APP)/Contents/MacOS/
-	sed 's/@VERSION@/$(VERSION)/g' crates/gnista-gui/macos/Info.plist > $(APP)/Contents/Info.plist
+	cp target/release/e8-mcp $(APP)/Contents/MacOS/
+	sed 's/@VERSION@/$(VERSION)/g' crates/e8-gui/macos/Info.plist > $(APP)/Contents/Info.plist
 	codesign --force --deep --sign - $(APP)
 	@echo "Built $(APP) ($(ENGINE), version $(VERSION))"
 

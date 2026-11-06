@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""How many of Emacs's C primitives Gnista has under Emacs's own name.
+"""How many of Emacs's C primitives E8 has under Emacs's own name.
 
 Lists Emacs's primitives (`subr-primitive-p`) with the C file that defines
 each (`help-C-file-name`) from batch Emacs, and matches them by name against
-Gnista's commands and script functions (packages/gnista.d.ts, camelCase read
-as kebab-case), gnista-core's functions and the functions packages define.
-Primitives of the Lisp language and of platforms Gnista stands in for
+E8's commands and script functions (packages/e8.d.ts, camelCase read
+as kebab-case), e8-core's functions and the functions packages define.
+Primitives of the Lisp language and of platforms E8 stands in for
 otherwise are counted apart. Run from the repository's root:
 
     python3 tests/emacs/parity.py
@@ -31,23 +31,23 @@ def kebab(name):
     return re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", name).lower()
 
 
-def gnista_names():
+def e8_names():
     names = set()
-    dts = open("packages/gnista.d.ts").read()
+    dts = open("packages/e8.d.ts").read()
     commands = re.search(r"interface Commands \{(.*?)\n    \}", dts, re.S).group(1)
     names |= set(re.findall(r'^\s+"([^"]+)": ', commands, re.M))
     names |= {kebab(f) for f in re.findall(r"^\s+function (\w+)", dts, re.M)}
-    for path in glob.glob("crates/gnista-core/src/*.rs"):
+    for path in glob.glob("crates/e8-core/src/*.rs"):
         names |= {f.replace("_", "-") for f in re.findall(r"pub(?:\(crate\))? fn (\w+)", open(path).read())}
     for path in glob.glob("packages/*.ts"):
-        names |= set(re.findall(r'gnista\.defun\("([^"]+)"', open(path).read()))
+        names |= set(re.findall(r'e8\.defun\("([^"]+)"', open(path).read()))
     return names
 
 
 def main():
     out = subprocess.run(["emacs", "-Q", "--batch", "--eval", LISP], capture_output=True, text=True, check=True).stdout
     primitives = [line.split("\t") for line in out.splitlines() if "\t" in line]
-    names = gnista_names()
+    names = e8_names()
     totals = collections.Counter()
     by_file = collections.defaultdict(lambda: [0, 0])
     for name, path in primitives:

@@ -16,7 +16,7 @@ Status: accepted · 2026-10-31
   - `font-family-list`, `list-fonts`, `x-list-fonts` and `find-font` list what is installed;
   - `char-displayable-p` tells whether a character can be shown.
 
-  Packages use them to choose fonts and to check for glyphs, such as emoji or icon fonts, before using them. Gnista had none (font.c: 0 of about 30).
+  Packages use them to choose fonts and to check for glyphs, such as emoji or icon fonts, before using them. E8 had none (font.c: 0 of about 30).
 - **The bell.** In the GUI it only flashed, and only with `visible-bell`.
 
 ## Options considered

@@ -15,7 +15,7 @@ for (const [name, doc, value, local] of [
   ["imenu-space-replacement", "What spaces in index names are shown as, so a name reads as one word in completion.", ".", false],
   ["imenu-after-jump-hook", "Functions run after M-x imenu goes to an item.", null, false],
 ] as const) {
-  gnista.defineVariable({ name, doc, value: value as gnista.Value, local });
+  e8.defineVariable({ name, doc, value: value as e8.Value, local });
 }
 
 const isSubmenu = (item: IndexItem): item is [string, IndexItem[]] => Array.isArray(item[1]);
@@ -26,21 +26,21 @@ const isSubmenu = (item: IndexItem): item is [string, IndexItem[]] => Array.isAr
  * under its title, sorted by position, with untitled items at the top.
  */
 export function genericIndex(patterns: [string | null, string, number][]): IndexItem[] {
-  const fold = gnista.variable("imenu-case-fold-search") !== false;
+  const fold = e8.variable("imenu-case-fold-search") !== false;
   const menus = new Map<string | null, IndexItem[]>();
   for (const [title, regexp, group] of patterns) {
-    gnista.saveExcursion(() => {
-      gnista.gotoChar(gnista.pointMax());
-      while (gnista.reSearchBackward(regexp, { noerror: true, caseFold: fold }) !== undefined) {
-        const start = gnista.point();
-        const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
+    e8.saveExcursion(() => {
+      e8.gotoChar(e8.pointMax());
+      while (e8.reSearchBackward(regexp, { noerror: true, caseFold: fold }) !== undefined) {
+        const start = e8.point();
+        const [b, e] = [e8.matchBeginning(0)!, e8.matchEnd(0)!];
         if (b === e) break;
-        const name = gnista.matchString(group) ?? "";
-        const beg = gnista.lineBeginningPosition(gnista.matchBeginning(group) ?? start);
+        const name = e8.matchString(group) ?? "";
+        const beg = e8.lineBeginningPosition(e8.matchBeginning(group) ?? start);
         if (!menus.has(title)) menus.set(title, []);
         const menu = menus.get(title)!;
         if (!menu.some(([n, p]) => n === name && p === beg)) menu.unshift([name, beg]);
-        gnista.gotoChar(start);
+        e8.gotoChar(start);
       }
     });
   }
@@ -54,18 +54,18 @@ export function genericIndex(patterns: [string | null, string, number][]): Index
   return [...top, ...subs];
 }
 
-gnista.defun("imenu-default-create-index-function", () => {
-  const patterns = gnista.variable("imenu-generic-expression");
+e8.defun("imenu-default-create-index-function", () => {
+  const patterns = e8.variable("imenu-generic-expression");
   if (!Array.isArray(patterns) || patterns.length === 0) throw new Error("This buffer cannot use `imenu-default-create-index-function'");
-  return genericIndex(patterns as unknown as [string | null, string, number][]) as unknown as gnista.Value;
+  return genericIndex(patterns as unknown as [string | null, string, number][]) as unknown as e8.Value;
 });
 
 /** The buffer's index, made by imenu-create-index-function over the whole buffer. */
 export function makeIndex(): IndexItem[] {
-  const fn = gnista.variable("imenu-create-index-function") ?? "imenu-default-create-index-function";
-  const index = gnista.saveRestriction(() => {
-    gnista.widen();
-    return gnista.saveExcursion(() => gnista.funcall(fn as string)) as unknown as IndexItem[] | null;
+  const fn = e8.variable("imenu-create-index-function") ?? "imenu-default-create-index-function";
+  const index = e8.saveRestriction(() => {
+    e8.widen();
+    return e8.saveExcursion(() => e8.funcall(fn as string)) as unknown as IndexItem[] | null;
   });
   if (!index || index.length === 0) throw new Error("No items suitable for an index found in this buffer");
   return index;
@@ -73,14 +73,14 @@ export function makeIndex(): IndexItem[] {
 
 /** A name with its spaces shown as imenu-space-replacement. */
 const shown = (name: string): string => {
-  const r = gnista.variable("imenu-space-replacement");
+  const r = e8.variable("imenu-space-replacement");
   return typeof r === "string" && r !== "" ? name.replaceAll(" ", r[0]!) : name;
 };
 
 /** The symbol at point, if there is one. */
 function symbolAtPoint(): string | undefined {
-  const line = gnista.lineText(gnista.lineOf(gnista.point()));
-  const col = gnista.point() - gnista.lineBeginningPosition();
+  const line = e8.lineText(e8.lineOf(e8.point()));
+  const col = e8.point() - e8.lineBeginningPosition();
   const re = /[\w$-]+/g;
   for (const m of allMatches(re, line)) {
     if (m.index! <= col && col <= m.index! + m[0].length) return m[0];
@@ -102,15 +102,15 @@ async function chooseItem(items: IndexItem[], prompt?: string): Promise<IndexIte
   const atPoint = symbolAtPoint();
   const fallback = atPoint !== undefined && inIndex(atPoint, prepared) ? atPoint : undefined;
   const p = prompt ?? (fallback === undefined ? "Index item: " : `Index item (default ${fallback}): `);
-  const name = await gnista.completingRead(p, prepared.map(([n]) => n), { requireMatch: true, default: fallback, history: "imenu--history-list" });
+  const name = await e8.completingRead(p, prepared.map(([n]) => n), { requireMatch: true, default: fallback, history: "imenu--history-list" });
   const choice = prepared.find(([n]) => n === (name === "" ? fallback : name));
   if (choice === undefined) return undefined;
   return isSubmenu(choice) ? chooseItem(choice[1], p) : choice;
 }
 
-gnista.defineVariable({ name: "imenu--history-list", doc: "Items chosen with M-x imenu, newest first.", value: [] });
+e8.defineVariable({ name: "imenu--history-list", doc: "Items chosen with M-x imenu, newest first.", value: [] });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "imenu",
   doc:
     "Go to a definition in the buffer, chosen by name with completion from the buffer's index.\n\n" +
@@ -118,10 +118,10 @@ gnista.defineCommand({
   run: async () => {
     const item = await chooseItem(makeIndex());
     if (item === undefined) return;
-    gnista.pushMark(gnista.point());
+    e8.pushMark(e8.point());
     const pos = item[1] as number;
-    if (pos < gnista.pointMin() || pos > gnista.pointMax()) gnista.widen();
-    gnista.gotoChar(pos);
-    gnista.runHooks("imenu-after-jump-hook");
+    if (pos < e8.pointMin() || pos > e8.pointMax()) e8.widen();
+    e8.gotoChar(pos);
+    e8.runHooks("imenu-after-jump-hook");
   },
 });

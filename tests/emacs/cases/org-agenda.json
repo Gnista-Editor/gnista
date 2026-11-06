@@ -4,7 +4,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -19,7 +19,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -34,7 +34,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -49,7 +49,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -64,7 +64,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -79,7 +79,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -94,7 +94,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -109,7 +109,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -124,7 +124,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -139,7 +139,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -154,7 +154,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -169,7 +169,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -184,7 +184,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,
@@ -204,7 +204,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda-2.org",
+    "visit": "e8-agenda-2.org",
     "today": "2026-10-28",
     "agenda_files": true
   },
@@ -218,7 +218,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda-3.org",
+    "visit": "e8-agenda-3.org",
     "today": "2026-10-28",
     "agenda_files": true
   },
@@ -227,7 +227,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "gnista-agenda.org",
+    "visit": "e8-agenda.org",
     "today": "2026-10-28",
     "agenda_files": true,
     "windows": true,

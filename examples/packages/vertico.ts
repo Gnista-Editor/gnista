@@ -6,7 +6,7 @@
 // styles, as orderless adds one, and sorted by history, length and name.
 //
 // Copyright (C) 2021-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -16,32 +16,32 @@
 import { completionAllCompletions, completionMetadataGet, testCompletion, type CompletionMetadata } from "minibuffer";
 import { truthy } from "subr";
 
-gnista.defineVariable({ name: "vertico-count-format", doc: 'Format string used for the candidate count, as [outer, inner], or nil for none.', value: ["%-6s ", "%s/%s"] });
-gnista.defineVariable({ name: "vertico-group-format", doc: "Format string used for the group title, %s for the title, or nil for no titles.", value: "     %s " });
-gnista.defineVariable({ name: "vertico-count", doc: "Maximal number of candidates to show.", value: 10 });
-gnista.defineVariable({
+e8.defineVariable({ name: "vertico-count-format", doc: 'Format string used for the candidate count, as [outer, inner], or nil for none.', value: ["%-6s ", "%s/%s"] });
+e8.defineVariable({ name: "vertico-group-format", doc: "Format string used for the group title, %s for the title, or nil for no titles.", value: "     %s " });
+e8.defineVariable({ name: "vertico-count", doc: "Maximal number of candidates to show.", value: 10 });
+e8.defineVariable({
   name: "vertico-preselect",
   doc: 'What is selected first: "prompt" the input, "first" the first candidate, "no-prompt" like first without ever selecting the input, "directory" like first but the input if it is a directory.',
   value: "directory",
 });
-gnista.defineVariable({ name: "vertico-scroll-margin", doc: "Number of lines at the top and bottom when scrolling, between 0 and vertico-count/2.", value: 2 });
-gnista.defineVariable({ name: "vertico-resize", doc: 'How the minibuffer window resizes: t shrinks and grows, "grow-only" only grows, nil keeps it vertico-count high.', value: true });
-gnista.defineVariable({ name: "vertico-cycle", doc: "Enable cycling for vertico-next and vertico-previous.", value: false });
-gnista.defineVariable({
+e8.defineVariable({ name: "vertico-scroll-margin", doc: "Number of lines at the top and bottom when scrolling, between 0 and vertico-count/2.", value: 2 });
+e8.defineVariable({ name: "vertico-resize", doc: 'How the minibuffer window resizes: t shrinks and grows, "grow-only" only grows, nil keeps it vertico-count high.', value: true });
+e8.defineVariable({ name: "vertico-cycle", doc: "Enable cycling for vertico-next and vertico-previous.", value: false });
+e8.defineVariable({
   name: "vertico-sort-function",
   doc: "Default sorting function, used if the table gives no display-sort-function: a function of the candidates.",
   value: "vertico-sort-history-length-alpha",
 });
-gnista.defineVariable({ name: "vertico-sort-override-function", doc: "Override sort function which overrides the display-sort-function.", value: null });
-gnista.defineVariable({ name: "vertico-sort-history-duplicate", doc: "History position shift for duplicate history elements, which decays with vertico-sort-history-decay.", value: 10 });
-gnista.defineVariable({ name: "vertico-sort-history-decay", doc: "Exponential decay for the position shift of duplicate elements.", value: 10 });
+e8.defineVariable({ name: "vertico-sort-override-function", doc: "Override sort function which overrides the display-sort-function.", value: null });
+e8.defineVariable({ name: "vertico-sort-history-duplicate", doc: "History position shift for duplicate history elements, which decays with vertico-sort-history-decay.", value: 10 });
+e8.defineVariable({ name: "vertico-sort-history-decay", doc: "Exponential decay for the position shift of duplicate elements.", value: 10 });
 
-gnista.defineFace({ name: "vertico-multiline", doc: "Face used to highlight multiline replacement characters.", attributes: { inherit: "shadow" } });
-gnista.defineFace({ name: "vertico-group-title", doc: "Face used for the title text of the candidate group headlines.", attributes: { inherit: "shadow", slant: "italic" } });
-gnista.defineFace({ name: "vertico-group-separator", doc: "Face used for the separator lines of the candidate groups.", attributes: { inherit: "vertico-group-title", strikeThrough: true } });
-gnista.defineFace({ name: "vertico-current", doc: "Face used to highlight the currently selected candidate.", attributes: { inherit: "highlight", extend: true } });
+e8.defineFace({ name: "vertico-multiline", doc: "Face used to highlight multiline replacement characters.", attributes: { inherit: "shadow" } });
+e8.defineFace({ name: "vertico-group-title", doc: "Face used for the title text of the candidate group headlines.", attributes: { inherit: "shadow", slant: "italic" } });
+e8.defineFace({ name: "vertico-group-separator", doc: "Face used for the separator lines of the candidate groups.", attributes: { inherit: "vertico-group-title", strikeThrough: true } });
+e8.defineFace({ name: "vertico-current", doc: "Face used to highlight the currently selected candidate.", attributes: { inherit: "highlight", extend: true } });
 
-type Text = string | gnista.PropertizedString;
+type Text = string | e8.PropertizedString;
 
 /** The open prompt's state, as vertico's buffer-local variables in the minibuffer. */
 interface State {
@@ -65,10 +65,10 @@ interface State {
 
 /** Each open prompt's state, by minibuffer depth. */
 const states = new Map<number, State>();
-const state = (): State | undefined => states.get(gnista.minibufferDepth());
+const state = (): State | undefined => states.get(e8.minibufferDepth());
 
 const number = (name: string, fallback: number): number => {
-  const v = gnista.variable(name);
+  const v = e8.variable(name);
   return typeof v === "number" ? v : fallback;
 };
 
@@ -76,8 +76,8 @@ const number = (name: string, fallback: number): number => {
 
 /** The positions of the history's elements, for the base being completed, as vertico-sort--history. */
 function historyPositions(base: string): Map<string, number> {
-  const name = gnista.minibufferInfo()?.history;
-  const hist = name && name !== "t" ? gnista.variable(name) : undefined;
+  const name = e8.minibufferInfo()?.history;
+  const hist = name && name !== "t" ? e8.variable(name) : undefined;
   const list = Array.isArray(hist) ? hist.map(String) : [];
   const positions = new Map<string, number>();
   const filep = base.length > 0 && name === "file-name-history";
@@ -113,23 +113,23 @@ export const sortHistoryLengthAlpha = (c: string[]): string[] => sortBy(c, true,
 export const sortHistoryAlpha = (c: string[]): string[] => sortBy(c, true, alpha);
 export const sortLengthAlpha = (c: string[]): string[] => sortBy(c, false, lengthAlpha);
 export const sortAlpha = (c: string[]): string[] => sortBy(c, false, alpha);
-gnista.defun("vertico-sort-history-length-alpha", sortHistoryLengthAlpha);
-gnista.defun("vertico-sort-history-alpha", sortHistoryAlpha);
-gnista.defun("vertico-sort-length-alpha", sortLengthAlpha);
-gnista.defun("vertico-sort-alpha", sortAlpha);
-gnista.defun("vertico-sort-directories-first", (list: string[]) => {
+e8.defun("vertico-sort-history-length-alpha", sortHistoryLengthAlpha);
+e8.defun("vertico-sort-history-alpha", sortHistoryAlpha);
+e8.defun("vertico-sort-length-alpha", sortLengthAlpha);
+e8.defun("vertico-sort-alpha", sortAlpha);
+e8.defun("vertico-sort-directories-first", (list: string[]) => {
   const sorted = sortHistoryLengthAlpha(list);
   return [...sorted.filter((x) => x.endsWith("/")), ...sorted.filter((x) => !x.endsWith("/"))];
 });
 
 /** The sort function: the override, the table's own, or vertico-sort-function, as vertico--sort-function. */
 function sortFunction(): ((c: string[]) => string[]) | undefined {
-  const override = gnista.variable("vertico-sort-override-function");
-  if (truthy(override)) return (c) => gnista.funcall(override as string, c) as string[];
+  const override = e8.variable("vertico-sort-override-function");
+  if (truthy(override)) return (c) => e8.funcall(override as string, c) as string[];
   const own = completionMetadataGet("displaySortFunction");
   if (own) return own;
-  const fn = gnista.variable("vertico-sort-function");
-  return truthy(fn) ? (c) => gnista.funcall(fn as string, c) as string[] : undefined;
+  const fn = e8.variable("vertico-sort-function");
+  return truthy(fn) ? (c) => e8.funcall(fn as string, c) as string[] : undefined;
 }
 
 // Working out the candidates.
@@ -162,8 +162,8 @@ function groupBy(fun: NonNullable<CompletionMetadata["groupFunction"]>, elems: s
 
 /** Works the candidates out afresh for the input and point, as vertico--recompute. */
 function recompute(s: State, pt: number, content: string): void {
-  const info = gnista.minibufferInfo();
-  const found = completionAllCompletions(gnista.minibufferPromptEnd() + pt);
+  const info = e8.minibufferInfo();
+  const found = completionAllCompletions(e8.minibufferPromptEnd() + pt);
   if (!found) return;
   const field = found.field.before + found.field.after;
   const completingFile = completionMetadataGet("category") === "file";
@@ -190,7 +190,7 @@ function recompute(s: State, pt: number, content: string): void {
     const at = s.index < 0 ? -1 : all.indexOf(s.candidates[s.index]);
     lock = s.index < 0 || at >= 0 ? at : undefined;
   }
-  const preselect = String(gnista.variable("vertico-preselect"));
+  const preselect = String(e8.variable("vertico-preselect"));
   s.candidates = all;
   s.total = all.length;
   s.hilit = found.hilit ?? ((c) => c);
@@ -208,8 +208,8 @@ function recompute(s: State, pt: number, content: string): void {
 
 /** Works the candidates out if the input or point changed, as vertico--update. */
 function update(s: State): void {
-  const pt = Math.max(0, gnista.point() - gnista.minibufferPromptEnd());
-  const content = gnista.minibufferContents();
+  const pt = Math.max(0, e8.point() - e8.minibufferPromptEnd());
+  const content = e8.minibufferContents();
   if (s.input !== true && s.input[0] === content && s.input[1] === pt) return;
   recompute(s, pt, content);
   s.input = [content, pt];
@@ -226,7 +226,7 @@ function affixate(cands: Text[]): [Text, Text, Text][] {
   if (ann) {
     return cands.map((c, i) => {
       const suffix = ann(plain[i]) ?? "";
-      return [c, "", typeof suffix === "string" ? gnista.propertize(suffix, { face: "completions-annotations" }) : suffix];
+      return [c, "", typeof suffix === "string" ? e8.propertize(suffix, { face: "completions-annotations" }) : suffix];
     });
   }
   return cands.map((c) => [c, "", ""]);
@@ -242,19 +242,19 @@ function computeScroll(s: State): void {
 }
 
 function minibufferWidth(): number {
-  return gnista.windowSize(gnista.minibufferWindow())?.width ?? 80;
+  return e8.windowSize(e8.minibufferWindow())?.width ?? 80;
 }
 
 /** A group's title line, as vertico--format-group-title. */
 function formatGroupTitle(title: string): Text {
-  const format = gnista.variable("vertico-group-format");
+  const format = e8.variable("vertico-group-format");
   if (typeof format !== "string") return "";
   const [before, after] = format.split("%s");
   const width = Math.max(0, minibufferWidth() - 1 - before.length - title.length - (after ?? "").length);
-  return gnista.concat(
-    gnista.propertize(before.slice(0, 4), { face: "vertico-group-separator" }),
-    gnista.propertize(`${before.slice(4)}${title}${after ?? ""}`, { face: "vertico-group-title" }),
-    gnista.propertize(" ".repeat(width), { face: "vertico-group-separator" }),
+  return e8.concat(
+    e8.propertize(before.slice(0, 4), { face: "vertico-group-separator" }),
+    e8.propertize(`${before.slice(4)}${title}${after ?? ""}`, { face: "vertico-group-title" }),
+    e8.propertize(" ".repeat(width), { face: "vertico-group-separator" }),
     "\n",
   );
 }
@@ -263,7 +263,7 @@ function formatGroupTitle(title: string): Text {
 function arrangeCandidates(s: State): Text[] {
   computeScroll(s);
   const count = number("vertico-count", 10);
-  const groupFun = gnista.variable("vertico-group-format") ? completionMetadataGet("groupFunction") : undefined;
+  const groupFun = e8.variable("vertico-group-format") ? completionMetadataGet("groupFunction") : undefined;
   const shown = s.candidates.slice(s.scroll, s.scroll + count);
   const cands = affixate(shown.map((c) => s.hilit(c)));
   const lines: (Text | [number, Text, Text, Text])[] = [];
@@ -295,9 +295,9 @@ function arrangeCandidates(s: State): Text[] {
     if (!Array.isArray(line)) return line;
     const [index, cand, prefix, suffix] = line;
     let text: Text = String(cand).includes("\n") ? String(cand).replace(/\n/g, "↲") : cand;
-    text = gnista.concat(prefix, text, suffix, "\n");
+    text = e8.concat(prefix, text, suffix, "\n");
     if (index === s.index) {
-      text = gnista.concat(...splitFaces(text, "vertico-current"));
+      text = e8.concat(...splitFaces(text, "vertico-current"));
     }
     return text;
   });
@@ -305,25 +305,25 @@ function arrangeCandidates(s: State): Text[] {
 
 /** TEXT with FACE added under the faces it has, as add-face-text-property with APPEND. */
 function splitFaces(text: Text, face: string): Text[] {
-  if (typeof text === "string") return [gnista.propertize(text, { face })];
+  if (typeof text === "string") return [e8.propertize(text, { face })];
   // A propertized string: its runs, each with FACE after its own.
-  const runs = (text as unknown as { string: string; properties: [number, number, { [name: string]: gnista.Value }][] }).properties ?? [];
+  const runs = (text as unknown as { string: string; properties: [number, number, { [name: string]: e8.Value }][] }).properties ?? [];
   const string = String(text);
   const out: Text[] = [];
   let at = 0;
   for (const [start, end, props] of [...runs].sort((a, b) => a[0] - b[0])) {
-    if (start > at) out.push(gnista.propertize(string.slice(at, start), { face }));
+    if (start > at) out.push(e8.propertize(string.slice(at, start), { face }));
     const own = props.face;
-    out.push(gnista.propertize(string.slice(start, end), { ...props, face: own ? [...(Array.isArray(own) ? own : [own]), face] : face }));
+    out.push(e8.propertize(string.slice(start, end), { ...props, face: own ? [...(Array.isArray(own) ? own : [own]), face] : face }));
     at = end;
   }
-  if (at < string.length) out.push(gnista.propertize(string.slice(at), { face }));
+  if (at < string.length) out.push(e8.propertize(string.slice(at), { face }));
   return out;
 }
 
 /** The count before the prompt, as vertico--format-count. */
 function formatCount(s: State): string {
-  const format = gnista.variable("vertico-count-format");
+  const format = e8.variable("vertico-count-format");
   if (!Array.isArray(format)) return "";
   const which = s.index >= 0 ? String(s.index + 1) : s.allowPrompt ? "*" : "!";
   const inner = String(format[1]).replace("%s", which).replace("%s", String(s.total));
@@ -338,32 +338,32 @@ function formatCount(s: State): string {
 function exhibit(): void {
   const s = state();
   if (!s) return;
-  gnista.letBind({ "buffer-undo-list": true }, () => {
+  e8.letBind({ "buffer-undo-list": true }, () => {
     update(s);
-    gnista.moveOverlay(s.promptOv, gnista.minibufferPromptEnd(), gnista.pointMax());
-    gnista.overlayPut(s.promptOv, "face", s.index < 0 && s.allowPrompt ? "vertico-current" : null);
-    gnista.moveOverlay(s.countOv, gnista.pointMin(), gnista.pointMin());
-    gnista.overlayPut(s.countOv, "before-string", formatCount(s));
+    e8.moveOverlay(s.promptOv, e8.minibufferPromptEnd(), e8.pointMax());
+    e8.overlayPut(s.promptOv, "face", s.index < 0 && s.allowPrompt ? "vertico-current" : null);
+    e8.moveOverlay(s.countOv, e8.pointMin(), e8.pointMin());
+    e8.overlayPut(s.countOv, "before-string", formatCount(s));
     const lines = arrangeCandidates(s);
-    gnista.moveOverlay(s.candidatesOv, gnista.pointMax(), gnista.pointMax());
-    gnista.overlayPut(s.candidatesOv, "after-string", gnista.concat(gnista.propertize(" ", { cursor: true }), ...(lines.length > 0 ? ["\n"] : []), ...lines));
+    e8.moveOverlay(s.candidatesOv, e8.pointMax(), e8.pointMax());
+    e8.overlayPut(s.candidatesOv, "after-string", e8.concat(e8.propertize(" ", { cursor: true }), ...(lines.length > 0 ? ["\n"] : []), ...lines));
     // Rows are cut at the window's edge, not continued, unless the input
     // itself runs long, as vertico--resize-window has it.
-    gnista.makeLocalVariable("truncate-lines");
-    gnista.setVariable("truncate-lines", gnista.point() - gnista.pointMin() + 1 < 0.8 * minibufferWidth());
+    e8.makeLocalVariable("truncate-lines");
+    e8.setVariable("truncate-lines", e8.point() - e8.pointMin() + 1 < 0.8 * minibufferWidth());
   });
 }
 
 /** Works the candidates out before a vertico command runs, so it sees them for the input, as vertico--prepare. */
 function prepare(): void {
   const s = state();
-  const command = gnista.thisCommand();
+  const command = e8.thisCommand();
   if (s && command?.startsWith("vertico-")) update(s);
 }
 
 /** Sets vertico up in the minibuffer of a prompt that completes, as vertico--setup. */
 function setup(): void {
-  if (!truthy(gnista.variable("vertico-mode")) || !gnista.minibufferInfo()?.completing) return;
+  if (!truthy(e8.variable("vertico-mode")) || !e8.minibufferInfo()?.completing) return;
   // The minibuffer may grow to the frame's height for vertico-count lines,
   // and shrinks with them only as vertico-resize t says, as
   // vertico--resize-window has it.
@@ -371,10 +371,10 @@ function setup(): void {
     ["completion-auto-help", null],
     ["completion-show-inline-help", null],
     ["max-mini-window-height", 1.0],
-    ["resize-mini-windows", gnista.variable("vertico-resize") === true ? true : "grow-only"],
+    ["resize-mini-windows", e8.variable("vertico-resize") === true ? true : "grow-only"],
   ] as const) {
-    gnista.makeLocalVariable(name);
-    gnista.setVariable(name, value);
+    e8.makeLocalVariable(name);
+    e8.setVariable(name, value);
   }
   const s: State = {
     index: -1,
@@ -389,24 +389,24 @@ function setup(): void {
     allGroups: [],
     groups: [],
     allowPrompt: false,
-    candidatesOv: gnista.makeOverlay(gnista.pointMax(), gnista.pointMax()),
-    countOv: gnista.makeOverlay(gnista.pointMin(), gnista.pointMin()),
-    promptOv: gnista.makeOverlay(gnista.minibufferPromptEnd(), gnista.pointMax()),
+    candidatesOv: e8.makeOverlay(e8.pointMax(), e8.pointMax()),
+    countOv: e8.makeOverlay(e8.pointMin(), e8.pointMin()),
+    promptOv: e8.makeOverlay(e8.minibufferPromptEnd(), e8.pointMax()),
   };
-  gnista.overlayPut(s.countOv, "priority", 1);
-  states.set(gnista.minibufferDepth(), s);
-  gnista.composeLocalMap("vertico-map");
-  gnista.addHook("pre-command-hook", prepare, { local: true });
-  gnista.addHook("post-command-hook", exhibit, { local: true });
+  e8.overlayPut(s.countOv, "priority", 1);
+  states.set(e8.minibufferDepth(), s);
+  e8.composeLocalMap("vertico-map");
+  e8.addHook("pre-command-hook", prepare, { local: true });
+  e8.addHook("post-command-hook", exhibit, { local: true });
   exhibit();
 }
 
-gnista.addHook("minibuffer-setup-hook", setup);
-gnista.addHook("minibuffer-exit-hook", () => {
+e8.addHook("minibuffer-setup-hook", setup);
+e8.addHook("minibuffer-exit-hook", () => {
   const s = state();
   if (!s) return;
-  for (const ov of [s.candidatesOv, s.countOv, s.promptOv]) gnista.deleteOverlay(ov);
-  states.delete(gnista.minibufferDepth());
+  for (const ov of [s.candidatesOv, s.countOv, s.promptOv]) e8.deleteOverlay(ov);
+  states.delete(e8.minibufferDepth());
 });
 
 // Commands.
@@ -421,16 +421,16 @@ function goTo(s: State, index: number): void {
 export function candidate(): string | undefined {
   const s = state();
   if (!s) return undefined;
-  const content = s.input === true ? gnista.minibufferContents() : s.input[0];
+  const content = s.input === true ? e8.minibufferContents() : s.input[0];
   if (s.index >= 0) return s.base + s.candidates[s.index];
-  const def = gnista.minibufferInfo()?.default;
+  const def = e8.minibufferInfo()?.default;
   if (content === "" && def) return def;
   return content;
 }
-gnista.defun("vertico--candidate", () => candidate());
+e8.defun("vertico--candidate", () => candidate());
 
 /** Works the candidates out again and shows them, as when a table's names changed between commands, as consult--vertico-refresh does. */
-gnista.defun("vertico--refresh", () => {
+e8.defun("vertico--refresh", () => {
   const s = state();
   if (!s) return;
   s.input = true;
@@ -439,8 +439,8 @@ gnista.defun("vertico--refresh", () => {
 
 /** Whether INPUT may be the answer, as vertico--match-p. */
 function matchP(input: string): boolean {
-  if (!gnista.minibufferInfo()?.requireMatch || input === "" || testCompletion(input)) return true;
-  gnista.message("Match required");
+  if (!e8.minibufferInfo()?.requireMatch || input === "" || testCompletion(input)) return true;
+  e8.message("Match required");
   return false;
 }
 
@@ -449,20 +449,20 @@ const withState = (fn: (s: State) => void) => () => {
   if (s) fn(s);
 };
 
-const first = gnista.defineCommand({
+const first = e8.defineCommand({
   name: "vertico-first",
   doc: "Go to first candidate, or to the prompt when the first candidate is selected.",
   run: withState((s) => goTo(s, s.index > 0 ? 0 : -1)),
 });
-const last = gnista.defineCommand({ name: "vertico-last", doc: "Go to last candidate.", run: withState((s) => goTo(s, s.total - 1)) });
+const last = e8.defineCommand({ name: "vertico-last", doc: "Go to last candidate.", run: withState((s) => goTo(s, s.total - 1)) });
 
-const scrollDown = gnista.defineCommand({
+const scrollDown = e8.defineCommand({
   name: "vertico-scroll-down",
   doc: "Go back by N pages.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => withState((s) => goTo(s, Math.max(0, s.index - n * number("vertico-count", 10))))(),
 });
-const scrollUp = gnista.defineCommand({
+const scrollUp = e8.defineCommand({
   name: "vertico-scroll-up",
   doc: "Go forward by N pages.",
   params: [{ name: "n", kind: "count" }],
@@ -477,7 +477,7 @@ function next(n: number): void {
   const mod = (a: number, b: number) => ((a % b) + b) % b;
   goTo(
     s,
-    !truthy(gnista.variable("vertico-cycle"))
+    !truthy(e8.variable("vertico-cycle"))
       ? index
       : s.total === 0
         ? -1
@@ -487,13 +487,13 @@ function next(n: number): void {
   );
 }
 
-const nextCommand = gnista.defineCommand({
+const nextCommand = e8.defineCommand({
   name: "vertico-next",
   doc: "Go forward N candidates.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => next(n),
 });
-const previousCommand = gnista.defineCommand({
+const previousCommand = e8.defineCommand({
   name: "vertico-previous",
   doc: "Go backward N candidates.",
   params: [{ name: "n", kind: "count" }],
@@ -508,35 +508,35 @@ function insert(): void {
   s.index = Math.max(0, s.index);
   const cand = candidate()!;
   s.index = saved;
-  gnista.deleteRegion(gnista.minibufferPromptEnd(), gnista.pointMax());
-  gnista.insert(cand);
+  e8.deleteRegion(e8.minibufferPromptEnd(), e8.pointMax());
+  e8.insert(cand);
 }
 
-const insertCommand = gnista.defineCommand({ name: "vertico-insert", doc: "Insert current candidate in minibuffer.", run: () => insert() });
+const insertCommand = e8.defineCommand({ name: "vertico-insert", doc: "Insert current candidate in minibuffer.", run: () => insert() });
 
-const exitCommand = gnista.defineCommand({
+const exitCommand = e8.defineCommand({
   name: "vertico-exit",
   doc: "Exit minibuffer with current candidate, or with the input if given a prefix argument.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: gnista.Value) => {
+  run: (arg: e8.Value) => {
     const s = state();
     if (s && !truthy(arg) && s.index >= 0) insert();
-    if (matchP(gnista.minibufferContents())) gnista.call("exit-minibuffer");
+    if (matchP(e8.minibufferContents())) e8.call("exit-minibuffer");
   },
 });
 
-const exitInput = gnista.defineCommand({
+const exitInput = e8.defineCommand({
   name: "vertico-exit-input",
   doc: "Exit minibuffer with input.",
-  run: () => gnista.callWithPrefix([4], exitCommand),
+  run: () => e8.callWithPrefix([4], exitCommand),
 });
 
-const saveCommand = gnista.defineCommand({
+const saveCommand = e8.defineCommand({
   name: "vertico-save",
   doc: "Save current candidate to kill ring.",
   run: () => {
-    if (gnista.regionActive()) gnista.call("kill-ring-save");
-    else gnista.killNew(candidate() ?? "");
+    if (e8.regionActive()) e8.call("kill-ring-save");
+    else e8.killNew(candidate() ?? "");
   },
 });
 
@@ -559,20 +559,20 @@ function nextGroup(n: number): void {
   s.input = true;
 }
 
-const nextGroupCommand = gnista.defineCommand({
+const nextGroupCommand = e8.defineCommand({
   name: "vertico-next-group",
   doc: "Cycle N groups forward. When the prefix argument is 0, the group order is reset.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => nextGroup(n),
 });
-const previousGroupCommand = gnista.defineCommand({
+const previousGroupCommand = e8.defineCommand({
   name: "vertico-previous-group",
   doc: "Cycle N groups backward. When the prefix argument is 0, the group order is reset.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => nextGroup(-n),
 });
 
-gnista.defineKeymap("vertico-map");
+e8.defineKeymap("vertico-map");
 for (const [from, to] of [
   ["beginning-of-buffer", first],
   ["end-of-buffer", last],
@@ -586,22 +586,22 @@ for (const [from, to] of [
   ["minibuffer-complete-and-exit", exitCommand],
   ["kill-ring-save", saveCommand],
 ] as const) {
-  gnista.remapCommand("vertico-map", from as gnista.CommandName, to);
+  e8.remapCommand("vertico-map", from as e8.CommandName, to);
 }
 // Emacs's minibuffer has these on next-line-or-history-element, which vertico remaps.
-gnista.defineKey("vertico-map", "<down>", nextCommand);
-gnista.defineKey("vertico-map", "<up>", previousCommand);
-gnista.defineKey("vertico-map", "M-RET", exitInput);
-gnista.defineKey("vertico-map", "TAB", insertCommand);
+e8.defineKey("vertico-map", "<down>", nextCommand);
+e8.defineKey("vertico-map", "<up>", previousCommand);
+e8.defineKey("vertico-map", "M-RET", exitInput);
+e8.defineKey("vertico-map", "TAB", insertCommand);
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "vertico-mode",
   global: true,
   doc: "VERTical Interactive COmpletion: list the candidates of every prompt that completes down the minibuffer. Turning it on turns icomplete's modes off, as both would list them.",
   onChange: (enabled) => {
     if (!enabled) return;
     for (const mode of ["fido-vertical-mode", "icomplete-vertical-mode", "fido-mode", "icomplete-mode"]) {
-      if (truthy(gnista.variable(mode))) gnista.callWithPrefix(-1, mode as gnista.CommandName);
+      if (truthy(e8.variable(mode))) e8.callWithPrefix(-1, mode as e8.CommandName);
     }
   },
 });

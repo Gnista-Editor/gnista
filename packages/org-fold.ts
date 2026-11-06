@@ -20,7 +20,7 @@ import { charCount, escapeRegExp } from "subr";
 export function hideOverlay(start: number, end: number, spec: string): void {
   // Text inserted at either end goes outside, as with org-fold-core's
   // overlays, which advance at the front only.
-  gnista.makeOverlay(start, end, { invisible: spec, evaporate: true }, { frontAdvance: true });
+  e8.makeOverlay(start, end, { invisible: spec, evaporate: true }, { frontAdvance: true });
 }
 
 /**
@@ -32,12 +32,12 @@ export function flag(start: number, end: number, hide: boolean, spec = "outline"
   // Positions outside the buffer are brought inside, as make-overlay does,
   // so folds that reached past an item, restored relative to its new
   // place, are cut short rather than failing.
-  start = Math.min(Math.max(start, 0), gnista.bufferSize());
-  end = Math.min(Math.max(end, start), gnista.bufferSize());
-  for (const id of gnista.overlaysIn(start, end)) {
-    if (gnista.overlayGet(id, "invisible") !== spec) continue;
-    const [from, to] = [gnista.overlayStart(id) ?? start, gnista.overlayEnd(id) ?? end];
-    gnista.deleteOverlay(id);
+  start = Math.min(Math.max(start, 0), e8.bufferSize());
+  end = Math.min(Math.max(end, start), e8.bufferSize());
+  for (const id of e8.overlaysIn(start, end)) {
+    if (e8.overlayGet(id, "invisible") !== spec) continue;
+    const [from, to] = [e8.overlayStart(id) ?? start, e8.overlayEnd(id) ?? end];
+    e8.deleteOverlay(id);
     if (from < start) hideOverlay(from, start, spec);
     if (to > end) hideOverlay(end, to, spec);
   }
@@ -48,8 +48,8 @@ export const FOLD_SPECS = ["outline", "org-hide-drawer", "org-hide-block"];
 
 /** Whether a heading, drawer or block fold hides the character at pos, or one with `spec` if given. */
 export function folded(pos: number, spec?: string): boolean {
-  return gnista.overlaysAt(pos).some((id) => {
-    const value = gnista.overlayGet(id, "invisible");
+  return e8.overlaysAt(pos).some((id) => {
+    const value = e8.overlayGet(id, "invisible");
     return spec === undefined ? FOLD_SPECS.includes(String(value)) : value === spec;
   });
 }
@@ -72,7 +72,7 @@ export function showEntry(all: Heading[], i: number): void {
 export function showChildren(all: Heading[], i: number): boolean {
   const parent = all[i].level;
   const next = nextSameOrHigher(all, i);
-  const end = next ? next.start : gnista.bufferSize();
+  const end = next ? next.start : e8.bufferSize();
   showHeadingLine(all[i]);
   let min = Infinity;
   let max = Infinity;
@@ -114,7 +114,7 @@ export function ancestors(all: Heading[], i: number): number[] {
  * other counts or a range starting partway through a line.
  */
 function separatorLines(range: [number, number], k: number): [number, number][] | undefined {
-  if ((k !== 1 && k !== 2) || gnista.lineStart(lineAt(range[0])) !== range[0]) return undefined;
+  if ((k !== 1 && k !== 2) || e8.lineStart(lineAt(range[0])) !== range[0]) return undefined;
   const all = headings();
   const headingOn = (line: number): Heading | undefined => {
     let [lo, hi] = [0, all.length];
@@ -127,7 +127,7 @@ function separatorLines(range: [number, number], k: number): [number, number][] 
   };
   const pattern = k === 2 ? "^[ \t]*\n[ \t]*\n\\*+ " : "^[ \t]*\n\\*+ ";
   const found: [number, number][] = [];
-  for (const [line, start, text] of gnista.matchingLines(pattern, { caseFold: false, start: range[0], end: range[1] })) {
+  for (const [line, start, text] of e8.matchingLines(pattern, { caseFold: false, start: range[0], end: range[1] })) {
     const h = headingOn(line + k);
     if (!h) continue;
     // From the newline before the last blank line: for one separator line, the one before it.
@@ -144,15 +144,15 @@ function separatorLines(range: [number, number], k: number): [number, number][] 
  * those of the subtree point is in.
  */
 export function showEmptyLines(state: string, narrowed?: [number, number]): void {
-  const n = Number(gnista.variable("org-cycle-separator-lines") ?? 2);
+  const n = Number(e8.variable("org-cycle-separator-lines") ?? 2);
   let range: [number, number] | undefined;
-  if (["overview", "contents", "t"].includes(state)) range = narrowed ?? [0, gnista.bufferSize()];
+  if (["overview", "contents", "t"].includes(state)) range = narrowed ?? [0, e8.bufferSize()];
   else if (state === "children" || state === "folded") {
     const all = headings();
     const i = headingIndex(all, lineAt());
     const next = i === undefined ? undefined : nextSameOrHigher(all, i);
-    const to = next ? (next.line + 1 < gnista.lineCount() ? gnista.lineStart(next.line + 1) : gnista.bufferSize()) : gnista.bufferSize();
-    range = [gnista.point(), to];
+    const to = next ? (next.line + 1 < e8.lineCount() ? e8.lineStart(next.line + 1) : e8.bufferSize()) : e8.bufferSize();
+    range = [e8.point(), to];
   }
   if (n !== 0 && range) {
     const k = Math.abs(n);
@@ -163,8 +163,8 @@ export function showEmptyLines(state: string, narrowed?: [number, number]): void
         : k === 2
           ? /^[ \t]*(\n[ \t]*\n\*+) /gm
           : new RegExp(`^(?:[ \\t]*\\n){${k - 2}}[ \\t]*(\\n[ \\t]*\\n\\*+) `, "gm");
-    const text = fast ? "" : gnista.bufferText(range[0], range[1]);
-    const shown: [number, number][] = fast?.filter(([, e]) => !gnista.invisibleAt(e)) ?? [];
+    const text = fast ? "" : e8.bufferText(range[0], range[1]);
+    const shown: [number, number][] = fast?.filter(([, e]) => !e8.invisibleAt(e)) ?? [];
     // Characters counted on from the last match, not from the start each time.
     let [counted, chars] = [0, 0];
     for (let m = fast ? null : re.exec(text); m; m = re.exec(text)) {
@@ -173,25 +173,25 @@ export function showEmptyLines(state: string, narrowed?: [number, number]): void
       counted = at;
       const e = range[0] + chars;
       const b = e - charCount(m[1]);
-      if (!gnista.invisibleAt(e)) shown.push([b, e]);
+      if (!e8.invisibleAt(e)) shown.push([b, e]);
     }
     for (const [b, e] of shown) {
       if (n >= 0) flag(b, e, false);
       else {
         // A negative count shows all the blank lines.
         let l = lineAt(b);
-        while (l > 0 && isBlank(gnista.lineText(l))) l--;
-        flag(gnista.lineEnd(l), e, false);
+        while (l > 0 && isBlank(e8.lineText(l))) l--;
+        flag(e8.lineEnd(l), e, false);
       }
     }
   }
   // Never hide empty lines at the end of the file.
-  const size = narrowed ? narrowed[1] : gnista.bufferSize();
+  const size = narrowed ? narrowed[1] : e8.bufferSize();
   const all = headings();
   const lastAt = firstHeadingFrom(all, size) - 1;
   const last = lastAt >= 0 && all[lastAt].start >= (narrowed?.[0] ?? 0) ? all[lastAt] : undefined;
-  const eoh = last ? last.end : gnista.lineEnd(lineAt(narrowed?.[0] ?? 0));
-  if (eoh < size && /^[ \t\n]+$/.test(gnista.bufferText(eoh, size))) flag(eoh, size, false);
+  const eoh = last ? last.end : e8.lineEnd(lineAt(narrowed?.[0] ?? 0));
+  if (eoh < size && /^[ \t\n]+$/.test(e8.bufferText(eoh, size))) flag(eoh, size, false);
 }
 
 /** Whether any of the text from `start` to `end` is folded. */
@@ -202,11 +202,11 @@ function anyFolded(start: number, end: number): boolean {
 
 /** Where the text hidden from the line after `line` ends, as org-cycle-internal-local finds it. */
 export function endOfHidden(line: number): number {
-  const size = gnista.bufferSize();
-  let p = line + 1 < gnista.lineCount() ? gnista.lineStart(line + 1) : size;
+  const size = e8.bufferSize();
+  let p = line + 1 < e8.lineCount() ? e8.lineStart(line + 1) : size;
   while (p < size && folded(p - 1)) {
     while (p < size && folded(p) === folded(p - 1)) p++;
-    if (p < size && p === gnista.lineEnd(lineAt(p))) p = lineAt(p) + 1 < gnista.lineCount() ? gnista.lineStart(lineAt(p) + 1) : size;
+    if (p < size && p === e8.lineEnd(lineAt(p))) p = lineAt(p) + 1 < e8.lineCount() ? e8.lineStart(lineAt(p) + 1) : size;
   }
   return p;
 }
@@ -222,25 +222,25 @@ export function cycleHeading(all: Heading[], i: number, at = i): void {
   const eos = subtreeEnd(all, i);
   const hasChildren = all[i + 1] !== undefined && all[i + 1].level > h.level;
   const eol = endOfHidden(h.line);
-  const again = gnista.lastCommand() === gnista.thisCommand();
-  const status = gnista.variable("org-cycle-subtree-status");
+  const again = e8.lastCommand() === e8.thisCommand();
+  const status = e8.variable("org-cycle-subtree-status");
   let skipped = false;
   /** Shows the heading after the subtree if it is hidden. */
   const showFollowing = (): void => {
     const next = findFrom(all, i + 1, (x) => x.start > eos);
-    if (next && gnista.invisibleAt(next.start)) showHeadingLine(next);
+    if (next && e8.invisibleAt(next.start)) showHeadingLine(next);
   };
   if (eos === eoh) {
-    gnista.message("EMPTY ENTRY");
-    gnista.setVariable("org-cycle-subtree-status", null);
+    e8.message("EMPTY ENTRY");
+    e8.setVariable("org-cycle-subtree-status", null);
     showFollowing();
     return;
   }
   // Org takes an entry of only blank lines for folded whether they show or
-  // not, so once shown TAB never folds it again; Gnista folds it when none of
+  // not, so once shown TAB never folds it again; E8 folds it when none of
   // it is hidden (docs/differences.md).
-  const shownBlank = !hasChildren && eol < eos && /^\s*$/.test(gnista.bufferText(eoh, eos)) && !anyFolded(eoh, eos);
-  const hiddenInOneLine = !shownBlank && (eol >= eos || /^\s*$/.test(gnista.bufferText(eol, eos)));
+  const shownBlank = !hasChildren && eol < eos && /^\s*$/.test(e8.bufferText(eoh, eos)) && !anyFolded(eoh, eos);
+  const hiddenInOneLine = !shownBlank && (eol >= eos || /^\s*$/.test(e8.bufferText(eol, eos)));
   if (hiddenInOneLine && !hasChildren) skipped = true;
   if (hiddenInOneLine && hasChildren) {
     showEntry(all, at);
@@ -250,20 +250,20 @@ export function cycleHeading(all: Heading[], i: number, at = i): void {
       showHeadingLine(all[a]);
       showChildren(all, a);
     }
-    gnista.message("CHILDREN");
+    e8.message("CHILDREN");
     const next = findFrom(all, i + 1, (x) => x.start > eos);
-    if (next && next.start < gnista.bufferSize() && gnista.invisibleAt(next.start)) showHeadingLine(next);
-    gnista.setVariable("org-cycle-subtree-status", "children");
+    if (next && next.start < e8.bufferSize() && e8.invisibleAt(next.start)) showHeadingLine(next);
+    e8.setVariable("org-cycle-subtree-status", "children");
     showEmptyLines("children");
   } else if (skipped || (again && status === "children")) {
     flag(eoh, eos, false);
-    gnista.message(skipped ? "SUBTREE (NO CHILDREN)" : "SUBTREE");
-    gnista.setVariable("org-cycle-subtree-status", "subtree");
+    e8.message(skipped ? "SUBTREE (NO CHILDREN)" : "SUBTREE");
+    e8.setVariable("org-cycle-subtree-status", "subtree");
     showEmptyLines("subtree");
   } else {
     flag(eoh, eos, true);
-    gnista.message("FOLDED");
-    gnista.setVariable("org-cycle-subtree-status", "folded");
+    e8.message("FOLDED");
+    e8.setVariable("org-cycle-subtree-status", "folded");
     showEmptyLines("folded");
   }
 }
@@ -271,10 +271,10 @@ export function cycleHeading(all: Heading[], i: number, at = i): void {
 /** Hides the drawers before the first heading, as overview and contents do. */
 function hideTopDrawers(): void {
   const first = headings()[0];
-  const end = first ? first.line : gnista.lineCount();
+  const end = first ? first.line : e8.lineCount();
   // From the start of the accessible portion, as org-cycle-hide-drawers.
-  for (let line = lineAt(gnista.pointMin()); line < end; line++) {
-    const m = DRAWER.exec(gnista.lineText(line));
+  for (let line = lineAt(e8.pointMin()); line < end; line++) {
+    const m = DRAWER.exec(e8.lineText(line));
     if (m && m[1].toUpperCase() !== "END") toggleDrawerOrBlock(line, true);
   }
 }
@@ -293,14 +293,14 @@ export function overview(): void {
     level = h.level;
   }
   // Up to the end of the accessible portion, where Org's search stops.
-  flag(last, gnista.pointMax(), true);
+  flag(last, e8.pointMax(), true);
 }
 
 /** Shows the headings up to a level, or all of them, as org-cycle-content does. */
 export function showLevels(levels: number): void {
-  flag(gnista.pointMin(), gnista.pointMax(), false);
+  flag(e8.pointMin(), e8.pointMax(), false);
   hideTopDrawers();
-  let last = gnista.pointMax();
+  let last = e8.pointMax();
   for (const h of [...headings()].reverse()) {
     if (h.level > levels) continue;
     flag(h.end, last, true);
@@ -314,23 +314,23 @@ export function contents(): void {
 
 /** Cycles the whole buffer, as org-cycle-internal-global does. */
 export function globalCycle(): void {
-  const again = gnista.lastCommand() === gnista.thisCommand();
-  const status = gnista.variable("org-cycle-global-status");
+  const again = e8.lastCommand() === e8.thisCommand();
+  const status = e8.variable("org-cycle-global-status");
   if (again && status === "overview") {
     contents();
-    gnista.message("CONTENTS...done");
-    gnista.setVariable("org-cycle-global-status", "contents");
+    e8.message("CONTENTS...done");
+    e8.setVariable("org-cycle-global-status", "contents");
     showEmptyLines("contents");
   } else if (again && status === "contents") {
-    flag(0, gnista.bufferSize(), false);
-    flag(0, gnista.bufferSize(), false, "org-hide-block");
-    gnista.message("SHOW ALL");
-    gnista.setVariable("org-cycle-global-status", "all");
+    flag(0, e8.bufferSize(), false);
+    flag(0, e8.bufferSize(), false, "org-hide-block");
+    e8.message("SHOW ALL");
+    e8.setVariable("org-cycle-global-status", "all");
     showEmptyLines("all");
   } else {
     overview();
-    gnista.message("OVERVIEW");
-    gnista.setVariable("org-cycle-global-status", "overview");
+    e8.message("OVERVIEW");
+    e8.setVariable("org-cycle-global-status", "overview");
     showEmptyLines("overview");
   }
 }
@@ -342,12 +342,12 @@ export function globalCycle(): void {
 function showAround(pos: number): void {
   const all = headings();
   const i = headingIndex(all, lineAt(pos));
-  if (i === undefined) flag(0, all[0]?.start ?? gnista.bufferSize(), false);
+  if (i === undefined) flag(0, all[0]?.start ?? e8.bufferSize(), false);
   else showEntry(all, i);
-  if (gnista.invisibleAt(pos)) {
-    for (const id of gnista.overlaysAt(pos)) {
-      const spec = String(gnista.overlayGet(id, "invisible"));
-      if (FOLD_SPECS.includes(spec)) flag(gnista.overlayStart(id) ?? pos, gnista.overlayEnd(id) ?? pos, false, spec);
+  if (e8.invisibleAt(pos)) {
+    for (const id of e8.overlaysAt(pos)) {
+      const spec = String(e8.overlayGet(id, "invisible"));
+      if (FOLD_SPECS.includes(spec)) flag(e8.overlayStart(id) ?? pos, e8.overlayEnd(id) ?? pos, false, spec);
     }
   }
   if (i !== undefined) {
@@ -362,18 +362,18 @@ function showAround(pos: number): void {
  * or "delete-backward".
  */
 function checkBeforeInvisibleEdit(kind: string): void {
-  const mode = gnista.variable("org-fold-catch-invisible-edits");
-  const p = gnista.point();
-  if (!mode || !(gnista.invisibleAt(p) || gnista.invisibleAt(Math.max(0, p - 1)))) return;
+  const mode = e8.variable("org-fold-catch-invisible-edits");
+  const p = e8.point();
+  if (!mode || !(e8.invisibleAt(p) || e8.invisibleAt(Math.max(0, p - 1)))) return;
   const atPoint = folded(p);
   const beforePoint = p > 0 && folded(p - 1);
   if (!atPoint && !beforePoint) return;
-  if (mode === "error") gnista.userError("Editing in invisible areas is prohibited, make them visible first");
+  if (mode === "error") e8.userError("Editing in invisible areas is prohibited, make them visible first");
   showAround(p);
   if (beforePoint) showAround(p - 1);
   const predictable = atPoint && !beforePoint && (kind === "insert" || kind === "delete-backward");
-  if (mode === "show" || (mode === "smart" && predictable)) gnista.message("Unfolding invisible region around point before editing");
-  else gnista.userError("Edit in invisible region aborted, repeat to confirm with text visible");
+  if (mode === "show" || (mode === "smart" && predictable)) e8.message("Unfolding invisible region around point before editing");
+  else e8.userError("Edit in invisible region aborted, repeat to confirm with text visible");
 }
 
 /** The commands checked before they edit next to folded text, as in org-fold-catch-invisible-edits-commands. */
@@ -387,11 +387,11 @@ const INVISIBLE_EDIT_COMMANDS: { [command: string]: string } = {
 
 /** Checks the command being run, if it is one of those, as Org's advice on them does. */
 export function checkInvisibleEditMaybe(): void {
-  const kind = INVISIBLE_EDIT_COMMANDS[gnista.thisCommand() ?? ""];
+  const kind = INVISIBLE_EDIT_COMMANDS[e8.thisCommand() ?? ""];
   if (kind) checkBeforeInvisibleEdit(kind);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-fold-check-before-invisible-edit-maybe",
   doc: "Stop or unfold before an edit next to folded text, if the running command is one Org checks.",
   run: () => checkInvisibleEditMaybe(),
@@ -425,9 +425,9 @@ export function withoutFoldChecks<T>(body: () => T): T {
 /** Checks the folds near a change, as org-fold-core--fix-folded-region does after each one. */
 export function fixFoldsAround(from: number, to: number): void {
   if (foldChecksOff) return;
-  const a = gnista.lineStart(Math.max(0, lineAt(from) - 1));
+  const a = e8.lineStart(Math.max(0, lineAt(from) - 1));
   const b = lineStartOrEnd(lineAt(to) + 2);
-  for (const id of gnista.overlaysIn(a, b)) checkFold(id);
+  for (const id of e8.overlaysIn(a, b)) checkFold(id);
 }
 
 /**
@@ -437,68 +437,68 @@ export function fixFoldsAround(from: number, to: number): void {
  * of characters, so they rarely do.
  */
 function revealHeadlineAt(line: number): void {
-  const size = gnista.bufferSize();
+  const size = e8.bufferSize();
   const blank = /[\n\t\r ]/;
-  const endl = gnista.lineEnd(line);
+  const endl = e8.lineEnd(line);
   let q = endl;
-  while (q < size && blank.test(gnista.bufferText(q, q + 1))) q++;
+  while (q < size && blank.test(e8.bufferText(q, q + 1))) q++;
   const all = headings();
   const i = headingIndex(all, line);
   let skipped = -1;
   if (i !== undefined) {
     let e = nextSameOrHigher(all, i)?.start ?? size;
-    for (let k = 0; k < 2 && e > 0 && /[\n\r]/.test(gnista.bufferText(e - 1, e)); k++) e--;
+    for (let k = 0; k < 2 && e > 0 && /[\n\r]/.test(e8.bufferText(e - 1, e)); k++) e--;
     skipped = 0;
-    while (e + skipped < size && blank.test(gnista.bufferText(e + skipped, e + skipped + 1))) skipped++;
+    while (e + skipped < size && blank.test(e8.bufferText(e + skipped, e + skipped + 1))) skipped++;
   }
-  flag(Math.max(0, gnista.lineStart(line) - 1), q + 1 === skipped ? q : endl, false);
+  flag(Math.max(0, e8.lineStart(line) - 1), q + 1 === skipped ? q : endl, false);
 }
 
 /** Unfolds a fold that no longer matches what it hides. */
 function checkFold(id: number): void {
-  const spec = String(gnista.overlayGet(id, "invisible"));
+  const spec = String(e8.overlayGet(id, "invisible"));
   if (!FOLD_SPECS.includes(spec)) return;
-  let start = gnista.overlayStart(id);
-  let end = gnista.overlayEnd(id);
+  let start = e8.overlayStart(id);
+  let end = e8.overlayEnd(id);
   if (start === undefined || end === undefined) return;
   // Folds that touch make one region, as Org's text-property folds do.
   const ids = [id];
   for (let grew = true; grew; ) {
     grew = false;
-    const near: number[] = gnista.overlaysIn(Math.max(0, start - 1), Math.min(gnista.bufferSize(), end + 1));
+    const near: number[] = e8.overlaysIn(Math.max(0, start - 1), Math.min(e8.bufferSize(), end + 1));
     for (const other of near) {
-      if (ids.includes(other) || gnista.overlayGet(other, "invisible") !== spec) continue;
-      const s0: number = gnista.overlayStart(other) ?? start;
-      const e0: number = gnista.overlayEnd(other) ?? end;
+      if (ids.includes(other) || e8.overlayGet(other, "invisible") !== spec) continue;
+      const s0: number = e8.overlayStart(other) ?? start;
+      const e0: number = e8.overlayEnd(other) ?? end;
       if (e0 < start || s0 > end) continue;
       ids.push(other);
       [start, end] = [Math.min(start, s0), Math.max(end, e0)];
       grew = true;
     }
   }
-  const size = gnista.bufferSize();
+  const size = e8.bufferSize();
   // Org's checks step back from the fold's start, which fails there.
   if (start === 0) throw new Error("Beginning of buffer");
   const before = lineAt(Math.max(0, start - 1));
-  const opener = gnista.lineText(before);
+  const opener = e8.lineText(before);
   const lastLine = lineAt(end);
   let valid: boolean;
   if (spec === "outline") {
     // The line before the fold shows whole, as org-fold--reveal-outline-maybe
     // makes sure first, unless it is folded itself.
-    const openerStart = gnista.lineStart(before);
+    const openerStart = e8.lineStart(before);
     if (!folded(openerStart, "outline")) {
       revealHeadlineAt(before);
-      start = Math.max(start, gnista.lineEnd(before));
+      start = Math.max(start, e8.lineEnd(before));
     }
     valid = start > 0 && (ITEM_RE.test(opener) || /^\*+ /.test(opener));
     if (valid) {
       // A top-level heading is never hidden, nor one partly hidden at the end.
-      for (let l = before + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
-        if (/^\* /.test(gnista.lineText(l))) revealHeadlineAt(l);
+      for (let l = before + 1; l < e8.lineCount() && e8.lineStart(l) < end; l++) {
+        if (/^\* /.test(e8.lineText(l))) revealHeadlineAt(l);
       }
       // The heading on the line where the fold ends shows.
-      if (isHeadingLine(gnista.lineText(lastLine)) && !folded(gnista.lineStart(lastLine), "outline")) revealHeadlineAt(lastLine);
+      if (isHeadingLine(e8.lineText(lastLine)) && !folded(e8.lineStart(lastLine), "outline")) revealHeadlineAt(lastLine);
     }
   } else {
     const block = /^[ \t]*#\+begin(?::|_(\S+))/i.exec(opener);
@@ -506,9 +506,9 @@ function checkFold(id: number): void {
       spec === "org-hide-drawer"
         ? /^[ \t]*:END:[ \t]*$/i
         : new RegExp(`^[ \\t]*#\\+end${block?.[1] ? `_${escapeRegExp(block[1])}[ \\t]*$` : ":?[ \\t]*$"}`, "i");
-    valid = start > 0 && (spec === "org-hide-drawer" ? DRAWER_RE.test(opener) : block !== null) && close.test(gnista.lineText(lastLine));
+    valid = start > 0 && (spec === "org-hide-drawer" ? DRAWER_RE.test(opener) : block !== null) && close.test(e8.lineText(lastLine));
     for (let l = before + 1; valid && l < lastLine; l++) {
-      if (close.test(gnista.lineText(l)) || isHeadingLine(gnista.lineText(l))) valid = false;
+      if (close.test(e8.lineText(l)) || isHeadingLine(e8.lineText(l))) valid = false;
     }
   }
   if (!valid) revealAfterCommand(start, end);
@@ -518,7 +518,7 @@ function checkFold(id: number): void {
  * Regions to show once the command is over, each held by an overlay that
  * hides nothing, so it moves with the text as Org's markers do.
  */
-let delayedReveals: { buffer: gnista.Buffer; id: number }[] = [];
+let delayedReveals: { buffer: e8.Buffer; id: number }[] = [];
 
 /**
  * Shows a region, every kind of fold in it, once the command is over, as
@@ -527,19 +527,19 @@ let delayedReveals: { buffer: gnista.Buffer; id: number }[] = [];
  * alone.
  */
 function revealAfterCommand(start: number, end: number): void {
-  delayedReveals.push({ buffer: gnista.currentBuffer(), id: gnista.makeOverlay(start, end) });
+  delayedReveals.push({ buffer: e8.currentBuffer(), id: e8.makeOverlay(start, end) });
 }
 
 // Each in the buffer it was made in, which need not be current once the
 // command is over: a change made from the agenda or capture is to another.
-gnista.addHook("post-command-hook", () => {
+e8.addHook("post-command-hook", () => {
   const reveals = delayedReveals;
   delayedReveals = [];
   for (const { buffer, id } of reveals) {
-    if (!gnista.bufferLiveP(buffer)) continue;
-    gnista.withCurrentBuffer(buffer, () => {
-      const [start, end] = [gnista.overlayStart(id), gnista.overlayEnd(id)];
-      gnista.deleteOverlay(id);
+    if (!e8.bufferLiveP(buffer)) continue;
+    e8.withCurrentBuffer(buffer, () => {
+      const [start, end] = [e8.overlayStart(id), e8.overlayEnd(id)];
+      e8.deleteOverlay(id);
       if (start === undefined || end === undefined || start >= end) return;
       for (const spec of FOLD_SPECS) flag(start, end, false, spec);
     });
@@ -552,10 +552,10 @@ export const BLOCK_END = /^[ \t]*#\+end_(\S+)/i;
 
 /** The lines a drawer or block starting at a line runs to, or undefined if it is not closed. */
 function closingLine(line: number): number | undefined {
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const block = BLOCK_BEGIN.exec(text);
-  for (let l = line + 1; l < gnista.lineCount(); l++) {
-    const t = gnista.lineText(l);
+  for (let l = line + 1; l < e8.lineCount(); l++) {
+    const t = e8.lineText(l);
     if (block ? BLOCK_END.test(t) : /^[ \t]*:END:[ \t]*$/i.test(t)) return l;
     if (isHeadingLine(t)) return undefined;
   }
@@ -566,19 +566,19 @@ function closingLine(line: number): number | undefined {
 export function toggleDrawerOrBlock(line: number, hide?: boolean): boolean {
   const close = closingLine(line);
   if (close === undefined) return false;
-  const spec = BLOCK_BEGIN.test(gnista.lineText(line)) ? "org-hide-block" : "org-hide-drawer";
-  const start = gnista.lineEnd(line);
-  flag(start, gnista.lineEnd(close), hide ?? !folded(start, spec), spec);
+  const spec = BLOCK_BEGIN.test(e8.lineText(line)) ? "org-hide-block" : "org-hide-drawer";
+  const start = e8.lineEnd(line);
+  flag(start, e8.lineEnd(close), hide ?? !folded(start, spec), spec);
   return true;
 }
 
 /** The line opening the drawer or block a closing line ends, if it is one. */
 export function openerOf(line: number): number | undefined {
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const end = BLOCK_END.exec(text);
   if (!end && !/^[ \t]*:END:[ \t]*$/i.test(text)) return undefined;
   for (let l = line - 1; l >= 0; l--) {
-    const t = gnista.lineText(l);
+    const t = e8.lineText(l);
     if (isHeadingLine(t)) return undefined;
     if (end ? BLOCK_BEGIN.test(t) : DRAWER.test(t) && !/^[ \t]*:END:/i.test(t)) return closingLine(l) === line ? l : undefined;
     if (!end && /^[ \t]*:END:/i.test(t)) return undefined;
@@ -588,15 +588,15 @@ export function openerOf(line: number): number | undefined {
 
 /** Folds the drawers whose first lines are from a line up to a position, as org-fold--hide-drawers does. */
 export function hideDrawersIn(fromLine: number, to: number): void {
-  for (let line = fromLine; line < gnista.lineCount() && gnista.lineStart(line) < to; line++) {
-    const m = DRAWER.exec(gnista.lineText(line));
+  for (let line = fromLine; line < e8.lineCount() && e8.lineStart(line) < to; line++) {
+    const m = DRAWER.exec(e8.lineText(line));
     if (m && m[1].toUpperCase() !== "END") toggleDrawerOrBlock(line, true);
   }
 }
 
 function hideAllDrawers(): void {
   // The lines of the accessible portion that can open a drawer, found in one pass.
-  const lines = gnista.matchingLines("^[ \t]*:[-_[:alnum:]]+:[ \t]*$", { caseFold: false });
+  const lines = e8.matchingLines("^[ \t]*:[-_[:alnum:]]+:[ \t]*$", { caseFold: false });
   for (const [line, , text] of lines) {
     const m = DRAWER.exec(text);
     if (m && m[1].toUpperCase() !== "END") toggleDrawerOrBlock(line, true);
@@ -605,7 +605,7 @@ function hideAllDrawers(): void {
 
 /** Folds the buffer as org-startup-folded or a #+STARTUP: line says. */
 export function startupVisibility(): void {
-  let how = String(gnista.variable("org-startup-folded") ?? "showeverything");
+  let how = String(e8.variable("org-startup-folded") ?? "showeverything");
   for (const [, , text] of keywordLines()) {
     const m = /^#\+STARTUP:(.*)$/i.exec(text);
     for (const word of m ? m[1].trim().split(/\s+/) : []) {

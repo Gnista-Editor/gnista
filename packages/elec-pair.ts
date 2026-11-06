@@ -8,41 +8,41 @@
 
 import { truthy } from "subr";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "electric-pair-pairs",
   doc: "Pairs of characters Electric Pair mode pairs even where the syntax table gives them no paren or quote syntax, as [open, close] lists.",
   value: [["\"", "\""], ["‘", "’"], ["“", "”"]],
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "electric-pair-text-pairs",
   doc: "Pairs Electric Pair mode pairs in comments and strings, as well as electric-pair-pairs.",
   value: [["\"", "\""], ["‘", "’"], ["“", "”"]],
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "electric-pair-preserve-balance",
   doc: "Whether Electric Pair mode pairs and skips only where that keeps the buffer's parens and quotes balanced.",
   value: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "electric-pair-delete-adjacent-pairs",
   doc: "Whether DEL between an open and close pair deletes both.",
   value: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "electric-pair-open-newline-between-pairs",
   doc: "Whether RET between an open and close pair puts the close on a line of its own too.",
   value: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "electric-pair-skip-whitespace",
   doc: "Whether typing a close paren moves over whitespace to one already there; chomp deletes the whitespace too.",
   value: true,
 });
 
-const charAt = (p: number): string => gnista.charAfter(p) ?? "";
-const charBefore = (p: number): string => gnista.charBefore(p) ?? "";
+const charAt = (p: number): string => e8.charAfter(p) ?? "";
+const charBefore = (p: number): string => e8.charBefore(p) ?? "";
 const pairs = (name: string): [string, string][] => {
-  const v = gnista.variable(name);
+  const v = e8.variable(name);
   return Array.isArray(v) ? v.filter((p): p is [string, string] => Array.isArray(p) && p.length === 2).map((p) => [String(p[0]), String(p[1])]) : [];
 };
 type ScanError = Error & { symbol: "scan-error"; data: [string, number, number] };
@@ -52,7 +52,7 @@ const scanEnd = (e: ScanError): number => e.data[2] - 1;
 
 /** The typed character, as last-command-event. */
 function lastEvent(): string | undefined {
-  const key = gnista.lastKey();
+  const key = e8.lastKey();
   if (key === undefined) return undefined;
   if (key === "RET" || key === "C-j") return "\n";
   if (key === "SPC") return " ";
@@ -65,13 +65,13 @@ const TEXT_TABLE = "prog-mode-syntax-table";
 
 /** Runs `fn` with the text syntax table if in a string or comment, as electric-pair--with-syntax. */
 function withSyntax<T>(stringOrComment: unknown, fn: () => T): T {
-  if (!truthy(stringOrComment as gnista.Value)) return fn();
-  const table = gnista.syntaxTable();
-  gnista.setSyntaxTable(TEXT_TABLE);
+  if (!truthy(stringOrComment as e8.Value)) return fn();
+  const table = e8.syntaxTable();
+  e8.setSyntaxTable(TEXT_TABLE);
   try {
     return fn();
   } finally {
-    gnista.setSyntaxTable(table);
+    e8.setSyntaxTable(table);
   }
 }
 
@@ -79,11 +79,11 @@ type SyntaxInfo = { syntax: string; pair: string; unconditional: boolean; string
 
 /** What a character is to Electric Pair mode here, as electric-pair-syntax-info. */
 function syntaxInfo(ev: string): SyntaxInfo | undefined {
-  const p = gnista.point();
-  const pre: number | true | null = p <= gnista.pointMin() ? true : gnista.syntaxPpss(p - 1).start;
-  const post = gnista.syntaxPpss(p).start;
+  const p = e8.point();
+  const pre: number | true | null = p <= e8.pointMin() ? true : e8.syntaxPpss(p - 1).start;
+  const post = e8.syntaxPpss(p).start;
   const soc = post !== null && pre !== null ? pre : null;
-  const [syntax, pair] = withSyntax(soc, () => [gnista.charSyntax(ev), gnista.matchingParen(ev) ?? ev]);
+  const [syntax, pair] = withSyntax(soc, () => [e8.charSyntax(ev), e8.matchingParen(ev) ?? ev]);
   const fallback = soc !== null ? [...pairs("electric-pair-text-pairs"), ...pairs("electric-pair-pairs")] : pairs("electric-pair-pairs");
   const direct = fallback.find(([open]) => open === ev);
   const reverse = fallback.find(([, close]) => close === ev);
@@ -98,21 +98,21 @@ function syntaxInfo(ev: string): SyntaxInfo | undefined {
 }
 
 /** syntax-ppss, parsing a string's or comment's text with the text syntax table, as electric-pair--syntax-ppss. */
-function pairSyntaxPpss(pos = gnista.point(), where: ("string" | "comment")[] = ["string", "comment"]): gnista.ParseState {
-  const quick = gnista.syntaxPpss(pos);
+function pairSyntaxPpss(pos = e8.point(), where: ("string" | "comment")[] = ["string", "comment"]): e8.ParseState {
+  const quick = e8.syntaxPpss(pos);
   let start: number | undefined;
   if (quick.inString !== null && where.includes("string")) {
     start = quick.start! + 1;
   } else if (quick.inComment !== null && where.includes("comment")) {
-    const p = gnista.point();
-    gnista.gotoChar(quick.start!);
-    gnista.forwardComment(-gnista.pointMax());
-    gnista.skipSyntaxForward(" >!");
-    start = gnista.point();
-    gnista.gotoChar(p);
+    const p = e8.point();
+    e8.gotoChar(quick.start!);
+    e8.forwardComment(-e8.pointMax());
+    e8.skipSyntaxForward(" >!");
+    start = e8.point();
+    e8.gotoChar(p);
   }
   if (start === undefined) return quick;
-  return withSyntax(start, () => gnista.parsePartialSexp(start!, pos));
+  return withSyntax(start, () => e8.parsePartialSexp(start!, pos));
 }
 
 type Pairing = [boolean, string?];
@@ -129,62 +129,62 @@ function balanceInfo(direction: number, stringOrComment: number | true | null): 
     innermost ??= [true];
   };
   const endedPrematurely = () => {
-    const pos = gnista.point();
+    const pos = e8.point();
     let matched: boolean;
     if (direction < 0) {
       try {
-        const after = withSyntax(stringOrComment, () => gnista.scanSexps(gnista.point(), 1));
-        matched = after !== null && charAt(pos) === withSyntax(stringOrComment, () => gnista.matchingParen(charBefore(after)));
+        const after = withSyntax(stringOrComment, () => e8.scanSexps(e8.point(), 1));
+        matched = after !== null && charAt(pos) === withSyntax(stringOrComment, () => e8.matchingParen(charBefore(after)));
       } catch (e) {
         if (!isScanError(e)) throw e;
         matched = false;
       }
     } else {
-      const ppss = pairSyntaxPpss(gnista.point() - 1);
+      const ppss = pairSyntaxPpss(e8.point() - 1);
       const start = ppss.openParens[ppss.openParens.length - 1];
       const opener = start === undefined ? "" : charAt(start);
-      matched = start !== undefined && charBefore(pos) === (withSyntax(stringOrComment, () => gnista.matchingParen(opener)) ?? opener);
+      matched = start !== undefined && charBefore(pos) === (withSyntax(stringOrComment, () => e8.matchingParen(opener)) ?? opener);
     }
-    const actual = direction > 0 ? charBefore(gnista.point()) : charAt(gnista.point());
+    const actual = direction > 0 ? charBefore(e8.point()) : charAt(e8.point());
     innermost ??= [matched, actual];
     if (!matched) outermost = [matched, actual];
   };
-  const p = gnista.point();
+  const p = e8.point();
   try {
     while (outermost === undefined) {
       try {
-        withSyntax(stringOrComment, () => gnista.scanSexps(gnista.point(), direction > 0 ? gnista.pointMax() : -gnista.pointMax()));
+        withSyntax(stringOrComment, () => e8.scanSexps(e8.point(), direction > 0 ? e8.pointMax() : -e8.pointMax()));
         topLevel();
       } catch (e) {
         if (!isScanError(e)) throw e;
-        if (!e.data[0].includes("ends prematurely") || (stringOrComment !== null && gnista.syntaxPpss().start === null)) {
+        if (!e.data[0].includes("ends prematurely") || (stringOrComment !== null && e8.syntaxPpss().start === null)) {
           topLevel();
         } else {
-          gnista.gotoChar(scanEnd(e));
+          e8.gotoChar(scanEnd(e));
           endedPrematurely();
         }
       }
     }
   } finally {
-    gnista.gotoChar(p);
+    e8.gotoChar(p);
   }
   return [innermost!, outermost!];
 }
 
 /** Whether there are strings started by `ch` left open, as electric-pair--unbalanced-strings-p. */
 function unbalancedStrings(ch: string): boolean {
-  const selector = gnista.syntaxPpss();
-  let relevant: gnista.ParseState;
+  const selector = e8.syntaxPpss();
+  let relevant: e8.ParseState;
   if (selector.inComment !== null) {
-    const p = gnista.point();
-    gnista.gotoChar(selector.start!);
-    gnista.forwardComment(gnista.pointMax());
-    gnista.skipSyntaxBackward(" >!");
-    const end = gnista.point();
-    gnista.gotoChar(p);
+    const p = e8.point();
+    e8.gotoChar(selector.start!);
+    e8.forwardComment(e8.pointMax());
+    e8.skipSyntaxBackward(" >!");
+    const end = e8.point();
+    e8.gotoChar(p);
     relevant = pairSyntaxPpss(end);
   } else {
-    relevant = gnista.syntaxPpss(gnista.pointMax());
+    relevant = e8.syntaxPpss(e8.pointMax());
   }
   return relevant.inString === "|" || relevant.inString === ch;
 }
@@ -193,9 +193,9 @@ function unbalancedStrings(ch: string): boolean {
 function inhibitIfHelpsBalance(ch: string): boolean {
   const info = syntaxInfo(ch);
   if (info === undefined) return false;
-  const group = gnista.prepareChangeGroup();
+  const group = e8.prepareChangeGroup();
   try {
-    gnista.deleteRegion(gnista.point() - 1, gnista.point());
+    e8.deleteRegion(e8.point() - 1, e8.point());
     if (info.syntax === "(") {
       const [, outermost] = balanceInfo(1, info.stringOrComment);
       return outermost[0] ? false : outermost[1] === info.pair;
@@ -203,13 +203,13 @@ function inhibitIfHelpsBalance(ch: string): boolean {
     if (info.syntax === "\"") return unbalancedStrings(ch);
     return false;
   } finally {
-    gnista.cancelChangeGroup(group);
+    e8.cancelChangeGroup(group);
   }
 }
 
 /** Whether point is in a string started by `ch`, as electric-pair--inside-string-p. */
 const insideString = (ch: string): boolean => {
-  const s = pairSyntaxPpss(gnista.point(), ["comment"]).inString;
+  const s = pairSyntaxPpss(e8.point(), ["comment"]).inString;
   return s === "|" || s === ch;
 };
 
@@ -217,9 +217,9 @@ const insideString = (ch: string): boolean => {
 function skipIfHelpsBalance(ch: string): boolean {
   const info = syntaxInfo(ch);
   if (info === undefined) return false;
-  const group = gnista.prepareChangeGroup();
+  const group = e8.prepareChangeGroup();
   try {
-    gnista.deleteRegion(gnista.point() - 1, gnista.point());
+    e8.deleteRegion(e8.point() - 1, e8.point());
     if (info.syntax === ")") {
       const [innermost, outermost] = balanceInfo(-1, info.stringOrComment);
       if (outermost[0]) return innermost[0];
@@ -229,11 +229,11 @@ function skipIfHelpsBalance(ch: string): boolean {
     if (info.syntax === "\"") return insideString(ch);
     return false;
   } finally {
-    gnista.cancelChangeGroup(group);
+    e8.cancelChangeGroup(group);
   }
 }
 
-const preserving = (): boolean => truthy(gnista.variable("electric-pair-preserve-balance"));
+const preserving = (): boolean => truthy(e8.variable("electric-pair-preserve-balance"));
 
 /** Whether to move over a typed close instead of inserting it, as electric-pair-default-skip-self. */
 const skipSelf = (ch: string): boolean => (preserving() ? skipIfHelpsBalance(ch) : true);
@@ -242,152 +242,152 @@ const skipSelf = (ch: string): boolean => (preserving() ? skipIfHelpsBalance(ch)
 function inhibit(ch: string): boolean {
   if (preserving()) return inhibitIfHelpsBalance(ch);
   // As electric-pair-conservative-inhibit.
-  const p = gnista.point();
-  return charAt(p) === ch || (charBefore(p) === ch && charBefore(p - 1) === ch) || gnista.charSyntax(charAt(p)) === "w";
+  const p = e8.point();
+  return charAt(p) === ch || (charBefore(p) === ch && charBefore(p - 1) === ch) || e8.charSyntax(charAt(p)) === "w";
 }
 
 /** Inserts a character as Electric Pair mode does, without pairing it again. */
 function insertPairChar(ch: string): void {
-  gnista.insertAndInherit(ch);
+  e8.insertAndInherit(ch);
 }
 
 /** Where the character just typed ends, as electric--after-char-pos, or undefined. */
 function afterCharPos(ev: string): number | undefined {
-  let p = gnista.point();
+  let p = e8.point();
   if (charBefore(p) === ev) return p;
-  while (p > gnista.pointMin() && " \t".includes(charBefore(p))) p--;
+  while (p > e8.pointMin() && " \t".includes(charBefore(p))) p--;
   if (charBefore(p) === ev) return p;
-  while (p > gnista.pointMin() && " \n\t".includes(charBefore(p))) p--;
+  while (p > e8.pointMin() && " \n\t".includes(charBefore(p))) p--;
   return charBefore(p) === ev ? p : undefined;
 }
 
 /** Moves over whitespace, unless that leaves a string or comment, as electric-pair--skip-whitespace. */
 function skipWhitespace(): void {
-  const saved = gnista.point();
-  const start = gnista.syntaxPpss().start;
+  const saved = e8.point();
+  const start = e8.syntaxPpss().start;
   let p = saved;
-  while (p < gnista.pointMax() && " \t\n".includes(charAt(p))) p++;
-  gnista.gotoChar(p);
-  if (gnista.syntaxPpss().start !== start) gnista.gotoChar(saved);
+  while (p < e8.pointMax() && " \t\n".includes(charAt(p))) p++;
+  e8.gotoChar(p);
+  if (e8.syntaxPpss().start !== start) e8.gotoChar(saved);
 }
 
-const regionUsed = (): boolean => gnista.regionActive() && gnista.mark() !== undefined && gnista.mark() !== gnista.point();
+const regionUsed = (): boolean => e8.regionActive() && e8.mark() !== undefined && e8.mark() !== e8.point();
 
 /** What Electric Pair mode does after a character is typed, as electric-pair-post-self-insert-function. */
 function postSelfInsert(): void {
-  if (gnista.variable("electric-pair-mode") !== true) return;
+  if (e8.variable("electric-pair-mode") !== true) return;
   const ev = lastEvent();
   if (ev === undefined) return;
   const pos = afterCharPos(ev);
   const info = syntaxInfo(ev);
   if (info === undefined || pos === undefined) return;
   const { syntax, pair, unconditional } = info;
-  const mark = gnista.mark();
+  const mark = e8.mark();
   if (["(", ")", "\"", "$"].includes(syntax) && regionUsed() && mark !== undefined) {
-    if (syntax === "\"" || (syntax === ")" && gnista.point() >= mark) || (syntax !== ")" && mark >= gnista.point())) {
-      const p = gnista.makeMarker();
-      gnista.gotoChar(mark);
+    if (syntax === "\"" || (syntax === ")" && e8.point() >= mark) || (syntax !== ")" && mark >= e8.point())) {
+      const p = e8.makeMarker();
+      e8.gotoChar(mark);
       insertPairChar(pair);
-      gnista.gotoChar(gnista.markerPosition(p)!);
-      gnista.deleteMarker(p);
+      e8.gotoChar(e8.markerPosition(p)!);
+      e8.deleteMarker(p);
     } else {
-      gnista.deleteRegion(pos - 1, pos);
+      e8.deleteRegion(pos - 1, pos);
       insertPairChar(pair);
-      gnista.gotoChar(gnista.mark()!);
+      e8.gotoChar(e8.mark()!);
       insertPairChar(ev);
     }
     return;
   }
   // Not after an escape.
   let escapes = 0;
-  for (let p = pos - 1; p > gnista.pointMin() && gnista.charSyntax(charBefore(p)) === "\\"; p--) escapes++;
+  for (let p = pos - 1; p > e8.pointMin() && e8.charSyntax(charBefore(p)) === "\\"; p--) escapes++;
   if (escapes % 2 !== 0) return;
   if ([")", "\"", "$"].includes(syntax)) {
-    const here = gnista.point();
-    gnista.gotoChar(pos);
+    const here = e8.point();
+    e8.gotoChar(pos);
     const skips = unconditional || skipSelf(ev);
-    gnista.gotoChar(here);
-    const skipWs = !(unconditional && syntax === "\"") && truthy(gnista.variable("electric-pair-skip-whitespace"));
+    e8.gotoChar(here);
+    const skipWs = !(unconditional && syntax === "\"") && truthy(e8.variable("electric-pair-skip-whitespace"));
     const closeAhead =
       skips &&
       (() => {
-        const p = gnista.point();
+        const p = e8.point();
         if (skipWs) skipWhitespace();
-        const found = charAt(gnista.point()) === ev;
-        gnista.gotoChar(p);
+        const found = charAt(e8.point()) === ev;
+        e8.gotoChar(p);
         return found;
       })();
     if (closeAhead) {
       if (skipWs) skipWhitespace();
-      const chomp = gnista.variable("electric-pair-skip-whitespace") === "chomp";
-      gnista.deleteRegion(pos - 1, chomp ? gnista.point() : pos);
-      gnista.gotoChar(gnista.point() + 1);
+      const chomp = e8.variable("electric-pair-skip-whitespace") === "chomp";
+      e8.deleteRegion(pos - 1, chomp ? e8.point() : pos);
+      e8.gotoChar(e8.point() + 1);
       return;
     }
   }
-  if (["(", "\"", "$"].includes(syntax) && gnista.variable("overwrite-mode") !== true) {
-    const here = gnista.point();
-    gnista.gotoChar(pos);
+  if (["(", "\"", "$"].includes(syntax) && e8.variable("overwrite-mode") !== true) {
+    const here = e8.point();
+    e8.gotoChar(pos);
     const inhibited = !unconditional && inhibit(ev);
-    gnista.gotoChar(here);
+    e8.gotoChar(here);
     if (!inhibited) {
-      const p = gnista.makeMarker();
+      const p = e8.makeMarker();
       insertPairChar(pair);
-      gnista.gotoChar(gnista.markerPosition(p)!);
-      gnista.deleteMarker(p);
+      e8.gotoChar(e8.markerPosition(p)!);
+      e8.deleteMarker(p);
     }
   }
 }
 
 /** RET between a pair opens a line for the close too, as electric-pair-open-newline-between-pairs-psif. */
 function openNewlineBetweenPairs(): void {
-  if (gnista.variable("electric-pair-mode") !== true || !truthy(gnista.variable("electric-pair-open-newline-between-pairs"))) return;
+  if (e8.variable("electric-pair-mode") !== true || !truthy(e8.variable("electric-pair-open-newline-between-pairs"))) return;
   if (lastEvent() !== "\n") return;
-  const p = gnista.point();
-  if (!(gnista.pointMin() + 1 < p && p < gnista.pointMax())) return;
+  const p = e8.point();
+  if (!(e8.pointMin() + 1 < p && p < e8.pointMax())) return;
   let q = p;
-  while (q > gnista.pointMin() && " \t".includes(charBefore(q))) q--;
+  while (q > e8.pointMin() && " \t".includes(charBefore(q))) q--;
   const before = charBefore(q - 1);
-  if (before !== "" && before === gnista.matchingParen(charAt(p))) {
+  if (before !== "" && before === e8.matchingParen(charAt(p))) {
     // As (save-excursion (newline 1 t)).
-    const m = gnista.makeMarker();
-    gnista.callInteractively("newline");
-    gnista.gotoChar(gnista.markerPosition(m)!);
-    gnista.deleteMarker(m);
+    const m = e8.makeMarker();
+    e8.callInteractively("newline");
+    e8.gotoChar(e8.markerPosition(m)!);
+    e8.deleteMarker(m);
   }
 }
 
 /** Whether typing this character wraps the region, as electric-pair-will-use-region. */
 function willUseRegion(): boolean {
-  if (gnista.variable("electric-pair-mode") !== true || !regionUsed()) return false;
+  if (e8.variable("electric-pair-mode") !== true || !regionUsed()) return false;
   const ev = lastEvent();
   const info = ev === undefined ? undefined : syntaxInfo(ev);
   return info !== undefined && ["(", ")", "\"", "$"].includes(info.syntax);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "electric-pair-delete-pair",
   doc: "Delete the open and close pair point is between, as DEL does there in Electric Pair mode.",
   run: () => {
-    gnista.deleteRegion(gnista.point(), gnista.point() + 1);
-    gnista.callWithPrefix(gnista.prefixArg(), "delete-backward-char");
+    e8.deleteRegion(e8.point(), e8.point() + 1);
+    e8.callWithPrefix(e8.prefixArg(), "delete-backward-char");
   },
 });
 
 /** DEL between an empty pair deletes both, as electric-pair-mode-map's DEL filter. */
 function deletePairBeforeCommand(): void {
-  if (gnista.variable("electric-pair-mode") !== true || gnista.lastKey() !== "DEL") return;
-  if (!truthy(gnista.variable("electric-pair-delete-adjacent-pairs")) || gnista.bufferReadOnly()) return;
-  const prev = charBefore(gnista.point());
-  const next = charAt(gnista.point());
+  if (e8.variable("electric-pair-mode") !== true || e8.lastKey() !== "DEL") return;
+  if (!truthy(e8.variable("electric-pair-delete-adjacent-pairs")) || e8.bufferReadOnly()) return;
+  const prev = charBefore(e8.point());
+  const next = charAt(e8.point());
   if (prev === "" || next === "") return;
   const info = syntaxInfo(prev);
   if (info !== undefined && ["(", "\"", "$"].includes(info.syntax) && info.pair === next) {
-    gnista.setThisCommand("electric-pair-delete-pair");
+    e8.setThisCommand("electric-pair-delete-pair");
   }
 }
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "electric-pair-mode",
   global: true,
   doc:
@@ -400,8 +400,8 @@ gnista.defineMinorMode({
       ["self-insert-uses-region-functions", willUseRegion],
       ["pre-command-hook", deletePairBeforeCommand],
     ] as const) {
-      if (on) gnista.addHook(hook, fn);
-      else gnista.removeHook(hook, fn);
+      if (on) e8.addHook(hook, fn);
+      else e8.removeHook(hook, fn);
     }
   },
 });

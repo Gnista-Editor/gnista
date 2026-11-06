@@ -23,10 +23,10 @@ for (const [name, doc, attributes] of [
   ["next-error", "The line next-error goes to, for a moment.", { inherit: "region" }],
   ["grep-match", "What grep matched.", { inherit: "match" }],
 ] as const) {
-  gnista.defineFace({ name, doc, attributes });
+  e8.defineFace({ name, doc, attributes });
 }
 
-const defvar = (name: string, value: gnista.Value, doc: string, local = false) => gnista.defineVariable({ name, value, doc, local });
+const defvar = (name: string, value: e8.Value, doc: string, local = false) => e8.defineVariable({ name, value, doc, local });
 defvar("compile-command", "make -k ", "The command M-x compile offers to run.");
 defvar("compilation-read-command", true, "Whether M-x compile asks for the command, rather than running compile-command.");
 defvar("compilation-ask-about-save", true, "Whether M-x compile asks before saving modified buffers; if nil, it saves them without asking.");
@@ -52,17 +52,17 @@ defvar("compilation-buffer-name-function", null, "A command naming the compilati
 defvar(
   "next-error-function",
   null,
-  "The function, named with gnista.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.",
+  "The function, named with e8.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.",
   true,
 );
 defvar("next-error-last-buffer", null, "The buffer next-error used last, which it uses again.");
 defvar("next-error-highlight", 0.5, "How many seconds next-error highlights the line it goes to, t to keep it until the next command, or nil not to.");
 defvar("next-error-verbose", true, "Whether next-error always says which buffer it used.");
 defvar("grep-command", "grep --color=auto -nH --null -e ", "The command M-x grep offers to run.");
-gnista.defineHook("compilation-start-hook", "Run with the process just started, in its compilation buffer.");
-gnista.defineHook("compilation-finish-functions", "Called with the compilation buffer and how it ended, as \"finished\\n\", when a compilation ends.");
-gnista.defineHook("compilation-filter-hook", "Run in the compilation buffer after output is inserted.");
-gnista.defineHook("next-error-hook", "Run after next-error visits a message's place.");
+e8.defineHook("compilation-start-hook", "Run with the process just started, in its compilation buffer.");
+e8.defineHook("compilation-finish-functions", "Called with the compilation buffer and how it ended, as \"finished\\n\", when a compilation ends.");
+e8.defineHook("compilation-filter-hook", "Run in the compilation buffer after output is inserted.");
+e8.defineHook("next-error-hook", "Run after next-error visits a message's place.");
 
 /** How many characters, as buffer positions count them, the first `i` UTF-16 units of `s` are. */
 const chars = (s: string, i = s.length): number => [...s.slice(0, i)].length;
@@ -113,7 +113,7 @@ type Message = {
   col?: number;
   type: 0 | 1 | 2;
   /** Where it points, once its file has been visited, moving with edits there as compile.el's markers do. */
-  marker?: gnista.Marker;
+  marker?: e8.Marker;
 };
 
 /**
@@ -121,17 +121,17 @@ type Message = {
  * read, kept by buffer rather than name, as a buffer-local variable would
  * be, so renaming the buffer keeps them.
  */
-const buffers = new Map<gnista.Buffer, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
+const buffers = new Map<e8.Buffer, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
 
 // A killed buffer's messages go with it, as its buffer-local variables would.
-gnista.addHook("kill-buffer-hook", () => {
-  const key = gnista.currentBuffer();
-  for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) gnista.deleteMarker(m.marker);
+e8.addHook("kill-buffer-hook", () => {
+  const key = e8.currentBuffer();
+  for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) e8.deleteMarker(m.marker);
   buffers.delete(key);
 });
 
-function state(buffer: gnista.BufferLike = gnista.currentBuffer()) {
-  const key = gnista.getBuffer(buffer) ?? gnista.signal("error", `No such buffer ${buffer}`);
+function state(buffer: e8.BufferLike = e8.currentBuffer()) {
+  const key = e8.getBuffer(buffer) ?? e8.signal("error", `No such buffer ${buffer}`);
   let s = buffers.get(key);
   if (s === undefined) {
     s = { messages: [], parsed: 0, started: Date.now(), matches: 0 };
@@ -145,15 +145,15 @@ const faceFor = (type: number): string => (type === 2 ? "compilation-error" : ty
 /** Finds the messages in the lines output has completed, highlighting them, as compilation--parse-region. */
 function parseNewLines(): void {
   const s = state();
-  const formats = (gnista.variable("compilation-error-regexp-alist") as gnista.Value[] | null ?? [])
+  const formats = (e8.variable("compilation-error-regexp-alist") as e8.Value[] | null ?? [])
     .filter((n): n is string => typeof n === "string" && FORMATS[n] !== undefined)
     .map((n) => FORMATS[n]);
-  const grep = gnista.derivedModeP("grep-mode");
-  let line = gnista.lineOf(s.parsed);
-  const last = gnista.lineCount() - 1;
+  const grep = e8.derivedModeP("grep-mode");
+  let line = e8.lineOf(s.parsed);
+  const last = e8.lineCount() - 1;
   while (line < last) {
-    const start = gnista.lineStart(line);
-    const text = gnista.lineText(line);
+    const start = e8.lineStart(line);
+    const text = e8.lineText(line);
     for (const f of formats) {
       const m = f.re.exec(text);
       if (m === null || m.groups === undefined) continue;
@@ -165,30 +165,30 @@ function parseNewLines(): void {
       // cargo says what it is on the line before the arrow.
       if (f === FORMATS.cargo && line > 0) {
         for (let l = line - 1; l >= 0 && l >= line - 3; l--) {
-          const t = gnista.lineText(l);
+          const t = e8.lineText(l);
           if (/^warning/.test(t)) type = 1;
           if (/^(?:note|help)/.test(t)) type = 0;
           if (/^(?:warning|error|note|help)/.test(t)) break;
         }
       }
       const fileAt = start + chars(text, m.index + m[0].indexOf(file));
-      s.messages.push({ start, end: gnista.lineEnd(line), file, line: lineNo, col: g.col === undefined ? undefined : Number(g.col), type });
+      s.messages.push({ start, end: e8.lineEnd(line), file, line: lineNo, col: g.col === undefined ? undefined : Number(g.col), type });
       if (grep) s.matches++;
       // As compilation-mode's font-lock puts them: silently.
-      gnista.withSilentModifications(() => {
-        gnista.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
+      e8.withSilentModifications(() => {
+        e8.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
         const lineText = String(lineNo);
         const lineAt = text.indexOf(lineText, m.index + m[0].indexOf(file) + file.length);
         if (lineAt >= 0) {
           const at = start + chars(text, lineAt);
-          gnista.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
+          e8.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
         }
       });
       break;
     }
     line++;
   }
-  s.parsed = gnista.lineStart(last);
+  s.parsed = e8.lineStart(last);
 }
 
 // --- Running a compilation ---------------------------------------------------
@@ -212,7 +212,7 @@ function duration(ms: number): string {
 
 /** Runs `fn` with the buffer writable, as inhibit-read-only. */
 function writable<T>(fn: () => T): T {
-  return gnista.letBind({ "inhibit-read-only": true }, fn);
+  return e8.letBind({ "inhibit-read-only": true }, fn);
 }
 
 /** The mode's name without -mode, as it goes in the -*- line: compilation or grep. */
@@ -238,37 +238,37 @@ function exitMessage(event: string, matches: number, grep: boolean): string {
 async function compilationStart(command: string, mode: string, directory: string): Promise<void> {
   const modeName = mode === "grep-mode" ? "Grep" : "Compilation";
   const bufferName = `*${modeStem(mode)}*`;
-  const existing = gnista.getBufferProcess(bufferName);
+  const existing = e8.getBufferProcess(bufferName);
   const start = () => {
-    if (existing !== undefined && gnista.processStatus(existing) === "run") gnista.deleteProcess(existing);
-    gnista.getBufferCreate(bufferName);
-    gnista.withCurrentBuffer(bufferName, () => {
-      writable(() => gnista.deleteRegion(0, gnista.bufferSize()));
-      gnista.call(mode as gnista.CommandName);
-      gnista.setVariable("default-directory", directory);
-      gnista.setVariable("compilation-directory", directory);
+    if (existing !== undefined && e8.processStatus(existing) === "run") e8.deleteProcess(existing);
+    e8.getBufferCreate(bufferName);
+    e8.withCurrentBuffer(bufferName, () => {
+      writable(() => e8.deleteRegion(0, e8.bufferSize()));
+      e8.call(mode as e8.CommandName);
+      e8.setVariable("default-directory", directory);
+      e8.setVariable("compilation-directory", directory);
       // And for recompile from anywhere, as compile sets its default.
-      gnista.setDefault("compilation-directory", directory);
-      gnista.setVariable("compilation-arguments", [command, mode]);
-      const key = gnista.currentBuffer();
-      for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) gnista.deleteMarker(m.marker);
+      e8.setDefault("compilation-directory", directory);
+      e8.setVariable("compilation-arguments", [command, mode]);
+      const key = e8.currentBuffer();
+      for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) e8.deleteMarker(m.marker);
       buffers.set(key, { messages: [], parsed: 0, started: Date.now(), matches: 0 });
       writable(() => {
-        gnista.insert(
-          `-*- mode: ${modeStem(mode)}; default-directory: ${JSON.stringify(gnista.abbreviateFileName(directory))} -*-\n` +
+        e8.insert(
+          `-*- mode: ${modeStem(mode)}; default-directory: ${JSON.stringify(e8.abbreviateFileName(directory))} -*-\n` +
             `${modeName} started at ${timeString()}\n\n${command}\n`,
         );
       });
-      state().parsed = gnista.bufferSize();
-      gnista.setBufferModified(false);
-      gnista.gotoChar(truthy(gnista.variable("compilation-scroll-output")) ? gnista.bufferSize() : 0);
+      state().parsed = e8.bufferSize();
+      e8.setBufferModified(false);
+      e8.gotoChar(truthy(e8.variable("compilation-scroll-output")) ? e8.bufferSize() : 0);
     });
-    gnista.setVariable("next-error-last-buffer", gnista.getBuffer(bufferName) ?? null);
-    const env: { [k: string]: string } = { INSIDE_EMACS: "gnista,compile" };
-    for (const e of (gnista.variable("compilation-environment") as gnista.Value[] | null) ?? []) {
+    e8.setVariable("next-error-last-buffer", e8.getBuffer(bufferName) ?? null);
+    const env: { [k: string]: string } = { INSIDE_EMACS: "e8,compile" };
+    for (const e of (e8.variable("compilation-environment") as e8.Value[] | null) ?? []) {
       if (typeof e === "string" && e.includes("=")) env[e.slice(0, e.indexOf("="))] = e.slice(e.indexOf("=") + 1);
     }
-    const proc = gnista.makeProcess({
+    const proc = e8.makeProcess({
       name: modeStem(mode),
       buffer: bufferName,
       command: ["/bin/sh", "-c", command],
@@ -277,12 +277,12 @@ async function compilationStart(command: string, mode: string, directory: string
       filter: (p, output) => compilationFilter(p, output),
       sentinel: (p, event) => compilationSentinel(p, event, modeName),
     });
-    gnista.withCurrentBuffer(bufferName, () => gnista.runHooks("compilation-start-hook", proc));
-    gnista.call("display-buffer", bufferName);
+    e8.withCurrentBuffer(bufferName, () => e8.runHooks("compilation-start-hook", proc));
+    e8.call("display-buffer", bufferName);
   };
-  if (existing !== undefined && gnista.processStatus(existing) === "run" && !truthy(gnista.variable("compilation-always-kill"))) {
-    if (!(await gnista.yesOrNoP(`A ${modeStem(mode)} process is running; kill it? `))) {
-      gnista.signal("error", `Cannot have two processes in ‘${bufferName}’ at once`);
+  if (existing !== undefined && e8.processStatus(existing) === "run" && !truthy(e8.variable("compilation-always-kill"))) {
+    if (!(await e8.yesOrNoP(`A ${modeStem(mode)} process is running; kill it? `))) {
+      e8.signal("error", `Cannot have two processes in ‘${bufferName}’ at once`);
     }
   }
   start();
@@ -290,122 +290,122 @@ async function compilationStart(command: string, mode: string, directory: string
 
 /** Inserts output at the process mark, as compilation-filter, and finds the messages in it. */
 function compilationFilter(proc: string, output: string): void {
-  const buffer = gnista.processBuffer(proc);
-  if (buffer === undefined || !gnista.bufferList().includes(buffer)) return;
-  gnista.withCurrentBuffer(buffer, () => {
-    const mark = gnista.processMark(proc)!;
-    const at = gnista.markerPosition(mark) ?? gnista.bufferSize();
-    const moving = gnista.point() === at;
-    const point = gnista.makeMarker();
+  const buffer = e8.processBuffer(proc);
+  if (buffer === undefined || !e8.bufferList().includes(buffer)) return;
+  e8.withCurrentBuffer(buffer, () => {
+    const mark = e8.processMark(proc)!;
+    const at = e8.markerPosition(mark) ?? e8.bufferSize();
+    const moving = e8.point() === at;
+    const point = e8.makeMarker();
     const text = stripAnsi(output);
     writable(() => {
-      gnista.gotoChar(at);
-      gnista.insert(text);
-      gnista.setMarker(mark, gnista.point());
+      e8.gotoChar(at);
+      e8.insert(text);
+      e8.setMarker(mark, e8.point());
     });
-    gnista.gotoChar(moving ? gnista.markerPosition(mark)! : gnista.markerPosition(point)!);
-    gnista.deleteMarker(point);
+    e8.gotoChar(moving ? e8.markerPosition(mark)! : e8.markerPosition(point)!);
+    e8.deleteMarker(point);
     parseNewLines();
     // grep separates the file name with a NUL, shown as a colon, as grep-mode's display property does.
     // Only in the lines read, so an unfinished one is still read with its NUL.
-    if (gnista.derivedModeP("grep-mode")) writable(() => gnista.substCharInRegion(at, Math.max(at, state().parsed), "\0", ":"));
-    gnista.setBufferModified(false);
-    gnista.runHooks("compilation-filter-hook");
+    if (e8.derivedModeP("grep-mode")) writable(() => e8.substCharInRegion(at, Math.max(at, state().parsed), "\0", ":"));
+    e8.setBufferModified(false);
+    e8.runHooks("compilation-filter-hook");
   });
 }
 
 /** Notes how the compilation ended, as compilation-handle-exit. */
 function compilationSentinel(proc: string, event: string, modeName: string): void {
-  const buffer = gnista.processBuffer(proc);
-  if (buffer === undefined || !gnista.bufferList().includes(buffer)) return;
+  const buffer = e8.processBuffer(proc);
+  if (buffer === undefined || !e8.bufferList().includes(buffer)) return;
   let message = "";
-  gnista.withCurrentBuffer(buffer, () => {
+  e8.withCurrentBuffer(buffer, () => {
     // Output not yet ended by a newline is a line too.
-    if (gnista.bufferSize() > 0 && gnista.bufferText(gnista.bufferSize() - 1, gnista.bufferSize()) !== "\n") {
+    if (e8.bufferSize() > 0 && e8.bufferText(e8.bufferSize() - 1, e8.bufferSize()) !== "\n") {
       writable(() => {
-        gnista.gotoChar(gnista.bufferSize());
-        gnista.insert("\n");
+        e8.gotoChar(e8.bufferSize());
+        e8.insert("\n");
       });
     }
     parseNewLines();
     const s = state();
-    const status = exitMessage(event, s.matches, gnista.derivedModeP("grep-mode"));
-    const point = gnista.makeMarker();
+    const status = exitMessage(event, s.matches, e8.derivedModeP("grep-mode"));
+    const point = e8.makeMarker();
     writable(() => {
-      gnista.gotoChar(gnista.bufferSize());
-      const from = gnista.point();
-      gnista.insert(`\n${modeName} ${status.replace(/\n$/, "")} at ${timeString()}, duration ${duration(Date.now() - s.started)}\n`);
-      const failed = !event.startsWith("finished") && !(gnista.derivedModeP("grep-mode") && /code 1\n/.test(event));
+      e8.gotoChar(e8.bufferSize());
+      const from = e8.point();
+      e8.insert(`\n${modeName} ${status.replace(/\n$/, "")} at ${timeString()}, duration ${duration(Date.now() - s.started)}\n`);
+      const failed = !event.startsWith("finished") && !(e8.derivedModeP("grep-mode") && /code 1\n/.test(event));
       // Emacs inserts these propertized, so they are no change of their own.
-      gnista.withSilentModifications(() => {
-        gnista.putTextProperty(from + 1, from + 1 + modeName.length, "face", "compilation-info");
+      e8.withSilentModifications(() => {
+        e8.putTextProperty(from + 1, from + 1 + modeName.length, "face", "compilation-info");
         const word = from + 2 + modeName.length;
-        gnista.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
+        e8.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
       });
     });
-    gnista.gotoChar(gnista.markerPosition(point)!);
-    gnista.deleteMarker(point);
-    gnista.setBufferModified(false);
+    e8.gotoChar(e8.markerPosition(point)!);
+    e8.deleteMarker(point);
+    e8.setBufferModified(false);
     message = `${modeName} ${status.replace(/\n$/, "")}`;
   });
-  gnista.message(message);
-  gnista.runHooks("compilation-finish-functions", buffer, event);
+  e8.message(message);
+  e8.runHooks("compilation-finish-functions", buffer, event);
 }
 
 /** The directory a buffer's commands run in, ending in a slash. */
-const currentDirectory = (): string => gnista.fileNameAsDirectory(gnista.expandFileName("."));
+const currentDirectory = (): string => e8.fileNameAsDirectory(e8.expandFileName("."));
 
 /** Saves modified buffers, asking as compilation-ask-about-save says. */
 function saveSomeBuffers(): void {
-  if (truthy(gnista.variable("compilation-ask-about-save"))) {
-    gnista.call("save-some-buffers");
+  if (truthy(e8.variable("compilation-ask-about-save"))) {
+    e8.call("save-some-buffers");
   } else {
-    gnista.callWithPrefix([4], "save-some-buffers");
+    e8.callWithPrefix([4], "save-some-buffers");
   }
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "compile",
   doc:
     "Run a shell command in the background, make -k by default, showing its output in *compilation*, where error messages are found and highlighted. " +
     "M-g n (next-error) then visits each error's place in turn. Asks to save modified buffers first.",
   run: async () => {
     const directory = currentDirectory();
-    let command = String(gnista.variable("compile-command") ?? "");
+    let command = String(e8.variable("compile-command") ?? "");
     // As compilation-read-command says, or always with a prefix argument.
-    if (truthy(gnista.variable("compilation-read-command")) || gnista.prefixArg() !== null) {
-      command = await gnista.readString("Compile command: ", { initial: command, history: "compile-history" });
+    if (truthy(e8.variable("compilation-read-command")) || e8.prefixArg() !== null) {
+      command = await e8.readString("Compile command: ", { initial: command, history: "compile-history" });
     }
-    gnista.setDefault("compile-command", command);
+    e8.setDefault("compile-command", command);
     saveSomeBuffers();
     compilationStart(command, "compilation-mode", directory);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "recompile",
   doc: "Run the last compilation again, or this buffer's, in the directory it ran in.",
   run: () => {
-    const args = gnista.variable("compilation-arguments");
-    const command = Array.isArray(args) && typeof args[0] === "string" ? args[0] : String(gnista.variable("compile-command") ?? "");
+    const args = e8.variable("compilation-arguments");
+    const command = Array.isArray(args) && typeof args[0] === "string" ? args[0] : String(e8.variable("compile-command") ?? "");
     const mode = Array.isArray(args) && typeof args[1] === "string" ? args[1] : "compilation-mode";
-    const dir = gnista.variable("compilation-directory");
+    const dir = e8.variable("compilation-directory");
     const directory = typeof dir === "string" ? dir : currentDirectory();
     saveSomeBuffers();
     compilationStart(command, mode, directory);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "kill-compilation",
   doc: "Kill the compilation this buffer shows, or the last one.",
   run: () => {
-    const buffer = gnista.derivedModeP("compilation-mode") ? gnista.bufferName() : String(gnista.variable("next-error-last-buffer") ?? "*compilation*");
-    const proc = gnista.getBufferProcess(buffer);
-    if (proc === undefined || gnista.processStatus(proc) !== "run") {
+    const buffer = e8.derivedModeP("compilation-mode") ? e8.bufferName() : String(e8.variable("next-error-last-buffer") ?? "*compilation*");
+    const proc = e8.getBufferProcess(buffer);
+    if (proc === undefined || e8.processStatus(proc) !== "run") {
       throw new Error(`The ${buffer.replace(/^\*|\*$/g, "")} process is not running`);
     }
-    gnista.interruptProcess(proc);
+    e8.interruptProcess(proc);
   },
 });
 
@@ -421,7 +421,7 @@ const counted = (m: Message): boolean => m.type >= num("compilation-skip-thresho
  */
 function nthMessage(n: number, from: number): Message {
   const s = state();
-  const word = String(gnista.variable("compilation-error") ?? "error");
+  const word = String(e8.variable("compilation-error") ?? "error");
   const list = s.messages.filter(counted);
   // From the message containing `from`, if any.
   const here = s.messages.findIndex((m) => m.start <= from && from <= m.end);
@@ -434,7 +434,7 @@ function nthMessage(n: number, from: number): Message {
   if (n > 0) {
     const after = list.filter((m) => m.start > pos);
     if (after.length < n) {
-      const running = gnista.getBufferProcess(gnista.bufferName()) !== undefined;
+      const running = e8.getBufferProcess(e8.bufferName()) !== undefined;
       throw new Error(running ? `No more ${word}s yet` : `Past last ${word}`);
     }
     return after[n - 1];
@@ -445,35 +445,35 @@ function nthMessage(n: number, from: number): Message {
 }
 
 function compilationNextError(n: number): void {
-  if (!gnista.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
-  gnista.gotoChar(nthMessage(n, gnista.point()).start);
+  if (!e8.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
+  e8.gotoChar(nthMessage(n, e8.point()).start);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "compilation-next-error",
   doc: "Move to the next error message, or as many as the prefix argument says, without visiting it.",
-  run: () => compilationNextError(gnista.prefixNumericValue(gnista.prefixArg())),
+  run: () => compilationNextError(e8.prefixNumericValue(e8.prefixArg())),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "compilation-previous-error",
   doc: "Move to the error message before, or as many back as the prefix argument says, without visiting it.",
-  run: () => compilationNextError(-gnista.prefixNumericValue(gnista.prefixArg())),
+  run: () => compilationNextError(-e8.prefixNumericValue(e8.prefixArg())),
 });
 
 /** The file a message names, relative to the directory its compilation ran in. */
 function messageFile(m: Message): string {
-  const dir = gnista.variable("compilation-directory");
+  const dir = e8.variable("compilation-directory");
   const base = typeof dir === "string" ? dir : currentDirectory();
-  return gnista.expandFileName(m.file.startsWith("/") || m.file.startsWith("~") ? m.file : base + m.file);
+  return e8.expandFileName(m.file.startsWith("/") || m.file.startsWith("~") ? m.file : base + m.file);
 }
 
 let highlight: number | undefined;
 let highlightBuffer: string | undefined;
 
 function clearHighlight(): void {
-  if (highlight !== undefined && highlightBuffer !== undefined && gnista.bufferList().includes(highlightBuffer)) {
+  if (highlight !== undefined && highlightBuffer !== undefined && e8.bufferList().includes(highlightBuffer)) {
     const o = highlight;
-    gnista.withCurrentBuffer(highlightBuffer, () => gnista.deleteOverlay(o));
+    e8.withCurrentBuffer(highlightBuffer, () => e8.deleteOverlay(o));
   }
   highlight = undefined;
 }
@@ -483,110 +483,110 @@ function clearHighlight(): void {
  * its file at its line and column, as compilation-goto-locus.
  */
 function gotoLocus(compilation: string, m: Message): void {
-  const file = gnista.withCurrentBuffer(compilation, () => messageFile(m));
-  if (!gnista.fileExists(file)) throw new Error(`Cannot find file ${file}`);
-  const firstColumn = gnista.withCurrentBuffer(compilation, () => num("compilation-first-column", 1));
-  const fromCompilation = gnista.windowBuffer() === compilation;
-  let window = gnista.windowList().find((w) => gnista.windowBuffer(w) === compilation);
+  const file = e8.withCurrentBuffer(compilation, () => messageFile(m));
+  if (!e8.fileExists(file)) throw new Error(`Cannot find file ${file}`);
+  const firstColumn = e8.withCurrentBuffer(compilation, () => num("compilation-first-column", 1));
+  const fromCompilation = e8.windowBuffer() === compilation;
+  let window = e8.windowList().find((w) => e8.windowBuffer(w) === compilation);
   if (!(fromCompilation && window !== undefined)) {
-    gnista.call("display-buffer", compilation);
-    window = gnista.windowList().find((w) => gnista.windowBuffer(w) === compilation);
+    e8.call("display-buffer", compilation);
+    window = e8.windowList().find((w) => e8.windowBuffer(w) === compilation);
   }
   // The message at the top of its window's view, point on it.
   if (window !== undefined) {
-    const selected = gnista.selectedWindow();
-    gnista.selectWindow(window);
-    gnista.gotoChar(m.start);
-    gnista.selectWindow(selected);
+    const selected = e8.selectedWindow();
+    e8.selectWindow(window);
+    e8.gotoChar(m.start);
+    e8.selectWindow(selected);
   }
-  const target = gnista.findFileNoselect(file);
+  const target = e8.findFileNoselect(file);
   // The first time a file's message is visited, every message in that file
   // gets a marker, so edits there before going to the next keep them right.
-  if (m.marker === undefined || gnista.markerBuffer(m.marker) !== target) {
-    const all = gnista.withCurrentBuffer(compilation, () => state().messages.filter((x) => x.marker === undefined && messageFile(x) === file));
-    gnista.withCurrentBuffer(target, () => {
+  if (m.marker === undefined || e8.markerBuffer(m.marker) !== target) {
+    const all = e8.withCurrentBuffer(compilation, () => state().messages.filter((x) => x.marker === undefined && messageFile(x) === file));
+    e8.withCurrentBuffer(target, () => {
       for (const x of all.includes(m) ? all : [...all, m]) {
-        gnista.saveExcursion(() => {
-          gnista.gotoChar(gnista.lineStart(Math.max(0, Math.min(x.line - 1, gnista.lineCount() - 1))));
-          if (x.col !== undefined) gnista.moveToColumn(Math.max(0, x.col - firstColumn));
-          x.marker = gnista.makeMarker();
+        e8.saveExcursion(() => {
+          e8.gotoChar(e8.lineStart(Math.max(0, Math.min(x.line - 1, e8.lineCount() - 1))));
+          if (x.col !== undefined) e8.moveToColumn(Math.max(0, x.col - firstColumn));
+          x.marker = e8.makeMarker();
         });
       }
     });
   }
-  if (fromCompilation || gnista.selectedWindow() === window) gnista.call("pop-to-buffer", target);
-  else gnista.call("switch-to-buffer", target);
-  gnista.gotoChar(gnista.markerPosition(m.marker!)!);
+  if (fromCompilation || e8.selectedWindow() === window) e8.call("pop-to-buffer", target);
+  else e8.call("switch-to-buffer", target);
+  e8.gotoChar(e8.markerPosition(m.marker!)!);
   // The line flashes, as next-error-highlight says.
   clearHighlight();
-  const secs = gnista.variable("next-error-highlight");
+  const secs = e8.variable("next-error-highlight");
   if (truthy(secs)) {
-    const line = gnista.lineOf(gnista.point());
-    highlight = gnista.makeOverlay(gnista.lineStart(line), gnista.lineEnd(line), { face: "next-error", priority: 1000 });
-    highlightBuffer = gnista.bufferName();
-    if (typeof secs === "number") gnista.runWithTimer(secs, null, clearHighlight);
+    const line = e8.lineOf(e8.point());
+    highlight = e8.makeOverlay(e8.lineStart(line), e8.lineEnd(line), { face: "next-error", priority: 1000 });
+    highlightBuffer = e8.bufferName();
+    if (typeof secs === "number") e8.runWithTimer(secs, null, clearHighlight);
   }
 }
 
 /** Moves `n` messages in a compilation buffer and visits the place, as compilation-next-error-function. */
 function compilationNextErrorFunction(n: number, reset: boolean): void {
-  const buffer = gnista.bufferName();
+  const buffer = e8.bufferName();
   const s = state();
   if (reset) s.current = undefined;
-  const from = s.current ?? (n === 0 ? gnista.point() : 0);
+  const from = s.current ?? (n === 0 ? e8.point() : 0);
   const m = nthMessage(n, from);
   s.current = m.start;
   // The overlay arrow at the message's line: a triangle in the fringe, or
   // nothing on a terminal, its string being empty here.
-  const at = gnista.lineStart(gnista.lineOf(m.start));
-  const arrow = gnista.variable("overlay-arrow-position");
-  if (arrow instanceof gnista.Marker) gnista.setMarker(arrow, at);
-  else gnista.setVariable("overlay-arrow-position", gnista.makeMarker(at));
+  const at = e8.lineStart(e8.lineOf(m.start));
+  const arrow = e8.variable("overlay-arrow-position");
+  if (arrow instanceof e8.Marker) e8.setMarker(arrow, at);
+  else e8.setVariable("overlay-arrow-position", e8.makeMarker(at));
   gotoLocus(buffer, m);
 }
 
-gnista.defun("compilation-next-error-function", compilationNextErrorFunction);
+e8.defun("compilation-next-error-function", compilationNextErrorFunction);
 
 /** Whether a buffer has messages next-error can go to, as next-error-buffer-p. */
-function nextErrorBuffer(b: gnista.BufferLike): boolean {
-  const buffer = gnista.getBuffer(b);
-  return buffer !== undefined && gnista.withCurrentBuffer(buffer, () => typeof gnista.variable("next-error-function") === "string");
+function nextErrorBuffer(b: e8.BufferLike): boolean {
+  const buffer = e8.getBuffer(b);
+  return buffer !== undefined && e8.withCurrentBuffer(buffer, () => typeof e8.variable("next-error-function") === "string");
 }
 
 /** The buffer next-error uses, as next-error-find-buffer. */
-function findNextErrorBuffer(): gnista.Buffer {
+function findNextErrorBuffer(): e8.Buffer {
   // The buffer it used last, kept as a buffer, so renaming it does not lose it.
-  const last = gnista.variable("next-error-last-buffer");
-  if ((typeof last === "string" || gnista.bufferLiveP(last)) && nextErrorBuffer(last as gnista.BufferLike)) return gnista.getBuffer(last as gnista.BufferLike)!;
-  if (nextErrorBuffer(gnista.currentBuffer())) return gnista.currentBuffer();
-  const any = gnista.bufferList().find(nextErrorBuffer);
-  if (any !== undefined) return gnista.getBuffer(any)!;
+  const last = e8.variable("next-error-last-buffer");
+  if ((typeof last === "string" || e8.bufferLiveP(last)) && nextErrorBuffer(last as e8.BufferLike)) return e8.getBuffer(last as e8.BufferLike)!;
+  if (nextErrorBuffer(e8.currentBuffer())) return e8.currentBuffer();
+  const any = e8.bufferList().find(nextErrorBuffer);
+  if (any !== undefined) return e8.getBuffer(any)!;
   throw new Error("No buffers contain error message locations");
 }
 
 /** Goes to the `n`th next message's place, as next-error. */
 function nextError(n: number, reset: boolean, select = true): void {
   const buffer = findNextErrorBuffer();
-  const selected = gnista.selectedWindow();
-  const fn = gnista.withCurrentBuffer(buffer, () => String(gnista.variable("next-error-function")));
+  const selected = e8.selectedWindow();
+  const fn = e8.withCurrentBuffer(buffer, () => String(e8.variable("next-error-function")));
   // In that buffer, as Emacs calls it; the windows it changes stay changed.
-  gnista.withCurrentBuffer(buffer, () => gnista.funcall(fn, n, reset));
-  const previous = gnista.variable("next-error-last-buffer");
-  gnista.setVariable("next-error-last-buffer", buffer);
-  gnista.runHooks("next-error-hook");
-  if (truthy(gnista.variable("next-error-verbose")) || previous !== buffer) {
+  e8.withCurrentBuffer(buffer, () => e8.funcall(fn, n, reset));
+  const previous = e8.variable("next-error-last-buffer");
+  e8.setVariable("next-error-last-buffer", buffer);
+  e8.runHooks("next-error-hook");
+  if (truthy(e8.variable("next-error-verbose")) || previous !== buffer) {
     const which = reset ? "First" : n === 0 ? "Current" : n < 0 ? "Previous" : "Next";
-    gnista.message(`${which} locus from ${buffer.name}`);
+    e8.message(`${which} locus from ${buffer.name}`);
   }
-  if (!select) gnista.selectWindow(selected);
+  if (!select) e8.selectWindow(selected);
 }
 
 const prefixCount = (): [number, boolean] => {
-  const arg = gnista.prefixArg();
-  return Array.isArray(arg) ? [1, true] : [gnista.prefixNumericValue(arg), false];
+  const arg = e8.prefixArg();
+  return Array.isArray(arg) ? [1, true] : [e8.prefixNumericValue(arg), false];
 };
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "next-error",
   doc:
     "Visit the place of the next error message, or grep hit, in the compilation or grep buffer used last: its file, at its line. " +
@@ -596,52 +596,52 @@ gnista.defineCommand({
     nextError(n, reset);
   },
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "previous-error",
   doc: "Visit the place of the error message before, or as many back as the prefix argument says.",
-  run: () => nextError(-gnista.prefixNumericValue(gnista.prefixArg()), false),
+  run: () => nextError(-e8.prefixNumericValue(e8.prefixArg()), false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "first-error",
   doc: "Visit the place of the first error message.",
-  run: () => nextError(gnista.prefixNumericValue(gnista.prefixArg()), true),
+  run: () => nextError(e8.prefixNumericValue(e8.prefixArg()), true),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "next-error-no-select",
   doc: "Show the next error message's place, keeping this window selected.",
-  run: () => nextError(gnista.prefixNumericValue(gnista.prefixArg()), false, false),
+  run: () => nextError(e8.prefixNumericValue(e8.prefixArg()), false, false),
 });
-gnista.defineCommand({
+e8.defineCommand({
   name: "previous-error-no-select",
   doc: "Show the place of the error message before, keeping this window selected.",
-  run: () => nextError(-gnista.prefixNumericValue(gnista.prefixArg()), false, false),
+  run: () => nextError(-e8.prefixNumericValue(e8.prefixArg()), false, false),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "compile-goto-error",
   doc: "Visit the place of the error message at point.",
   run: () => {
-    if (!gnista.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
-    const m = nthMessage(0, gnista.point());
+    if (!e8.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
+    const m = nthMessage(0, e8.point());
     state().current = m.start;
-    gnista.setVariable("next-error-last-buffer", gnista.currentBuffer());
-    gotoLocus(gnista.bufferName(), m);
+    e8.setVariable("next-error-last-buffer", e8.currentBuffer());
+    gotoLocus(e8.bufferName(), m);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "compilation-display-error",
   doc: "Show the place of the error message at point in another window, keeping this one selected.",
   run: () => {
-    const window = gnista.selectedWindow();
-    gnista.call("compile-goto-error");
-    gnista.selectWindow(window);
+    const window = e8.selectedWindow();
+    e8.call("compile-goto-error");
+    e8.selectWindow(window);
   },
 });
 
 // --- The modes ------------------------------------------------------------------
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "compilation-mode",
   modeName: "Compilation",
   doc:
@@ -664,28 +664,28 @@ gnista.defineMajorMode({
     DEL: "scroll-down-command",
   },
   setup: () => {
-    gnista.setReadOnly(true);
-    gnista.setVariable("next-error-function", "compilation-next-error-function");
-    gnista.setVariable("truncate-lines", false);
-    gnista.makeLocalVariable("overlay-arrow-position");
-    gnista.makeLocalVariable("overlay-arrow-string");
-    gnista.setVariable("overlay-arrow-string", "");
+    e8.setReadOnly(true);
+    e8.setVariable("next-error-function", "compilation-next-error-function");
+    e8.setVariable("truncate-lines", false);
+    e8.makeLocalVariable("overlay-arrow-position");
+    e8.makeLocalVariable("overlay-arrow-string");
+    e8.setVariable("overlay-arrow-string", "");
   },
 });
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "grep-mode",
   modeName: "Grep",
   parent: "compilation-mode",
   doc: "The mode of *grep*: grep's hits, each a place next-error can visit. RET visits the hit at point, n and p the next and previous, g runs the search again.",
   setup: () => {
-    gnista.setVariable("compilation-error-regexp-alist", ["grep", "grep-binary"]);
-    gnista.setVariable("compilation-error", "grep hit");
-    gnista.setVariable("compilation-first-column", 0);
+    e8.setVariable("compilation-error-regexp-alist", ["grep", "grep-binary"]);
+    e8.setVariable("compilation-error", "grep hit");
+    e8.setVariable("compilation-first-column", 0);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "grep",
   doc:
     "Run grep, with the arguments you give, in the background, showing its hits in *grep*. " +
@@ -693,7 +693,7 @@ gnista.defineCommand({
   params: [{
     name: "command",
     prompt: "Run grep (like this): ",
-    initial: () => String(gnista.variable("grep-command") ?? ""),
+    initial: () => String(e8.variable("grep-command") ?? ""),
     history: "grep-history",
   }],
   run: (command: string) => compilationStart(command, "grep-mode", currentDirectory()),
@@ -706,5 +706,5 @@ for (const [keys, command] of [
   ["M-g p", "previous-error"],
   ["M-g M-p", "previous-error"],
 ] as const) {
-  gnista.bindKey(keys, command);
+  e8.bindKey(keys, command);
 }

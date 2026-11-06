@@ -1,15 +1,15 @@
 # Runs what `make check` runs, every test and clippy on V8 and on QuickJS,
-# and the tests of the ports in their own repositories against this Gnista,
+# and the tests of the ports in their own repositories against this E8,
 # so a change here that breaks one shows here
 # (docs/adr/0059-packages-are-git-repositories.md).
 #
 # On main after each merge, and by hand (Actions, Test, Run workflow), not on
-# pull requests: while Gnista changes fast, `make check` before pushing is
+# pull requests: while E8 changes fast, `make check` before pushing is
 # the gate, and waiting 20 minutes on GitHub's runners to merge is not worth
 # it. Turn pull requests back on once a stage branch takes the merges
 # (CLAUDE.md, "Branches, worktrees and pull requests").
 #
-# V8 on macOS, where Gnista is made and used, and both engines on Linux,
+# V8 on macOS, where E8 is made and used, and both engines on Linux,
 # which the releases are built for too. One job on macOS, not two: GitHub's
 # Apple silicon runners are often short, and a job that gets none for 15
 # minutes is cancelled. A change to the docs alone runs nothing.
@@ -82,8 +82,8 @@ jobs:
       # Tests make git repositories and commits of their own.
       - name: Set up git
         run: |
-          git config --global user.name "Gnista CI"
-          git config --global user.email "ci@gnista.invalid"
+          git config --global user.name "E8 CI"
+          git config --global user.email "ci@e8.invalid"
           git config --global init.defaultBranch main
 
       - uses: actions/cache@v6
@@ -123,24 +123,24 @@ jobs:
           key: ports-${{ hashFiles('Cargo.lock') }}
           restore-keys: ports-
 
-      - name: Build gnista
-        run: cargo build --locked -p gnista
+      - name: Build e8
+        run: cargo build --locked -p e8
 
       # The ports moved to repositories of their own, each tested with its
-      # own `make test` against the gnista just built.
+      # own `make test` against the e8 just built.
       - name: Test the ports
         run: |
-          gnista="$PWD/target/debug/gnista"
+          e8="$PWD/target/debug/e8"
           failed=""
-          for port in gnista-vundo gnista-nord-theme; do
+          for port in e8-vundo e8-nord-theme; do
             echo "::group::$port"
-            git clone --quiet --depth 1 "https://github.com/Gnista-Editor/$port" "$RUNNER_TEMP/$port"
-            if ! make -C "$RUNNER_TEMP/$port" test GNISTA="$gnista"; then
+            git clone --quiet --depth 1 "https://github.com/e8-editor/$port" "$RUNNER_TEMP/$port"
+            if ! make -C "$RUNNER_TEMP/$port" test E8="$e8"; then
               failed="$failed $port"
             fi
             echo "::endgroup::"
           done
           if [ -n "$failed" ]; then
-            echo "::error::Ports whose tests failed against this Gnista:$failed"
+            echo "::error::Ports whose tests failed against this E8:$failed"
             exit 1
           fi

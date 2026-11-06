@@ -15,12 +15,12 @@ One record per decision, in the order they were made; a later one can change an 
 - [0011](0011-search-and-the-minibuffer.md) Search, replace and the minibuffer
 - [0012](0012-org-mode.md) Org mode as TypeScript packages
 - [0013](0013-following-org-closely.md) Following Org's Lisp closely
-- [0014](0014-gpl.md) Gnista is GPL
-- [0015](0015-mcp-server.md) Gnista as an MCP server
+- [0014](0014-gpl.md) E8 is GPL
+- [0015](0015-mcp-server.md) E8 as an MCP server
 - [0016](0016-org-agenda-and-capture.md) The Org agenda and capture
 - [0017](0017-frames.md) Frames
 - [0018](0018-files-and-saving.md) Files and saving
-- [0019](0019-agent-buffer.md) An agent inside Gnista
+- [0019](0019-agent-buffer.md) An agent inside E8
 - [0020](0020-completion-and-icomplete.md) Completion and icomplete
 - [0021](0021-managing-files.md) Managing files
 - [0022](0022-dired-and-projects.md) Dired and projects
@@ -63,5 +63,5 @@ One record per decision, in the order they were made; a later one can change an 
 - [0059](0059-packages-are-git-repositories.md) Packages are git repositories
 - [0060](0060-releases.md) Releases
 - [0061](0061-agents-over-acp.md) Agents over ACP
-- [0062](0062-agents-through-gnista-mcp-ask-first.md) Agents through gnista-mcp ask first
+- [0062](0062-agents-through-e8-mcp-ask-first.md) Agents through e8-mcp ask first
 - [0063](0063-the-name-e8.md) The name E8

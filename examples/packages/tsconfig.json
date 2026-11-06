@@ -1,9 +1,9 @@
 {
   // Lets `tsc -p examples/packages` check these packages as a user's are
-  // checked: against gnista.d.ts, importing Gnista's own packages by name.
+  // checked: against e8.d.ts, importing E8's own packages by name.
   "extends": "../../packages/tsconfig.json",
   "compilerOptions": {
     "paths": { "*": ["./*", "../../packages/*"] }
   },
-  "include": ["*.ts", "../../packages/gnista.d.ts"]
+  "include": ["*.ts", "../../packages/e8.d.ts"]
 }

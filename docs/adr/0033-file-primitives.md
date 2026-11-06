@@ -4,7 +4,7 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-Gnista could visit, save, copy, rename and delete files ([ADR 0018](0018-files-and-saving.md), [ADR 0021](0021-managing-files.md)), but the primitives Lisp uses to do such things itself were missing or under names of Gnista's own (`fileExists`, `readTextFile`). That covers `insert-file-contents`, `write-region`, the `file-*-p` predicates, modes and times, temporary files and true names. Without them, packages that read and write files of their own cannot be ported as their Lisp is written. And Emacs offers every one of these operations first to a handler in `file-name-handler-alist`, which TRAMP's remote files and the archive and compression modes are built on. Lock files, `.#name`, which warn two editors off one file, were left out of ADR 0018. [docs/plan.md](../plan.md) lists these sixth among the gaps in the core.
+E8 could visit, save, copy, rename and delete files ([ADR 0018](0018-files-and-saving.md), [ADR 0021](0021-managing-files.md)), but the primitives Lisp uses to do such things itself were missing or under names of E8's own (`fileExists`, `readTextFile`). That covers `insert-file-contents`, `write-region`, the `file-*-p` predicates, modes and times, temporary files and true names. Without them, packages that read and write files of their own cannot be ported as their Lisp is written. And Emacs offers every one of these operations first to a handler in `file-name-handler-alist`, which TRAMP's remote files and the archive and compression modes are built on. Lock files, `.#name`, which warn two editors off one file, were left out of ADR 0018. [docs/plan.md](../plan.md) lists these sixth among the gaps in the core.
 
 ## Options considered
 

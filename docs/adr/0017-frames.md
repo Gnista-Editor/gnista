@@ -4,7 +4,7 @@ Status: accepted · 2026-10-28
 
 ## Context
 
-[ADR 0009](0009-windows.md) gave Gnista one frame of windows. In Emacs a frame is a top-level window of the operating system, each with its own tree of windows, all sharing the buffers, the kill ring and the minibuffer's history. The `C-x 5` commands mirror `C-x 4` for frames. A terminal Emacs has frames too, but shows only the selected one. Gnista's GUI is egui, which can open more native windows as viewports, but tests embed every viewport in one window.
+[ADR 0009](0009-windows.md) gave E8 one frame of windows. In Emacs a frame is a top-level window of the operating system, each with its own tree of windows, all sharing the buffers, the kill ring and the minibuffer's history. The `C-x 5` commands mirror `C-x 4` for frames. A terminal Emacs has frames too, but shows only the selected one. E8's GUI is egui, which can open more native windows as viewports, but tests embed every viewport in one window.
 
 ## Options considered
 

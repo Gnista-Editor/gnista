@@ -24,18 +24,18 @@ for (const [name, value, doc] of [
   ["which-key-max-display-columns", null, "The most columns shown, or nil for as many as fit."],
   ["which-key-inhibit", false, "Whether showing is turned off for now."],
 ] as const) {
-  gnista.defineVariable({ name, value: value as gnista.Value, doc });
+  e8.defineVariable({ name, value: value as e8.Value, doc });
 }
 
-gnista.defineFace({ name: "which-key-key-face", doc: "The keys which-key lists.", attributes: { inherit: "font-lock-constant-face" } });
-gnista.defineFace({ name: "which-key-separator-face", doc: "Between a key and its description.", attributes: { inherit: "font-lock-comment-face" } });
-gnista.defineFace({ name: "which-key-note-face", doc: "Notes, such as page numbers.", attributes: { inherit: "which-key-separator-face" } });
-gnista.defineFace({
+e8.defineFace({ name: "which-key-key-face", doc: "The keys which-key lists.", attributes: { inherit: "font-lock-constant-face" } });
+e8.defineFace({ name: "which-key-separator-face", doc: "Between a key and its description.", attributes: { inherit: "font-lock-comment-face" } });
+e8.defineFace({ name: "which-key-note-face", doc: "Notes, such as page numbers.", attributes: { inherit: "which-key-separator-face" } });
+e8.defineFace({
   name: "which-key-command-description-face",
   doc: "A command's name in which-key's list.",
   attributes: { inherit: "font-lock-function-name-face" },
 });
-gnista.defineFace({
+e8.defineFace({
   name: "which-key-group-description-face",
   doc: "The description of a key that is a prefix.",
   attributes: { inherit: "font-lock-keyword-face" },
@@ -48,19 +48,19 @@ const prefixNames = new Map<string, string>();
 export function addKeyBasedReplacements(...pairs: string[]): void {
   for (let i = 0; i + 1 < pairs.length; i += 2) prefixNames.set(pairs[i], pairs[i + 1]);
 }
-gnista.defun("which-key-add-key-based-replacements", (...pairs: string[]) => addKeyBasedReplacements(...pairs));
+e8.defun("which-key-add-key-based-replacements", (...pairs: string[]) => addKeyBasedReplacements(...pairs));
 
-gnista.defun("which-key-setup-side-window-bottom", () => {
-  gnista.setVariable("which-key-popup-type", "side-window");
-  gnista.setVariable("which-key-side-window-location", "bottom");
-  gnista.setVariable("which-key-show-prefix", "echo");
+e8.defun("which-key-setup-side-window-bottom", () => {
+  e8.setVariable("which-key-popup-type", "side-window");
+  e8.setVariable("which-key-side-window-location", "bottom");
+  e8.setVariable("which-key-show-prefix", "echo");
 });
 
 // --- Sorting, as which-key-key-order ----------------------------------------
 
 /** As which-key--string<. */
 function stringLess(a: string, b: string): boolean {
-  if (truthy(gnista.variable("which-key-sort-uppercase-first"))) return a < b;
+  if (truthy(e8.variable("which-key-sort-uppercase-first"))) return a < b;
   const [aUp, bUp] = [a !== a.toLowerCase(), b !== b.toLowerCase()];
   return aUp === bUp ? a < b : bUp;
 }
@@ -96,10 +96,10 @@ interface Cell {
 
 /** The keys after a prefix, sorted and described, as which-key--get-bindings with which-key--format-and-replace. */
 function cells(prefix: string): Cell[] {
-  const max = Number(gnista.variable("which-key-max-description-length") ?? 27);
-  const ellipsis = String(gnista.variable("which-key-ellipsis") ?? "..");
-  const plus = String(gnista.variable("which-key-prefix-prefix") ?? "+");
-  return gnista
+  const max = Number(e8.variable("which-key-max-description-length") ?? 27);
+  const ellipsis = String(e8.variable("which-key-ellipsis") ?? "..");
+  const plus = String(e8.variable("which-key-prefix-prefix") ?? "+");
+  return e8
     .prefixBindings(prefix)
     .sort(([a], [b]) => (keyLess(a, b) ? -1 : keyLess(b, a) ? 1 : 0))
     .map(([key, command]) => {
@@ -113,25 +113,25 @@ function cells(prefix: string): Cell[] {
 }
 
 /** The lines a page of cells makes, columns of `height` cells within `width`, and how many cells it took, as which-key--list-to-pages. */
-function page(all: Cell[], height: number, width: number): { lines: (string | gnista.PropertizedString)[]; shown: number } | undefined {
-  const padding = Number(gnista.variable("which-key-add-column-padding") ?? 0);
-  const separator = String(gnista.variable("which-key-separator") ?? " : ");
-  const minDesc = Number(gnista.variable("which-key-min-column-description-width") ?? 0);
-  const maxColumns = gnista.variable("which-key-max-display-columns");
-  const columns: { width: number; rows: (string | gnista.PropertizedString)[] }[] = [];
+function page(all: Cell[], height: number, width: number): { lines: (string | e8.PropertizedString)[]; shown: number } | undefined {
+  const padding = Number(e8.variable("which-key-add-column-padding") ?? 0);
+  const separator = String(e8.variable("which-key-separator") ?? " : ");
+  const minDesc = Number(e8.variable("which-key-min-column-description-width") ?? 0);
+  const maxColumns = e8.variable("which-key-max-display-columns");
+  const columns: { width: number; rows: (string | e8.PropertizedString)[] }[] = [];
   for (let i = 0; i < all.length; i += height) {
     const column = all.slice(i, i + height);
     // As which-key--pad-column: keys right-aligned, descriptions padded.
-    const keyWidth = padding + Math.max(...column.map((c) => gnista.stringWidth(c.key)));
-    const descWidth = Math.min(width - keyWidth - gnista.stringWidth(separator), Math.max(minDesc, ...column.map((c) => gnista.stringWidth(c.description))));
+    const keyWidth = padding + Math.max(...column.map((c) => e8.stringWidth(c.key)));
+    const descWidth = Math.min(width - keyWidth - e8.stringWidth(separator), Math.max(minDesc, ...column.map((c) => e8.stringWidth(c.description))));
     columns.push({
-      width: keyWidth + gnista.stringWidth(separator) + descWidth,
+      width: keyWidth + e8.stringWidth(separator) + descWidth,
       rows: column.map((c) =>
-        gnista.concat(
-          gnista.propertize(" ".repeat(keyWidth - gnista.stringWidth(c.key)) + c.key, { face: "which-key-key-face" }),
-          gnista.propertize(separator, { face: "which-key-separator-face" }),
-          gnista.propertize(c.description, { face: c.face }),
-          " ".repeat(Math.max(0, descWidth - gnista.stringWidth(c.description))),
+        e8.concat(
+          e8.propertize(" ".repeat(keyWidth - e8.stringWidth(c.key)) + c.key, { face: "which-key-key-face" }),
+          e8.propertize(separator, { face: "which-key-separator-face" }),
+          e8.propertize(c.description, { face: c.face }),
+          " ".repeat(Math.max(0, descWidth - e8.stringWidth(c.description))),
         ),
       ),
     });
@@ -151,7 +151,7 @@ function page(all: Cell[], height: number, width: number): { lines: (string | gn
   const shownColumns = columns.slice(0, count);
   const rows = Math.min(height, all.length);
   const lines = Array.from({ length: rows }, (_, r) =>
-    shownColumns.reduce<string | gnista.PropertizedString>((line, c, k) => gnista.concat(line, k > 0 ? " " : "", c.rows[r] ?? ""), ""),
+    shownColumns.reduce<string | e8.PropertizedString>((line, c, k) => e8.concat(line, k > 0 ? " " : "", c.rows[r] ?? ""), ""),
   );
   return { lines, shown: Math.min(all.length, count * height) };
 }
@@ -165,14 +165,14 @@ let shownPrefix: string | undefined;
 
 /** The tallest the window may be, in lines with its mode line, as which-key--side-window-max-dimensions. */
 function maxHeight(): number {
-  const h = Number(gnista.variable("which-key-side-window-max-height") ?? 0.25);
-  return Number.isInteger(h) && h >= 1 ? h : Math.round(h * gnista.frameHeight());
+  const h = Number(e8.variable("which-key-side-window-max-height") ?? 0.25);
+  return Number.isInteger(h) && h >= 1 ? h : Math.round(h * e8.frameHeight());
 }
 
-const popupLive = (): boolean => popup !== undefined && gnista.windowList().includes(popup);
+const popupLive = (): boolean => popup !== undefined && e8.windowList().includes(popup);
 
 function hide(): void {
-  if (popupLive()) gnista.deleteWindow(popup);
+  if (popupLive()) e8.deleteWindow(popup);
   popup = undefined;
   shownPrefix = undefined;
 }
@@ -181,80 +181,80 @@ function hide(): void {
 function show(prefix: string): void {
   const all = cells(prefix);
   if (all.length === 0) {
-    gnista.message(`${prefix}-  which-key: There are no keys to show`);
+    e8.message(`${prefix}-  which-key: There are no keys to show`);
     return;
   }
   const height = Math.max(1, maxHeight() - 1);
-  const width = gnista.frameWidth() - Number(gnista.variable("which-key-unicode-correction") ?? 3);
+  const width = e8.frameWidth() - Number(e8.variable("which-key-unicode-correction") ?? 3);
   const shownPage = page(all, height, width);
   if (!shownPage) return;
   let lines = shownPage.lines;
-  const showPrefix = gnista.variable("which-key-show-prefix");
+  const showPrefix = e8.variable("which-key-show-prefix");
   const pages = Math.ceil(all.length / Math.max(1, shownPage.shown));
   if (showPrefix === "left") {
     // As which-key--process-page: the prefix in a column of its own.
     const label = `${prefix}`;
     const count = pages > 1 ? `1/${pages}` : "";
-    const first = 2 + Math.max(gnista.stringWidth(label), gnista.stringWidth(count));
+    const first = 2 + Math.max(e8.stringWidth(label), e8.stringWidth(count));
     lines = lines.map((line, r) => {
       const head = r === 0 ? label : r === 1 ? count : "";
-      return gnista.concat(gnista.propertize(head.padEnd(first), { face: r === 0 ? "which-key-key-face" : "which-key-separator-face" }), line);
+      return e8.concat(e8.propertize(head.padEnd(first), { face: r === 0 ? "which-key-key-face" : "which-key-separator-face" }), line);
     });
   } else if (showPrefix === "top") {
-    lines = [gnista.concat(gnista.propertize(`${prefix}-`, { face: "which-key-key-face" }), pages > 1 ? gnista.propertize(` (1 of ${pages})`, { face: "which-key-note-face" }) : ""), ...lines];
+    lines = [e8.concat(e8.propertize(`${prefix}-`, { face: "which-key-key-face" }), pages > 1 ? e8.propertize(` (1 of ${pages})`, { face: "which-key-note-face" }) : ""), ...lines];
   }
-  const buffer = gnista.getBufferCreate(BUFFER);
-  gnista.withCurrentBuffer(buffer, () => {
-    gnista.setReadOnly(false);
-    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
-    lines.forEach((line, k) => gnista.insert(k > 0 ? gnista.concat("\n", line) : line));
-    gnista.gotoChar(gnista.pointMin());
-    gnista.setBufferModified(false);
-    gnista.setReadOnly(true);
+  const buffer = e8.getBufferCreate(BUFFER);
+  e8.withCurrentBuffer(buffer, () => {
+    e8.setReadOnly(false);
+    e8.deleteRegion(e8.pointMin(), e8.pointMax());
+    lines.forEach((line, k) => e8.insert(k > 0 ? e8.concat("\n", line) : line));
+    e8.gotoChar(e8.pointMin());
+    e8.setBufferModified(false);
+    e8.setReadOnly(true);
     for (const [name, value] of [
       ["mode-line-format", ""],
       ["truncate-lines", true],
     ] as const) {
-      gnista.makeLocalVariable(name);
-      gnista.setVariable(name, value);
+      e8.makeLocalVariable(name);
+      e8.setVariable(name, value);
     }
   });
   const wanted = lines.length + 1;
-  if (popupLive() && gnista.windowSize(popup)?.totalHeight !== wanted) hide();
-  if (!popupLive()) popup = gnista.splitRootWindow("below", -wanted);
-  gnista.setWindowBuffer(popup, BUFFER);
+  if (popupLive() && e8.windowSize(popup)?.totalHeight !== wanted) hide();
+  if (!popupLive()) popup = e8.splitRootWindow("below", -wanted);
+  e8.setWindowBuffer(popup, BUFFER);
   shownPrefix = prefix;
   if (showPrefix === "echo") {
-    gnista.message(`${prefix}-${pages > 1 ? ` (1 of ${pages})` : ""}`);
+    e8.message(`${prefix}-${pages > 1 ? ` (1 of ${pages})` : ""}`);
   }
 }
 
 /** What the timer does when the keys pause, as which-key--update. */
 function update(): void {
-  const prefix = gnista.thisSingleCommandKeys();
-  const waiting = prefix !== "" && gnista.prefixBindings(prefix).length > 0 && gnista.thisCommand() === undefined;
-  if (waiting && !truthy(gnista.variable("which-key-inhibit")) && maxHeight() > 1) {
+  const prefix = e8.thisSingleCommandKeys();
+  const waiting = prefix !== "" && e8.prefixBindings(prefix).length > 0 && e8.thisCommand() === undefined;
+  if (waiting && !truthy(e8.variable("which-key-inhibit")) && maxHeight() > 1) {
     if (prefix !== shownPrefix) show(prefix);
   } else if (shownPrefix !== undefined) hide();
 }
 
 let timer: number | undefined;
 
-gnista.defineMinorMode({
+e8.defineMinorMode({
   name: "which-key-mode",
   global: true,
   doc:
     "After a prefix key such as C-x and a pause of which-key-idle-delay seconds, show in a window along the bottom of " +
     "the frame each key that can follow it, with the command it runs.",
   onChange: (enabled) => {
-    if (timer !== undefined) gnista.cancelTimer(timer);
+    if (timer !== undefined) e8.cancelTimer(timer);
     timer = undefined;
     if (enabled) {
-      timer = gnista.runWithIdleTimer(Number(gnista.variable("which-key-idle-delay") ?? 1), true, update);
+      timer = e8.runWithIdleTimer(Number(e8.variable("which-key-idle-delay") ?? 1), true, update);
     } else hide();
   },
 });
 
-gnista.addHook("pre-command-hook", () => {
+e8.addHook("pre-command-hook", () => {
   if (shownPrefix !== undefined) hide();
 });

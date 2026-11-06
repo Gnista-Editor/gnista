@@ -16,8 +16,8 @@
 // uses it, and anything else that talks to an agent may.
 //
 // Copyright (C) 2024 Alvaro Ramirez
-// Copyright (C) 2026 The Gnista contributors
-// Ported to Gnista in 2026.
+// Copyright (C) 2026 The E8 contributors
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -30,12 +30,12 @@ export const acpPackageVersion = "0.18.2";
 
 const jsonrpcVersion = "2.0";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "acp-logging-enabled",
   value: false,
   doc: "Whether ACP traffic and messages are logged, to each client's log and traffic buffers (acp-logs-buffer).",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "acp-drain-time-budget",
   value: 0.02,
   doc:
@@ -44,7 +44,7 @@ gnista.defineVariable({
     "and read keys meanwhile. Order is kept and nothing is dropped. At least one message is routed each time, so a " +
     "budget smaller than one handler still makes progress. Null drains the whole queue at once.",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "acp--shutdown-grace-period",
   value: 5,
   doc:
@@ -88,7 +88,7 @@ type OnFailure = (error: RpcError, message?: Message) => void;
 
 interface Pending {
   request: Json;
-  buffer?: gnista.BufferLike;
+  buffer?: e8.BufferLike;
   onSuccess?: OnSuccess;
   onFailure?: OnFailure;
 }
@@ -96,7 +96,7 @@ interface Pending {
 export interface RequestSenderArgs {
   client: Client;
   request: Outgoing;
-  buffer?: gnista.BufferLike;
+  buffer?: e8.BufferLike;
   onSuccess?: OnSuccess;
   onFailure?: OnFailure;
   sync?: boolean;
@@ -104,7 +104,7 @@ export interface RequestSenderArgs {
 
 /** A client: what makeClient makes, and every other function takes. */
 export interface Client {
-  contextBuffer?: gnista.BufferLike;
+  contextBuffer?: e8.BufferLike;
   instanceCount: number;
   process: string | undefined;
   command: string;
@@ -139,7 +139,7 @@ let instanceCount = 0;
  * for tests.
  */
 export function makeClient(options: {
-  contextBuffer?: gnista.BufferLike;
+  contextBuffer?: e8.BufferLike;
   command: string;
   commandParams?: string[];
   environmentVariables?: string[];
@@ -149,7 +149,7 @@ export function makeClient(options: {
   responseSender?: Client["responseSender"];
   outgoingRequestDecorator?: Client["outgoingRequestDecorator"];
 }): Client {
-  if (!options.command) gnista.signal("error", ":command is required");
+  if (!options.command) e8.signal("error", ":command is required");
   instanceCount = instanceCount === Number.MAX_SAFE_INTEGER ? 0 : instanceCount + 1;
   return {
     contextBuffer: options.contextBuffer,
@@ -174,15 +174,15 @@ export function makeClient(options: {
 
 /** Whether the client's agent has been started and is running. */
 export function clientStartedP(client: Client): boolean {
-  return client.process !== undefined && gnista.processLiveP(client.process);
+  return client.process !== undefined && e8.processLiveP(client.process);
 }
 
 /** Runs `fn` in `buffer` if it is live, else in the client's context buffer if that is, else where it is. */
-function inContext(client: Client, buffer: gnista.BufferLike | undefined, fn: () => void): void {
-  const live = (b: gnista.BufferLike | undefined) => b !== undefined && b !== null && gnista.getBuffer(b) !== undefined;
+function inContext(client: Client, buffer: e8.BufferLike | undefined, fn: () => void): void {
+  const live = (b: e8.BufferLike | undefined) => b !== undefined && b !== null && e8.getBuffer(b) !== undefined;
   const target = live(buffer) ? buffer : live(client.contextBuffer) ? client.contextBuffer : undefined;
   if (target === undefined) fn();
-  else gnista.withCurrentBuffer(target, fn);
+  else e8.withCurrentBuffer(target, fn);
 }
 
 /** Runs a handler, logging what it throws rather than letting it stop the drain. */
@@ -202,11 +202,11 @@ function describeError(e: unknown): string {
 
 /** Starts the client's agent, failing if its program is not found or it is already running. */
 function startClient(client: Client): void {
-  if (!client.command) gnista.signal("error", ":command is required");
+  if (!client.command) e8.signal("error", ":command is required");
   if (!executableFind(client.command)) {
-    gnista.signal("error", `"${client.command}" command line utility not found.  Please install it`);
+    e8.signal("error", `"${client.command}" command line utility not found.  Please install it`);
   }
-  if (clientStartedP(client)) gnista.signal("error", "Client already started");
+  if (clientStartedP(client)) e8.signal("error", "Client already started");
   let pendingInput = "";
   const queue: Message[] = [];
   let busy = false;
@@ -215,14 +215,14 @@ function startClient(client: Client): void {
     const i = pair.indexOf("=");
     if (i > 0) env[pair.slice(0, i)] = pair.slice(i + 1);
   }
-  const stderrBuffer = gnista.getBufferCreate(`acp-client-stderr(${client.command})-${client.instanceCount}`).name!;
+  const stderrBuffer = e8.getBufferCreate(`acp-client-stderr(${client.command})-${client.instanceCount}`).name!;
   client.stderrBuffer = stderrBuffer;
   client.stderrSeen = 0;
   // Drains the queue in order, within the time budget, going on at the next
   // timer when messages are left; the busy flag drops however a handler
   // exits, or no later message would ever be routed.
   const drain = () => {
-    const budget = gnista.variable("acp-drain-time-budget");
+    const budget = e8.variable("acp-drain-time-budget");
     const deadline = typeof budget === "number" ? Date.now() + budget * 1000 : undefined;
     let withinBudget = true;
     try {
@@ -249,11 +249,11 @@ function startClient(client: Client): void {
       }
     } finally {
       // The flag stays up while a drain is due, so the filter schedules no second one.
-      if (queue.length > 0) gnista.runWithTimer(0, null, drain);
+      if (queue.length > 0) e8.runWithTimer(0, null, drain);
       else busy = false;
     }
   };
-  const process = gnista.makeProcess({
+  const process = e8.makeProcess({
     name: `acp-client(${client.command})-${client.instanceCount}`,
     command: [client.command, ...client.commandParams],
     env,
@@ -284,7 +284,7 @@ function startClient(client: Client): void {
         queue.push({ json, object: object as Json });
         if (!busy) {
           busy = true;
-          gnista.runWithTimer(0, null, drain);
+          e8.runWithTimer(0, null, drain);
         }
       }
       pendingInput = pendingInput.slice(start);
@@ -293,20 +293,20 @@ function startClient(client: Client): void {
     sentinel: (proc, event) => {
       readStderr(client);
       stopStderrTimer(client);
-      if (gnista.bufferLiveP(gnista.getBuffer(stderrBuffer))) gnista.call("kill-buffer", stderrBuffer);
-      const status = gnista.processStatus(proc);
+      if (e8.bufferLiveP(e8.getBuffer(stderrBuffer))) e8.call("kill-buffer", stderrBuffer);
+      const status = e8.processStatus(proc);
       if (status === undefined || status === "exit" || status === "signal") failPendingRequests(client, event);
     },
   });
-  gnista.setProcessQueryOnExitFlag(process, false);
+  e8.setProcessQueryOnExitFlag(process, false);
   client.process = process;
   // The agent may write to standard error with nothing on its output, as
   // when it fails to reach its API, so its buffer is looked at meanwhile too.
-  client.stderrTimer = gnista.runWithTimer(0.25, 0.25, () => readStderr(client));
+  client.stderrTimer = e8.runWithTimer(0.25, 0.25, () => readStderr(client));
 }
 
 function stopStderrTimer(client: Client): void {
-  if (client.stderrTimer !== undefined) gnista.cancelTimer(client.stderrTimer);
+  if (client.stderrTimer !== undefined) e8.cancelTimer(client.stderrTimer);
   client.stderrTimer = undefined;
 }
 
@@ -317,11 +317,11 @@ function stopStderrTimer(client: Client): void {
  */
 function readStderr(client: Client): void {
   const name = client.stderrBuffer;
-  if (name === undefined || gnista.getBuffer(name) === undefined) return;
-  const raw = gnista.withCurrentBuffer(name, () => {
-    const size = gnista.bufferSize();
+  if (name === undefined || e8.getBuffer(name) === undefined) return;
+  const raw = e8.withCurrentBuffer(name, () => {
+    const size = e8.bufferSize();
     if (size <= client.stderrSeen) return "";
-    const text = gnista.bufferSubstringNoProperties(client.stderrSeen, size);
+    const text = e8.bufferSubstringNoProperties(client.stderrSeen, size);
     client.stderrSeen = size;
     return text;
   });
@@ -357,18 +357,18 @@ function failPendingRequests(client: Client, event: string): void {
 }
 
 /** Subscribes `onNotification` to what the agent tells the editor, run in `buffer`. */
-export function subscribeToNotifications(options: { client: Client; onNotification: (notification: Json) => void; buffer?: gnista.BufferLike }): void {
+export function subscribeToNotifications(options: { client: Client; onNotification: (notification: Json) => void; buffer?: e8.BufferLike }): void {
   const { client, onNotification, buffer } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!onNotification) gnista.signal("error", ":on-notification is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!onNotification) e8.signal("error", ":on-notification is required");
   client.notificationHandlers.unshift((notification) => inContext(client, buffer, () => onNotification(notification)));
 }
 
 /** Subscribes `onRequest` to what the agent asks of the editor, run in `buffer`; answer with sendResponse. */
-export function subscribeToRequests(options: { client: Client; onRequest: (request: Json) => void; buffer?: gnista.BufferLike }): void {
+export function subscribeToRequests(options: { client: Client; onRequest: (request: Json) => void; buffer?: e8.BufferLike }): void {
   const { client, onRequest, buffer } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!onRequest) gnista.signal("error", ":on-request is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!onRequest) e8.signal("error", ":on-request is required");
   client.requestHandlers.unshift((request) => inContext(client, buffer, () => onRequest(request)));
 }
 
@@ -377,10 +377,10 @@ export function subscribeToRequests(options: { client: Client; onRequest: (reque
  * standard error, run in `buffer`. A request's failure goes to its own
  * onFailure instead.
  */
-export function subscribeToErrors(options: { client: Client; onError: (error: RpcError) => void; buffer?: gnista.BufferLike }): void {
+export function subscribeToErrors(options: { client: Client; onError: (error: RpcError) => void; buffer?: e8.BufferLike }): void {
   const { client, onError, buffer } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!onError) gnista.signal("error", ":on-error is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!onError) e8.signal("error", ":on-error is required");
   client.errorHandlers.unshift((error) => inContext(client, buffer, () => onError(error)));
 }
 
@@ -392,7 +392,7 @@ export function subscribeToErrors(options: { client: Client; onError: (error: Rp
  */
 export function shutdown(options: { client: Client }): void {
   const { client } = options;
-  if (!client) gnista.signal("error", ":client is required");
+  if (!client) e8.signal("error", ":client is required");
   client.errorHandlers = [];
   client.notificationHandlers = [];
   client.requestHandlers = [];
@@ -402,13 +402,13 @@ export function shutdown(options: { client: Client }): void {
   if (process !== undefined) {
     // Unset first, so the filter ignores what still comes.
     client.process = undefined;
-    if (gnista.processLiveP(process)) {
-      gnista.signalProcess(process, "TERM");
-      const grace = Number(gnista.variable("acp--shutdown-grace-period") ?? 5);
-      gnista.runWithTimer(grace, null, () => {
-        if (gnista.processLiveP(process)) {
+    if (e8.processLiveP(process)) {
+      e8.signalProcess(process, "TERM");
+      const grace = Number(e8.variable("acp--shutdown-grace-period") ?? 5);
+      e8.runWithTimer(grace, null, () => {
+        if (e8.processLiveP(process)) {
           try {
-            gnista.deleteProcess(process);
+            e8.deleteProcess(process);
           } catch {
             // Gone meanwhile.
           }
@@ -417,7 +417,7 @@ export function shutdown(options: { client: Client }): void {
     }
   }
   for (const name of [logsBufferName(client), trafficBufferName(client)]) {
-    if (gnista.getBuffer(name) !== undefined) gnista.call("kill-buffer", name);
+    if (e8.getBuffer(name) !== undefined) e8.call("kill-buffer", name);
   }
 }
 
@@ -429,8 +429,8 @@ export function shutdown(options: { client: Client }): void {
  */
 export function sendRequest(options: RequestSenderArgs): unknown {
   const { client, request } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!request) gnista.signal("error", ":request is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!request) e8.signal("error", ":request is required");
   if (!clientStartedP(client)) startClient(client);
   return client.requestSender(options);
 }
@@ -438,8 +438,8 @@ export function sendRequest(options: RequestSenderArgs): unknown {
 /** Sends a notification, starting the agent if need be. */
 export function sendNotification(options: { client: Client; notification: Outgoing; sync?: boolean }): unknown {
   const { client, notification } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!notification) gnista.signal("error", ":notification is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!notification) e8.signal("error", ":notification is required");
   if (!clientStartedP(client)) startClient(client);
   return client.notificationSender(options);
 }
@@ -447,8 +447,8 @@ export function sendNotification(options: { client: Client; notification: Outgoi
 /** Answers a request the agent made, with a response from one of the make...Response builders. */
 export function sendResponse(options: { client: Client; response: Response }): void {
   const { client, response } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!response) gnista.signal("error", ":response is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!response) e8.signal("error", ":response is required");
   client.responseSender(options);
 }
 
@@ -456,8 +456,8 @@ function send(client: Client, kind: string, object: Json): void {
   const json = JSON.stringify(object);
   log(client, "OUTGOING TEXT", json);
   logTraffic(client, "outgoing", kind, { json, object });
-  if (client.process === undefined) gnista.signal("error", "The agent is not running");
-  gnista.processSendString(client.process, `${json}\n`);
+  if (client.process === undefined) e8.signal("error", "The agent is not running");
+  e8.processSendString(client.process, `${json}\n`);
 }
 
 /** Waits for `done`, taking in the agent's output and running timers meanwhile. */
@@ -465,10 +465,10 @@ function waitFor(client: Client, done: () => boolean): void {
   while (!done()) {
     const process = client.process;
     if (process === undefined) break;
-    gnista.acceptProcessOutput(process, 0.01);
-    if (!gnista.processLiveP(process) && !done()) {
+    e8.acceptProcessOutput(process, 0.01);
+    if (!e8.processLiveP(process) && !done()) {
       // Its end, and the failure of what was pending, come with the next look.
-      gnista.acceptProcessOutput(undefined, 0.01);
+      e8.acceptProcessOutput(undefined, 0.01);
       if (!done()) break;
     }
   }
@@ -477,8 +477,8 @@ function waitFor(client: Client, done: () => boolean): void {
 function defaultRequestSender(options: RequestSenderArgs): unknown {
   const { client, buffer, onSuccess, onFailure, sync } = options;
   let request = options.request;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!request) gnista.signal("error", ":request is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!request) e8.signal("error", ":request is required");
   if (!clientStartedP(client)) startClient(client);
   if (client.outgoingRequestDecorator) {
     const decorated = client.outgoingRequestDecorator(request);
@@ -506,15 +506,15 @@ function defaultRequestSender(options: RequestSenderArgs): unknown {
   send(client, "request", object);
   if (!sync) return undefined;
   waitFor(client, () => done !== false);
-  if (done === false) gnista.signal("error", `ACP request failed: the agent stopped before answering ${request.method}`);
-  if (done === "error") gnista.signal("error", `ACP request failed: ${JSON.stringify(result)}`);
+  if (done === false) e8.signal("error", `ACP request failed: the agent stopped before answering ${request.method}`);
+  if (done === "error") e8.signal("error", `ACP request failed: ${JSON.stringify(result)}`);
   return result;
 }
 
 function defaultResponseSender(options: { client: Client; response: Response }): void {
   const { client, response } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!response) gnista.signal("error", ":response is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!response) e8.signal("error", ":response is required");
   const object: Json =
     response.error !== undefined
       ? { jsonrpc: jsonrpcVersion, id: response.requestId, error: response.error }
@@ -524,8 +524,8 @@ function defaultResponseSender(options: { client: Client; response: Response }):
 
 function defaultNotificationSender(options: { client: Client; notification: Outgoing; sync?: boolean }): unknown {
   const { client, notification } = options;
-  if (!client) gnista.signal("error", ":client is required");
-  if (!notification) gnista.signal("error", ":notification is required");
+  if (!client) e8.signal("error", ":client is required");
+  if (!notification) e8.signal("error", ":notification is required");
   if (!clientStartedP(client)) startClient(client);
   const object: Json = { jsonrpc: jsonrpcVersion, method: notification.method };
   if (notification.params !== undefined) object.params = notification.params;
@@ -537,7 +537,7 @@ function defaultNotificationSender(options: { client: Client; notification: Outg
 
 /** A directory as the protocol wants it: absolute, without a trailing slash. */
 function directory(cwd: string): string {
-  return gnista.directoryFileName(gnista.expandFileName(cwd));
+  return e8.directoryFileName(e8.expandFileName(cwd));
 }
 
 /**
@@ -553,7 +553,7 @@ export function makeInitializeRequest(options: {
   elicitationFormCapability?: boolean;
   elicitationUrlCapability?: boolean;
 }): Outgoing {
-  if (options.protocolVersion === undefined) gnista.signal("error", ":protocol-version is required");
+  if (options.protocolVersion === undefined) e8.signal("error", ":protocol-version is required");
   const capabilities: Json = {
     fs: { readTextFile: Boolean(options.readTextFileCapability), writeTextFile: Boolean(options.writeTextFileCapability) },
   };
@@ -572,7 +572,7 @@ export function makeInitializeRequest(options: {
 
 /** An "authenticate" request, with the authentication method's id. */
 export function makeAuthenticateRequest(options: { methodId: string; method?: Json }): Outgoing {
-  if (!options.methodId) gnista.signal("error", ":method-id is required");
+  if (!options.methodId) e8.signal("error", ":method-id is required");
   const params: Json = { methodId: options.methodId };
   if (options.method) params.authMethod = options.method;
   return { method: "authenticate", params };
@@ -584,7 +584,7 @@ export function makeAuthenticateRequest(options: { methodId: string; method?: Js
  * agent's, or with { append } adds to it.
  */
 export function makeSessionNewRequest(options: { cwd: string; mcpServers?: Json[]; meta?: Json }): Outgoing {
-  if (!options.cwd) gnista.signal("error", ":cwd is required");
+  if (!options.cwd) e8.signal("error", ":cwd is required");
   const params: Json = { cwd: directory(options.cwd), mcpServers: options.mcpServers ?? [] };
   if (options.meta) params._meta = options.meta;
   return { method: "session/new", params };
@@ -592,36 +592,36 @@ export function makeSessionNewRequest(options: { cwd: string; mcpServers?: Json[
 
 /** A "session/prompt" request: the content blocks of the user's turn. */
 export function makeSessionPromptRequest(options: { sessionId: string; prompt: Json[] }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
-  if (!options.prompt) gnista.signal("error", ":prompt is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
+  if (!options.prompt) e8.signal("error", ":prompt is required");
   return { method: "session/prompt", params: { sessionId: options.sessionId, prompt: [...options.prompt] } };
 }
 
 /** A "session/set_mode" request, as "default", "plan", "acceptEdits" or "bypassPermissions". */
 export function makeSessionSetModeRequest(options: { sessionId: string; modeId: string }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
-  if (!options.modeId) gnista.signal("error", ":mode-id is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
+  if (!options.modeId) e8.signal("error", ":mode-id is required");
   return { method: "session/set_mode", params: { sessionId: options.sessionId, modeId: options.modeId } };
 }
 
 /** A "session/set_model" request, an extension of Claude's adapter. */
 export function makeSessionSetModelRequest(options: { sessionId: string; modelId: string }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
-  if (!options.modelId) gnista.signal("error", ":model-id is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
+  if (!options.modelId) e8.signal("error", ":model-id is required");
   return { method: "session/set_model", params: { sessionId: options.sessionId, modelId: options.modelId } };
 }
 
 /** A "session/set_config_option" request: the option's id and one of its values. */
 export function makeSessionSetConfigOptionRequest(options: { sessionId: string; configId: string; value: unknown }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
-  if (!options.configId) gnista.signal("error", ":config-id is required");
-  if (options.value === undefined || options.value === null) gnista.signal("error", ":value is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
+  if (!options.configId) e8.signal("error", ":config-id is required");
+  if (options.value === undefined || options.value === null) e8.signal("error", ":value is required");
   return { method: "session/set_config_option", params: { sessionId: options.sessionId, configId: options.configId, value: options.value } };
 }
 
 function sessionParams(name: string, options: { sessionId: string; cwd: string; mcpServers?: Json[]; meta?: Json }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
-  if (!options.cwd) gnista.signal("error", ":cwd is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
+  if (!options.cwd) e8.signal("error", ":cwd is required");
   const params: Json = { sessionId: options.sessionId, cwd: directory(options.cwd), mcpServers: options.mcpServers ?? [] };
   if (options.meta) params._meta = options.meta;
   return { method: name, params };
@@ -655,15 +655,15 @@ export function makeSessionListRequest(options: { cwd?: string; cursor?: string 
 
 /** A "session/delete" request. */
 export function makeSessionDeleteRequest(options: { sessionId: string }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
   return { method: "session/delete", params: { sessionId: options.sessionId } };
 }
 
 /** The answer to "session/request_permission": the option the user chose, or that it was cancelled. */
 export function makeSessionRequestPermissionResponse(options: { requestId: number | string; optionId?: string; cancelled?: boolean }): Response {
-  if (options.requestId === undefined || options.requestId === null) gnista.signal("error", ":request-id is required");
-  if (options.optionId && options.cancelled) gnista.signal("error", "Choose :option-id or :cancelled Not both");
-  if (!options.optionId && !options.cancelled) gnista.signal("error", "Must specify either :option-id or :cancelled");
+  if (options.requestId === undefined || options.requestId === null) e8.signal("error", ":request-id is required");
+  if (options.optionId && options.cancelled) e8.signal("error", "Choose :option-id or :cancelled Not both");
+  if (!options.optionId && !options.cancelled) e8.signal("error", "Must specify either :option-id or :cancelled");
   return {
     requestId: options.requestId,
     result: { outcome: options.cancelled ? { outcome: "cancelled" } : { outcome: "selected", optionId: options.optionId } },
@@ -672,23 +672,23 @@ export function makeSessionRequestPermissionResponse(options: { requestId: numbe
 
 /** The answer to "fs/read_text_file": the file's text, or an error. */
 export function makeFsReadTextFileResponse(options: { requestId: number | string; content?: string; error?: RpcError }): Response {
-  if (options.requestId === undefined || options.requestId === null) gnista.signal("error", ":request-id is required");
-  if (options.content !== undefined && options.error) gnista.signal("error", "Either :content or :error but not both");
+  if (options.requestId === undefined || options.requestId === null) e8.signal("error", ":request-id is required");
+  if (options.content !== undefined && options.error) e8.signal("error", "Either :content or :error but not both");
   if (options.error) return { requestId: options.requestId, error: options.error as unknown as Json };
   if (options.content !== undefined) return { requestId: options.requestId, result: { content: options.content } };
-  return gnista.signal("error", "Either :content or :error is required");
+  return e8.signal("error", "Either :content or :error is required");
 }
 
 /** The answer to "fs/write_text_file": nothing, or an error. */
 export function makeFsWriteTextFileResponse(options: { requestId: number | string; error?: RpcError }): Response {
-  if (options.requestId === undefined || options.requestId === null) gnista.signal("error", ":request-id is required");
+  if (options.requestId === undefined || options.requestId === null) e8.signal("error", ":request-id is required");
   return options.error ? { requestId: options.requestId, error: options.error as unknown as Json } : { requestId: options.requestId, result: null };
 }
 
 /** A JSON-RPC error object. */
 export function makeError(options: { code: number; message: string; data?: unknown }): RpcError {
-  if (options.code === undefined) gnista.signal("error", ":code is required");
-  if (options.message === undefined) gnista.signal("error", ":message is required");
+  if (options.code === undefined) e8.signal("error", ":code is required");
+  if (options.message === undefined) e8.signal("error", ":message is required");
   const error: RpcError = { code: options.code, message: options.message };
   if (options.data !== undefined && options.data !== null) error.data = options.data;
   return error;
@@ -696,7 +696,7 @@ export function makeError(options: { code: number; message: string; data?: unkno
 
 /** A "session/cancel" notification, which stops the session's turn. */
 export function makeSessionCancelNotification(options: { sessionId: string; reason?: string }): Outgoing {
-  if (!options.sessionId) gnista.signal("error", ":session-id is required");
+  if (!options.sessionId) e8.signal("error", ":session-id is required");
   const params: Json = { sessionId: options.sessionId };
   if (options.reason) params.reason = options.reason;
   return { method: "session/cancel", params };
@@ -793,29 +793,29 @@ function trafficBufferName(client: Client): string {
 }
 
 /** The client's log buffer, made if there is none. */
-export function logsBuffer(options: { client: Client }): gnista.Buffer {
+export function logsBuffer(options: { client: Client }): e8.Buffer {
   const name = logsBufferName(options.client);
-  const existing = gnista.getBuffer(name);
+  const existing = e8.getBuffer(name);
   if (existing) return existing;
-  const buffer = gnista.getBufferCreate(name);
-  gnista.bufferDisableUndo(buffer);
+  const buffer = e8.getBufferCreate(name);
+  e8.bufferDisableUndo(buffer);
   return buffer;
 }
 
 /** The client's traffic buffer, a line for each message in or out, made if there is none. */
-export function trafficBuffer(options: { client: Client }): gnista.Buffer {
+export function trafficBuffer(options: { client: Client }): e8.Buffer {
   const name = trafficBufferName(options.client);
-  const existing = gnista.getBuffer(name);
+  const existing = e8.getBuffer(name);
   if (existing) return existing;
-  const buffer = gnista.getBufferCreate(name);
-  gnista.bufferDisableUndo(buffer);
+  const buffer = e8.getBufferCreate(name);
+  e8.bufferDisableUndo(buffer);
   return buffer;
 }
 
 /** Empties the client's log and traffic buffers. */
 export function resetLogs(options: { client: Client }): void {
   for (const buffer of [logsBuffer(options), trafficBuffer(options)]) {
-    gnista.withCurrentBuffer(buffer, () => gnista.deleteRegion(0, gnista.bufferSize()));
+    e8.withCurrentBuffer(buffer, () => e8.deleteRegion(0, e8.bufferSize()));
   }
 }
 
@@ -825,20 +825,20 @@ export function formatLogMessage(label: string | undefined, body: string): strin
 }
 
 /** Appends text to a buffer; an entry of a log is marked where it starts, for trimming. */
-function appendTo(buffer: gnista.Buffer, text: string, entry = false): void {
-  gnista.withCurrentBuffer(buffer, () => {
-    gnista.saveExcursion(() => {
-      const start = gnista.bufferSize();
-      gnista.gotoChar(start);
-      gnista.insert(text);
-      if (entry && text !== "") gnista.putTextProperty(start, start + 1, "acp-log-boundary", true);
+function appendTo(buffer: e8.Buffer, text: string, entry = false): void {
+  e8.withCurrentBuffer(buffer, () => {
+    e8.saveExcursion(() => {
+      const start = e8.bufferSize();
+      e8.gotoChar(start);
+      e8.insert(text);
+      if (entry && text !== "") e8.putTextProperty(start, start + 1, "acp-log-boundary", true);
     });
   });
 }
 
 /** Logs to the client's log buffer, when acp-logging-enabled is on. */
 function log(client: Client, label: string | undefined, body: string): void {
-  if (gnista.variable("acp-logging-enabled") !== true) return;
+  if (e8.variable("acp-logging-enabled") !== true) return;
   const buffer = logsBuffer({ client });
   appendTo(buffer, formatLogMessage(label, body), true);
   trimLogBuffer(buffer);
@@ -848,25 +848,25 @@ function log(client: Client, label: string | undefined, body: string): void {
  * Trims a log buffer to `max` characters, the oldest entries going first,
  * whole: what is cut is up to the first entry that starts past the cut.
  */
-export function trimLogBuffer(buffer: gnista.BufferLike, max = logBufferMax): void {
-  if (gnista.getBuffer(buffer) === undefined) return;
-  gnista.withCurrentBuffer(buffer, () => {
-    const size = gnista.bufferSize();
+export function trimLogBuffer(buffer: e8.BufferLike, max = logBufferMax): void {
+  if (e8.getBuffer(buffer) === undefined) return;
+  e8.withCurrentBuffer(buffer, () => {
+    const size = e8.bufferSize();
     if (size <= max) return;
     let at = size - max;
     // An entry starting right at the cut is kept whole, so the search starts past it.
-    if (gnista.getTextProperty(at, "acp-log-boundary")) at += 1;
+    if (e8.getTextProperty(at, "acp-log-boundary")) at += 1;
     let next = at;
-    while (next < size && !gnista.getTextProperty(next, "acp-log-boundary")) {
-      next = gnista.nextSinglePropertyChange(next, "acp-log-boundary", size) ?? size;
+    while (next < size && !e8.getTextProperty(next, "acp-log-boundary")) {
+      next = e8.nextSinglePropertyChange(next, "acp-log-boundary", size) ?? size;
     }
-    gnista.deleteRegion(0, next);
+    e8.deleteRegion(0, next);
   });
 }
 
 /** Logs a message in or out to the client's traffic buffer, when acp-logging-enabled is on. */
 function logTraffic(client: Client, direction: "incoming" | "outgoing", kind: string, message: Message): void {
-  if (gnista.variable("acp-logging-enabled") !== true) return;
+  if (e8.variable("acp-logging-enabled") !== true) return;
   const arrow = direction === "incoming" ? "←" : "→";
   const method = message.object.method ?? (message.object.id !== undefined ? `#${message.object.id}` : "");
   appendTo(trafficBuffer({ client }), `${arrow} ${kind} ${method} ${message.json ?? JSON.stringify(message.object)}\n`);

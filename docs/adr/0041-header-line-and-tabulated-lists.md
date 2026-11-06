@@ -4,7 +4,7 @@ Status: accepted · 2026-10-31
 
 ## Context
 
-Emacs windows can show a header line above their text, from the buffer-local `header-line-format`, a mode line construct like `mode-line-format`. Many of Emacs's listing modes title their columns there: tabulated-list.el, which `list-buffers`, `list-processes`, `list-packages` and the bookmark list are built on, puts the column titles in the header line, lined up with the columns below by `(space :align-to COLUMN)` display specs. Gnista had neither, so the buffer list (ADR 0040) printed its titles as the first line of text and laid its columns out by hand. [ADR 0029](0029-redisplay-beyond-rows.md) lists the header line third among the parts of redisplay still to come.
+Emacs windows can show a header line above their text, from the buffer-local `header-line-format`, a mode line construct like `mode-line-format`. Many of Emacs's listing modes title their columns there: tabulated-list.el, which `list-buffers`, `list-processes`, `list-packages` and the bookmark list are built on, puts the column titles in the header line, lined up with the columns below by `(space :align-to COLUMN)` display specs. E8 had neither, so the buffer list (ADR 0040) printed its titles as the first line of text and laid its columns out by hand. [ADR 0029](0029-redisplay-beyond-rows.md) lists the header line third among the parts of redisplay still to come.
 
 ## Options considered
 

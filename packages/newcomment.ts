@@ -7,7 +7,7 @@
 
 import { escapeRegExp, numberValue as num, truthy } from "subr";
 
-const defvar = (name: string, value: gnista.Value, doc: string, local = false) => gnista.defineVariable({ name, value, doc, local });
+const defvar = (name: string, value: e8.Value, doc: string, local = false) => e8.defineVariable({ name, value, doc, local });
 defvar("comment-start", null, "What starts a comment in this mode, with the space after it: \"// \" or \"# \". nil if the mode has no comments.", true);
 defvar("comment-end", "", "What ends a comment, with the space before it: \" */\", or \"\" when comments end with the line.", true);
 defvar("comment-start-skip", null, "A regexp matching a comment's start and the space after it.", true);
@@ -18,14 +18,14 @@ defvar("comment-empty-lines", false, "Whether comment-region comments blank line
 defvar("comment-inline-offset", 1, "The least space between code and the comment after it.");
 
 const str = (name: string): string | undefined => {
-  const v = gnista.variable(name);
+  const v = e8.variable(name);
   return typeof v === "string" ? v : undefined;
 };
-const charAt = (p: number): string => gnista.charAfter(p) ?? "";
-const bol = (p = gnista.point()): number => gnista.lineBeginningPosition(p);
-const eol = (p = gnista.point()): number => gnista.lineEndPosition(p);
-const indentation = (line: number): number => gnista.currentIndentation(gnista.lineStart(line));
-const blank = (line: number): boolean => /^[ \t]*$/.test(gnista.lineText(line));
+const charAt = (p: number): string => e8.charAfter(p) ?? "";
+const bol = (p = e8.point()): number => e8.lineBeginningPosition(p);
+const eol = (p = e8.point()): number => e8.lineEndPosition(p);
+const indentation = (line: number): number => e8.currentIndentation(e8.lineStart(line));
+const blank = (line: number): boolean => /^[ \t]*$/.test(e8.lineText(line));
 
 /** Comment syntax, as comment-normalize-vars checks it is there. */
 function commentStart(): string {
@@ -60,16 +60,16 @@ function padLeft(s: string): string {
 function commentStartAt(p: number): number | undefined {
   const c = charAt(p);
   if (c === "") return undefined;
-  const d = gnista.syntaxEntry(c) ?? "";
+  const d = e8.syntaxEntry(c) ?? "";
   const flags = d.slice(2);
   if (d[0] === "<" || d[0] === "!") return 1;
   if (flags.includes("1")) {
-    const next = gnista.syntaxEntry(charAt(p + 1)) ?? "";
+    const next = e8.syntaxEntry(charAt(p + 1)) ?? "";
     if (next.slice(2).includes("2")) return 2;
   }
   // Modes without comment syntax in their table, by comment-start itself.
   const cs = trim(str("comment-start") ?? "");
-  if (cs !== "" && gnista.bufferText(p, p + cs.length) === cs && !hasCommentSyntax()) return cs.length;
+  if (cs !== "" && e8.bufferText(p, p + cs.length) === cs && !hasCommentSyntax()) return cs.length;
   return undefined;
 }
 
@@ -77,7 +77,7 @@ function commentStartAt(p: number): number | undefined {
 function hasCommentSyntax(): boolean {
   const cs = trim(str("comment-start") ?? "");
   if (cs === "") return false;
-  const d = gnista.syntaxEntry(cs[0]) ?? "";
+  const d = e8.syntaxEntry(cs[0]) ?? "";
   return d[0] === "<" || d[0] === "!" || d.slice(2).includes("1");
 }
 
@@ -90,7 +90,7 @@ function commentSearchForward(from: number, limit: number): number | undefined {
   for (let p = from; p < limit; p++) {
     const len = commentStartAt(p);
     if (len === undefined) continue;
-    const st = gnista.syntaxPpss(p);
+    const st = e8.syntaxPpss(p);
     if (st.inString !== null) continue;
     if (st.inComment !== null) {
       // Already in a comment: its start.
@@ -105,28 +105,28 @@ function commentSearchForward(from: number, limit: number): number | undefined {
 
 /** Puts point after a comment's starter, its repeats and the space after, as matching comment-start-skip leaves it. */
 function skipStarter(start: number, len: number): number {
-  const starter = gnista.bufferText(start, start + len);
+  const starter = e8.bufferText(start, start + len);
   let q = start + len;
   // Repeats of the starter's last character, as ;; or ///.
   while (charAt(q) === starter[starter.length - 1] && len === 1) q++;
   while (charAt(q) === " " || charAt(q) === "\t") q++;
-  gnista.gotoChar(q);
+  e8.gotoChar(q);
   return start;
 }
 
 /** Where the comment on point's line starts, if it has one. */
 function commentOnLine(line: number): number | undefined {
-  const p = gnista.point();
-  const found = commentSearchForward(gnista.lineStart(line), gnista.lineEnd(line));
-  gnista.gotoChar(p);
+  const p = e8.point();
+  const found = commentSearchForward(e8.lineStart(line), e8.lineEnd(line));
+  e8.gotoChar(p);
   return found;
 }
 
 /** Whether the text from `beg` to `end` is only comments and whitespace, as comment-only-p. */
 function commentOnly(beg: number, end: number): boolean {
-  for (let line = gnista.lineOf(beg); line <= gnista.lineOf(Math.max(beg, end - 1)); line++) {
+  for (let line = e8.lineOf(beg); line <= e8.lineOf(Math.max(beg, end - 1)); line++) {
     if (blank(line)) continue;
-    const start = gnista.lineStart(line) + /^[ \t]*/.exec(gnista.lineText(line))![0].length;
+    const start = e8.lineStart(line) + /^[ \t]*/.exec(e8.lineText(line))![0].length;
     if (commentOnLine(line) !== start) return false;
   }
   return true;
@@ -134,9 +134,9 @@ function commentOnly(beg: number, end: number): boolean {
 
 /** The lines a region covers: from its start's line to its end's, leaving out a line the end is at the start of. */
 function regionLines(beg: number, end: number): [number, number] {
-  const first = gnista.lineOf(beg);
-  let last = gnista.lineOf(end);
-  if (end > beg && end === gnista.lineStart(last) && last > first) last--;
+  const first = e8.lineOf(beg);
+  let last = e8.lineOf(end);
+  if (end > beg && end === e8.lineStart(last) && last > first) last--;
   return [first, last];
 }
 
@@ -145,7 +145,7 @@ function commentRegion(begIn: number, endIn: number, arg: number): void {
   if (arg < 0) return uncommentRegion(begIn, endIn, -arg);
   // The region without the blank lines around it, as comment-region-default-1 sanitizes it.
   let b = begIn;
-  while (b < gnista.bufferSize() && " \t\n\r".includes(charAt(b))) b++;
+  while (b < e8.bufferSize() && " \t\n\r".includes(charAt(b))) b++;
   const beg = Math.max(begIn, bol(b));
   let e = endIn;
   while (e > 0 && " \t\n\r".includes(charAt(e - 1))) e--;
@@ -153,38 +153,38 @@ function commentRegion(begIn: number, endIn: number, arg: number): void {
   if (beg >= end) throw new Error("Nothing to comment");
   // Comments that end with the line end the region's last line there.
   if (commentEnd() === "" && end !== eol(end)) {
-    const p = gnista.makeMarker();
-    gnista.gotoChar(end);
-    gnista.insert("\n");
-    gnista.call("indent-according-to-mode");
-    gnista.gotoChar(gnista.markerPosition(p)!);
-    gnista.deleteMarker(p);
+    const p = e8.makeMarker();
+    e8.gotoChar(end);
+    e8.insert("\n");
+    e8.call("indent-according-to-mode");
+    e8.gotoChar(e8.markerPosition(p)!);
+    e8.deleteMarker(p);
   }
   const add = num("comment-add", 0) + arg - 1;
   const cs = padRight(commentStart(), add);
   const ceRaw = commentEnd();
   const ce = ceRaw === "" ? "" : padLeft(ceRaw);
   const [first, last] = regionLines(beg, end);
-  const empty = truthy(gnista.variable("comment-empty-lines"));
+  const empty = truthy(e8.variable("comment-empty-lines"));
   let min = Infinity;
   for (let l = first; l <= last; l++) if (empty || !blank(l)) min = Math.min(min, blank(l) ? Infinity : indentation(l));
   if (min === Infinity) min = 0;
-  const p = gnista.makeMarker();
+  const p = e8.makeMarker();
   for (let l = last; l >= first; l--) {
     if (!empty && blank(l)) continue;
-    gnista.gotoChar(gnista.lineStart(l));
-    gnista.moveToColumn(min);
-    if (gnista.currentColumn() < min) gnista.insert(" ".repeat(min - gnista.currentColumn()));
+    e8.gotoChar(e8.lineStart(l));
+    e8.moveToColumn(min);
+    if (e8.currentColumn() < min) e8.insert(" ".repeat(min - e8.currentColumn()));
     // Trailing whitespace makes no comment of its own.
-    const content = gnista.lineText(l).replace(/[ \t]+$/, "");
-    gnista.insert(content.trim() === "" ? cs.replace(/\s+$/, "") : cs);
+    const content = e8.lineText(l).replace(/[ \t]+$/, "");
+    e8.insert(content.trim() === "" ? cs.replace(/\s+$/, "") : cs);
     if (ce !== "") {
-      gnista.gotoChar(gnista.lineEnd(l));
-      gnista.insert(ce);
+      e8.gotoChar(e8.lineEnd(l));
+      e8.insert(ce);
     }
   }
-  gnista.gotoChar(gnista.markerPosition(p)!);
-  gnista.deleteMarker(p);
+  e8.gotoChar(e8.markerPosition(p)!);
+  e8.deleteMarker(p);
 }
 
 /** Takes the comment starts and ends out of the region, as uncomment-region: all of them, or `arg` levels. */
@@ -193,7 +193,7 @@ function uncommentRegion(beg: number, end: number, arg?: number): void {
   const ce = trim(commentEnd());
   const [first, last] = regionLines(beg, end);
   const padding = str("comment-padding") ?? " ";
-  const p = gnista.makeMarker();
+  const p = e8.makeMarker();
   let found = false;
   for (let l = last; l >= first; l--) {
     const start = commentOnLine(l);
@@ -202,44 +202,44 @@ function uncommentRegion(beg: number, end: number, arg?: number): void {
     // The starter, its last character repeated as it may be, as
     // (comment-padright comment-start 're) matches it; with `arg`, that
     // many levels only.
-    let q = start + (gnista.bufferText(start, start + cs.length) === cs ? cs.length : (commentStartAt(start) ?? 0));
+    let q = start + (e8.bufferText(start, start + cs.length) === cs ? cs.length : (commentStartAt(start) ?? 0));
     const last = cs[cs.length - 1];
     let extra = arg === undefined ? Infinity : arg - 1;
     while (extra > 0 && charAt(q) === last) {
       q++;
       extra--;
     }
-    if (gnista.bufferText(q, q + padding.length) === padding) q += padding.length;
+    if (e8.bufferText(q, q + padding.length) === padding) q += padding.length;
     if (ce !== "") {
-      const lineEnd = gnista.lineEnd(l);
-      const text = gnista.bufferText(q, lineEnd);
+      const lineEnd = e8.lineEnd(l);
+      const text = e8.bufferText(q, lineEnd);
       const m = new RegExp(`[ \\t]*${escapeRegExp(ce)}[ \\t]*$`).exec(text);
-      if (m !== null) gnista.deleteRegion(q + m.index, lineEnd);
+      if (m !== null) e8.deleteRegion(q + m.index, lineEnd);
     }
-    gnista.deleteRegion(start, q);
+    e8.deleteRegion(start, q);
   }
-  gnista.gotoChar(gnista.markerPosition(p)!);
-  gnista.deleteMarker(p);
+  e8.gotoChar(e8.markerPosition(p)!);
+  e8.deleteMarker(p);
   if (!found) throw new Error("Can't find any comment");
 }
 
-function commentOrUncommentRegion(beg: number, end: number, arg: gnista.PrefixArg): void {
-  if (commentOnly(beg, end)) uncommentRegion(beg, end, arg === null ? undefined : gnista.prefixNumericValue(arg));
-  else commentRegion(beg, end, arg === null ? 1 : gnista.prefixNumericValue(arg));
+function commentOrUncommentRegion(beg: number, end: number, arg: e8.PrefixArg): void {
+  if (commentOnly(beg, end)) uncommentRegion(beg, end, arg === null ? undefined : e8.prefixNumericValue(arg));
+  else commentRegion(beg, end, arg === null ? 1 : e8.prefixNumericValue(arg));
 }
 
 /** The column for the comment at point, as comment-choose-indent: near comment-column, within the fill column, as the comments around align. */
 function chooseIndent(indent: number): number {
   const fill = num("fill-column", 70);
-  let max = gnista.currentColumn() + (fill - columnAt(eol()));
-  let q = gnista.point();
+  let max = e8.currentColumn() + (fill - columnAt(eol()));
+  let q = e8.point();
   while (q > bol() && " \t".includes(charAt(q - 1))) q--;
   let min = q === bol() ? 0 : num("comment-inline-offset", 1) + columnAt(q);
   if (max < min) max = min;
   let target = indent;
   if (max <= target) target = max;
   // As the comment on the line before is aligned, if that fits.
-  const line = gnista.lineOf(gnista.point());
+  const line = e8.lineOf(e8.point());
   if (line > 0) {
     const other = commentOnLine(line - 1);
     if (other !== undefined) {
@@ -248,12 +248,12 @@ function chooseIndent(indent: number): number {
     }
   }
   // Or those after.
-  for (let l = line + 1; l < gnista.lineCount(); l++) {
+  for (let l = line + 1; l < e8.lineCount(); l++) {
     const other = commentOnLine(l);
     if (other === undefined) break;
-    const omax = columnAt(other) + (fill - columnAt(gnista.lineEnd(l)));
+    const omax = columnAt(other) + (fill - columnAt(e8.lineEnd(l)));
     let o = other;
-    while (o > gnista.lineStart(l) && " \t".includes(charAt(o - 1))) o--;
+    while (o > e8.lineStart(l) && " \t".includes(charAt(o - 1))) o--;
     const omin = columnAt(o) + 1;
     if (omax >= min && omin <= max) {
       min = Math.max(omin, min);
@@ -264,35 +264,35 @@ function chooseIndent(indent: number): number {
 }
 
 const columnAt = (p: number): number =>
-  gnista.saveExcursion(() => {
-    gnista.gotoChar(p);
-    return gnista.currentColumn();
+  e8.saveExcursion(() => {
+    e8.gotoChar(p);
+    return e8.currentColumn();
   });
 
 /** Puts a comment at the end of the line, or indents the one there, as comment-indent. */
 function commentIndent(): void {
   const starter = commentStart();
   const ender = commentEnd();
-  gnista.gotoChar(bol());
-  let begpos = commentSearchForward(gnista.point(), eol());
-  let cpos: gnista.Marker;
+  e8.gotoChar(bol());
+  let begpos = commentSearchForward(e8.point(), eol());
+  let cpos: e8.Marker;
   if (begpos !== undefined) {
-    cpos = gnista.makeMarker();
+    cpos = e8.makeMarker();
   } else {
-    gnista.gotoChar(eol());
-    const p = gnista.point();
-    gnista.indentTo(num("comment-column", 32));
+    e8.gotoChar(eol());
+    const p = e8.point();
+    e8.indentTo(num("comment-column", 32));
     // A space before it, as sh needs and is neater.
-    if (gnista.point() > 0 && !["\n", "\t", " "].includes(charAt(gnista.point() - 1))) gnista.insert(" ");
+    if (e8.point() > 0 && !["\n", "\t", " "].includes(charAt(e8.point() - 1))) e8.insert(" ");
     void p;
-    begpos = gnista.point();
-    gnista.insert(starter);
-    cpos = gnista.makeMarker();
-    gnista.insert(ender);
+    begpos = e8.point();
+    e8.insert(starter);
+    cpos = e8.makeMarker();
+    e8.insert(ender);
   }
-  gnista.gotoChar(begpos);
+  e8.gotoChar(begpos);
   // As comment-indent-default: comment-column for a comment after code, or the code's indentation for one alone on its line.
-  const alone = gnista.currentColumn() === indentation(gnista.lineOf(begpos));
+  const alone = e8.currentColumn() === indentation(e8.lineOf(begpos));
   const starts = commentStartAt(begpos) ?? 1;
   const doubled = starts === 1 && charAt(begpos + 1) === charAt(begpos);
   const tripled = doubled && charAt(begpos + 2) === charAt(begpos);
@@ -304,44 +304,44 @@ function commentIndent(): void {
     // A comment alone of one starter, where comment-region doubles them, goes to comment-column.
     reindent(num("comment-column", 32));
   } else {
-    gnista.call("indent-according-to-mode");
+    e8.call("indent-according-to-mode");
   }
-  gnista.gotoChar(gnista.markerPosition(cpos)!);
-  gnista.deleteMarker(cpos);
+  e8.gotoChar(e8.markerPosition(cpos)!);
+  e8.deleteMarker(cpos);
 }
 
 /** Moves the comment at point to `column`, replacing the whitespace before it. */
 function reindent(column: number): void {
-  if (gnista.currentColumn() === column) return;
-  let q = gnista.point();
+  if (e8.currentColumn() === column) return;
+  let q = e8.point();
   while (q > bol() && " \t".includes(charAt(q - 1))) q--;
-  gnista.deleteRegion(q, gnista.point());
-  gnista.gotoChar(q);
-  gnista.indentTo(column);
+  e8.deleteRegion(q, e8.point());
+  e8.gotoChar(q);
+  e8.indentTo(column);
 }
 
 /** Kills the comment on the line, and the whitespace before it, as comment-kill. */
 function commentKill(count: number): void {
   for (let i = 0; i < Math.max(count, 1); i++) {
-    const line = gnista.lineOf(gnista.point());
+    const line = e8.lineOf(e8.point());
     const start = commentOnLine(line);
     if (start !== undefined) {
       let q = start;
-      while (q > gnista.lineStart(line) && " \t".includes(charAt(q - 1))) q--;
-      gnista.killRegion(q, gnista.lineEnd(line));
-      gnista.call("indent-according-to-mode");
+      while (q > e8.lineStart(line) && " \t".includes(charAt(q - 1))) q--;
+      e8.killRegion(q, e8.lineEnd(line));
+      e8.call("indent-according-to-mode");
     }
-    if (count > 1 && line + 1 < gnista.lineCount()) gnista.gotoChar(gnista.lineStart(line + 1));
+    if (count > 1 && line + 1 < e8.lineCount()) e8.gotoChar(e8.lineStart(line + 1));
   }
 }
 
-const regionUsed = (): boolean => gnista.regionActive() && gnista.mark() !== undefined && gnista.mark() !== gnista.point();
-const region = (): [number, number] => [Math.min(gnista.point(), gnista.mark()!), Math.max(gnista.point(), gnista.mark()!)];
+const regionUsed = (): boolean => e8.regionActive() && e8.mark() !== undefined && e8.mark() !== e8.point();
+const region = (): [number, number] => [Math.min(e8.point(), e8.mark()!), Math.max(e8.point(), e8.mark()!)];
 const barf = (): void => {
-  if (gnista.bufferReadOnly()) throw new Error(`Buffer is read-only: #<buffer ${gnista.bufferName()}>`);
+  if (e8.bufferReadOnly()) throw new Error(`Buffer is read-only: #<buffer ${e8.bufferName()}>`);
 };
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-dwim",
   doc:
     "Comment or uncomment the region if it is active. Otherwise put a comment at the end of the line, or indent the one there, " +
@@ -349,60 +349,60 @@ gnista.defineCommand({
   run: () => {
     barf();
     commentStart();
-    const arg = gnista.prefixArg();
+    const arg = e8.prefixArg();
     if (regionUsed()) return commentOrUncommentRegion(...region(), arg);
-    if (!blank(gnista.lineOf(gnista.point()))) {
+    if (!blank(e8.lineOf(e8.point()))) {
       if (arg !== null) commentKill(typeof arg === "number" ? arg : 1);
       else commentIndent();
       return;
     }
-    const add = num("comment-add", 0) + (arg === null ? 0 : gnista.prefixNumericValue(arg) - 1);
-    gnista.call("indent-according-to-mode");
-    gnista.insert(padRight(commentStart(), add));
+    const add = num("comment-add", 0) + (arg === null ? 0 : e8.prefixNumericValue(arg) - 1);
+    e8.call("indent-according-to-mode");
+    e8.insert(padRight(commentStart(), add));
     const ce = commentEnd();
     if (ce !== "") {
-      const p = gnista.makeMarker();
-      gnista.insert(padLeft(ce));
-      gnista.gotoChar(gnista.markerPosition(p)!);
-      gnista.deleteMarker(p);
+      const p = e8.makeMarker();
+      e8.insert(padLeft(ce));
+      e8.gotoChar(e8.markerPosition(p)!);
+      e8.deleteMarker(p);
     }
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-region",
   doc: "Comment out each line of the region. With a prefix argument N, use N comment starts; negative, uncomment instead.",
   run: () => {
     barf();
-    if (gnista.mark() === undefined) gnista.userError("The mark is not set now, so there is no region");
-    commentRegion(...region(), gnista.prefixNumericValue(gnista.prefixArg()));
+    if (e8.mark() === undefined) e8.userError("The mark is not set now, so there is no region");
+    commentRegion(...region(), e8.prefixNumericValue(e8.prefixArg()));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "uncomment-region",
   doc: "Take the comment starts and ends out of the region's lines. With a prefix argument, take out that many levels.",
   run: () => {
     barf();
     commentStart();
-    if (gnista.mark() === undefined) gnista.userError("The mark is not set now, so there is no region");
-    const arg = gnista.prefixArg();
-    uncommentRegion(...region(), arg === null ? undefined : gnista.prefixNumericValue(arg));
+    if (e8.mark() === undefined) e8.userError("The mark is not set now, so there is no region");
+    const arg = e8.prefixArg();
+    uncommentRegion(...region(), arg === null ? undefined : e8.prefixNumericValue(arg));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-or-uncomment-region",
   doc: "Uncomment the region's lines if they are all comments, else comment them.",
   run: () => {
     barf();
     commentStart();
-    if (gnista.mark() === undefined) gnista.userError("The mark is not set now, so there is no region");
-    commentOrUncommentRegion(...region(), gnista.prefixArg());
+    if (e8.mark() === undefined) e8.userError("The mark is not set now, so there is no region");
+    commentOrUncommentRegion(...region(), e8.prefixArg());
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-line",
   doc:
     "Comment or uncomment the current line, or the region's lines, and move to the next line. " +
@@ -414,27 +414,27 @@ gnista.defineCommand({
       const [a, b] = region();
       return commentOrUncommentRegion(bol(a), eol(b), null);
     }
-    let n = gnista.prefixNumericValue(gnista.prefixArg());
-    if (gnista.lastCommand() === "comment-line-backward" && n >= 0) n = -n;
+    let n = e8.prefixNumericValue(e8.prefixArg());
+    if (e8.lastCommand() === "comment-line-backward" && n >= 0) n = -n;
     const start = bol();
-    const target = gnista.lineOf(gnista.point()) + n - 1;
-    const end = target < 0 ? 0 : target >= gnista.lineCount() ? gnista.bufferSize() : gnista.lineEnd(target);
-    gnista.gotoChar(end);
+    const target = e8.lineOf(e8.point()) + n - 1;
+    const end = target < 0 ? 0 : target >= e8.lineCount() ? e8.bufferSize() : e8.lineEnd(target);
+    e8.gotoChar(end);
     commentOrUncommentRegion(Math.min(start, end), Math.max(start, end), null);
-    const next = gnista.lineOf(gnista.point()) + 1;
-    gnista.gotoChar(next < gnista.lineCount() ? gnista.lineStart(next) : gnista.bufferSize());
-    gnista.gotoChar(gnista.point() + /^[ \t]*/.exec(gnista.lineText(gnista.lineOf(gnista.point())))![0].length);
-    if (n < 0) gnista.setThisCommand("comment-line-backward" as gnista.CommandName);
+    const next = e8.lineOf(e8.point()) + 1;
+    e8.gotoChar(next < e8.lineCount() ? e8.lineStart(next) : e8.bufferSize());
+    e8.gotoChar(e8.point() + /^[ \t]*/.exec(e8.lineText(e8.lineOf(e8.point())))![0].length);
+    if (n < 0) e8.setThisCommand("comment-line-backward" as e8.CommandName);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-line-backward",
   doc: "What comment-line becomes when it goes backward, so typing it again goes on backward.",
-  run: () => gnista.call("comment-line"),
+  run: () => e8.call("comment-line"),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-indent",
   doc: "Put a comment at the end of the line at comment-column, or indent the comment there to it.",
   run: () => {
@@ -443,98 +443,98 @@ gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-kill",
   doc: "Kill the comment on this line. With a prefix argument, on that many lines.",
   run: () => {
     barf();
-    commentKill(gnista.prefixNumericValue(gnista.prefixArg()));
+    commentKill(e8.prefixNumericValue(e8.prefixArg()));
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-set-column",
   doc: "Set comment-column to point's column. With C-u, to that of the comment on the line before; with a negative argument, kill the comment.",
   run: () => {
-    const arg = gnista.prefixArg();
+    const arg = e8.prefixArg();
     if (arg === "-" || (typeof arg === "number" && arg < 0)) return commentKill(1);
     if (Array.isArray(arg)) {
-      const line = gnista.lineOf(gnista.point());
+      const line = e8.lineOf(e8.point());
       for (let l = line - 1; l >= 0; l--) {
         const c = commentOnLine(l);
         if (c !== undefined) {
           const col = columnAt(c);
-          gnista.setVariable("comment-column", col);
-          gnista.message(`Comment column set to ${col}`);
+          e8.setVariable("comment-column", col);
+          e8.message(`Comment column set to ${col}`);
           return;
         }
       }
       return;
     }
-    gnista.setVariable("comment-column", gnista.currentColumn());
-    gnista.message(`Comment column set to ${gnista.currentColumn()}`);
+    e8.setVariable("comment-column", e8.currentColumn());
+    e8.message(`Comment column set to ${e8.currentColumn()}`);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "comment-indent-new-line",
   doc: "Break the line, continuing the comment point is in on the new one, as M-j does; outside a comment, a newline that indents.",
   run: () => {
     barf();
-    const st = gnista.syntaxPpss();
+    const st = e8.syntaxPpss();
     const cs = str("comment-start");
     if (st.inComment === null || cs === undefined) {
-      gnista.call("default-indent-new-line" as gnista.CommandName);
+      e8.call("default-indent-new-line" as e8.CommandName);
       return;
     }
     const start = st.start!;
     // The starter as written on this line: its characters, the last one's
     // repeats, as ;; or ///, and the padding after, as comment-start-skip matches.
     let q = start + (commentStartAt(start) ?? 1);
-    while (q < gnista.point() && charAt(q) === charAt(q - 1)) q++;
+    while (q < e8.point() && charAt(q) === charAt(q - 1)) q++;
     let pad = q;
-    while (pad < gnista.point() && " \t".includes(charAt(pad))) pad++;
-    const starter = gnista.bufferText(start, pad);
+    while (pad < e8.point() && " \t".includes(charAt(pad))) pad++;
+    const starter = e8.bufferText(start, pad);
     const column = columnAt(start);
     // The whitespace either side goes.
-    let a = gnista.point();
+    let a = e8.point();
     let b = a;
     while (a > 0 && " \t".includes(charAt(a - 1))) a--;
-    while (b < gnista.bufferSize() && " \t".includes(charAt(b))) b++;
-    gnista.deleteRegion(a, b);
-    gnista.gotoChar(a);
+    while (b < e8.bufferSize() && " \t".includes(charAt(b))) b++;
+    e8.deleteRegion(a, b);
+    e8.gotoChar(a);
     const ce = commentEnd();
     if (ce !== "") {
       // A comment with an end is continued with comment-continue's start.
-      gnista.insertAndInherit("\n");
-      gnista.indentTo(column);
-      gnista.insert(starter.replace(/^\S/, " "));
+      e8.insertAndInherit("\n");
+      e8.indentTo(column);
+      e8.insert(starter.replace(/^\S/, " "));
       return;
     }
-    gnista.insertAndInherit("\n");
-    gnista.indentTo(column);
-    gnista.insert(starter);
+    e8.insertAndInherit("\n");
+    e8.indentTo(column);
+    e8.insert(starter);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "default-indent-new-line",
   doc: "Break the line and indent the new one, continuing a comment point is in, as comment-indent-new-line does.",
   run: () => {
-    if (gnista.syntaxPpss().inComment !== null && str("comment-start") !== undefined) {
-      gnista.call("comment-indent-new-line");
+    if (e8.syntaxPpss().inComment !== null && str("comment-start") !== undefined) {
+      e8.call("comment-indent-new-line");
       return;
     }
-    gnista.insertAndInherit("\n");
-    let a = gnista.point() - 1;
+    e8.insertAndInherit("\n");
+    let a = e8.point() - 1;
     while (a > 0 && " \t".includes(charAt(a - 1))) a--;
-    gnista.deleteRegion(a, gnista.point() - 1);
-    gnista.call("indent-according-to-mode");
+    e8.deleteRegion(a, e8.point() - 1);
+    e8.call("indent-according-to-mode");
   },
 });
 
-gnista.bindKey("M-;", "comment-dwim");
-gnista.bindKey("C-x C-;", "comment-line");
-gnista.bindKey("C-x ;", "comment-set-column");
-gnista.bindKey("M-j", "default-indent-new-line");
-gnista.bindKey("C-M-j", "default-indent-new-line");
+e8.bindKey("M-;", "comment-dwim");
+e8.bindKey("C-x C-;", "comment-line");
+e8.bindKey("C-x ;", "comment-set-column");
+e8.bindKey("M-j", "default-indent-new-line");
+e8.bindKey("C-M-j", "default-indent-new-line");

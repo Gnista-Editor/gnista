@@ -23,14 +23,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 13,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 11,
@@ -59,14 +59,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 15,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 9,
@@ -95,14 +95,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 11,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 13,
@@ -131,7 +131,7 @@
       "error": "Cannot enlarge selected window vertically",
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -160,14 +160,14 @@
       "error": "Cannot enlarge selected window vertically",
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -196,14 +196,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 10,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 14,
@@ -232,14 +232,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 41,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 39,
           "height": 24,
@@ -268,14 +268,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 35,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 45,
           "height": 24,
@@ -304,14 +304,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 39,
           "height": 24,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 41,
           "height": 24,
@@ -340,21 +340,21 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 8,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 8,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 8,
@@ -383,14 +383,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -419,21 +419,21 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 13,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 11,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 24,
@@ -462,7 +462,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -498,7 +498,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 4,
           "width": 80,
           "height": 12,
@@ -534,7 +534,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -570,7 +570,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -599,14 +599,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -635,14 +635,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 12,
@@ -681,7 +681,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -720,14 +720,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 6,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 6,
@@ -751,7 +751,7 @@
         "modes": [],
         "call": [
           "find-file-other-window",
-          "gnista-oracle-new.txt"
+          "e8-oracle-new.txt"
         ],
         "platform": null,
         "windows": true
@@ -766,14 +766,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": false
         },
         {
-          "buffer": "gnista-oracle-new.txt",
+          "buffer": "e8-oracle-new.txt",
           "point": 0,
           "width": 80,
           "height": 12,
@@ -805,7 +805,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -834,14 +834,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 63,
           "width": 80,
           "height": 12,
@@ -858,7 +858,7 @@
         "modes": [],
         "call": [
           "display-buffer",
-          "*gnista-oracle*"
+          "*e8-oracle*"
         ],
         "platform": null,
         "windows": true
@@ -873,7 +873,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -902,7 +902,7 @@
       "error": "Size of new window too small",
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,
@@ -931,14 +931,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 4,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 76,
           "height": 24,
@@ -967,14 +967,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 10,
           "width": 80,
           "height": 4,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 10,
           "width": 80,
           "height": 20,
@@ -1003,14 +1003,14 @@
       "error": "Cannot shrink selected window horizontally",
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 4,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 76,
           "height": 24,
@@ -1039,7 +1039,7 @@
       "error": "End of buffer",
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 11,
           "width": 80,
           "height": 24,
@@ -1068,14 +1068,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 2,
           "width": 40,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 1,
           "width": 40,
           "height": 24,
@@ -1104,14 +1104,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 19,
           "width": 40,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 13,
           "width": 40,
           "height": 24,
@@ -1140,28 +1140,28 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 10,
           "height": 24,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 10,
           "height": 24,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 20,
           "height": 24,
           "selected": false
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 40,
           "height": 24,
@@ -1192,14 +1192,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 7,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 7,
           "width": 80,
           "height": 12,

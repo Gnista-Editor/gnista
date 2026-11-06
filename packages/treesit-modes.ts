@@ -2,7 +2,7 @@
 // rust-ts-mode.el, js.el, json-ts-mode.el, python.el, go-ts-mode.el and
 // sh-script.el's bash-ts-mode.
 // Each is built on prog-mode and asks for its grammar with
-// treesit-parser-create. Go's grammar does not ship with Gnista: it is
+// treesit-parser-create. Go's grammar does not ship with E8: it is
 // loaded from libtree-sitter-go.dylib, as Emacs loads its grammars, and
 // highlighted by the mode's own font-lock rules.
 
@@ -121,33 +121,33 @@ const modes: ModeSpec[] = [
 
 // --- Python's Imenu, as python.el's python-imenu-treesit-create-index ------
 
-gnista.defun("python--treesit-defun-name", (node: gnista.TreesitNode) => {
-  const type = gnista.treesitNodeType(node);
+e8.defun("python--treesit-defun-name", (node: e8.TreesitNode) => {
+  const type = e8.treesitNodeType(node);
   if (type !== "function_definition" && type !== "class_definition") return undefined;
-  return nodeText(gnista.treesitNodeChildByFieldName(node, "name"), true) as string | undefined;
+  return nodeText(e8.treesitNodeChildByFieldName(node, "name"), true) as string | undefined;
 });
 
 /** How an item is labelled, as python-imenu-format-item-label: "name (def)". */
 const pythonLabel = (type: string, name: string) => `${name} (${type})`;
 
-type PythonSparse = [gnista.TreesitNode | undefined, PythonSparse[]];
+type PythonSparse = [e8.TreesitNode | undefined, PythonSparse[]];
 type PythonEntry = [string, number | PythonEntry[]];
 
 /** The index from a sparse tree of definitions, as python--imenu-treesit-create-index-1. */
 function pythonImenu1([node, children]: PythonSparse): PythonEntry[] {
   const subtrees = children.flatMap(pythonImenu1);
   if (node === undefined) return subtrees;
-  const type = gnista.treesitNodeType(node) === "class_definition" ? "class" : "def";
+  const type = e8.treesitNodeType(node) === "class_definition" ? "class" : "def";
   const name = defunName(node) ?? "Anonymous";
-  const start = gnista.treesitNodeStart(node)!;
+  const start = e8.treesitNodeStart(node)!;
   if (subtrees.length === 0) return [[pythonLabel(type, name), start]];
   // As python-imenu-format-parent-item-label and -jump-label.
   return [[`${pythonLabel(type, name)}...`, [[type === "class" ? "*class definition*" : "*function definition*", start], ...subtrees]]];
 }
 
-gnista.defun("python-imenu-treesit-create-index", () => {
+e8.defun("python-imenu-treesit-create-index", () => {
   const tree = induceSparseTree(bufferRootNode("python"), "^\\(?:function\\|class\\)_definition$", 1000) as PythonSparse;
-  return pythonImenu1(tree) as unknown as gnista.Value;
+  return pythonImenu1(tree) as unknown as e8.Value;
 });
 
 // --- Python's blocks for hideshow, as python.el's python-nav functions -------
@@ -158,128 +158,128 @@ const PY_BLOCK_START =
 /** python-nav-beginning-of-block-regexp: a line that starts a block. */
 const PY_BLOCK_START_LINE = `^[[:space:]]*${PY_BLOCK_START}`;
 
-const pyInStringOrComment = (pos = gnista.point()): boolean => gnista.syntaxPpss(pos).start !== null;
-const pyLineText = (pos = gnista.point()): string => gnista.bufferText(gnista.lineBeginningPosition(pos), gnista.lineEndPosition(pos));
+const pyInStringOrComment = (pos = e8.point()): boolean => e8.syntaxPpss(pos).start !== null;
+const pyLineText = (pos = e8.point()): string => e8.bufferText(e8.lineBeginningPosition(pos), e8.lineEndPosition(pos));
 const pyCommentOrEmptyLine = (): boolean => /^\s*(#.*)?$/.test(pyLineText());
 
 /** Goes to the start of the statement point is in, as python-nav-beginning-of-statement. */
 function pyBeginningOfStatement(): void {
   for (;;) {
-    gnista.gotoChar(gnista.lineBeginningPosition());
-    if (gnista.point() === gnista.pointMin()) break;
-    const ppss = gnista.syntaxPpss();
+    e8.gotoChar(e8.lineBeginningPosition());
+    if (e8.point() === e8.pointMin()) break;
+    const ppss = e8.syntaxPpss();
     const context = ppss.openParens.length > 0 ? ppss.openParens[0] : ppss.inString !== null ? ppss.start : null;
-    if (context !== null) gnista.gotoChar(context);
-    else if (pyLineText(gnista.point() - 1).endsWith("\\")) gnista.gotoChar(gnista.point() - 1);
+    if (context !== null) e8.gotoChar(context);
+    else if (pyLineText(e8.point() - 1).endsWith("\\")) e8.gotoChar(e8.point() - 1);
     else break;
   }
-  gnista.gotoChar(gnista.lineBeginningPosition());
-  gnista.skipCharsForward(" \t");
+  e8.gotoChar(e8.lineBeginningPosition());
+  e8.skipCharsForward(" \t");
 }
 
 /** Goes to the end of the statement point is in, as python-nav-end-of-statement: past brackets, strings and backslashes. */
 function pyEndOfStatement(): void {
   for (;;) {
-    gnista.gotoChar(gnista.lineEndPosition());
-    if (gnista.point() >= gnista.pointMax()) return;
-    const ppss = gnista.syntaxPpss();
-    if (ppss.depth > 0 || ppss.inString !== null || pyLineText().endsWith("\\")) gnista.gotoChar(gnista.point() + 1);
+    e8.gotoChar(e8.lineEndPosition());
+    if (e8.point() >= e8.pointMax()) return;
+    const ppss = e8.syntaxPpss();
+    if (ppss.depth > 0 || ppss.inString !== null || pyLineText().endsWith("\\")) e8.gotoChar(e8.point() + 1);
     else return;
   }
 }
 
 /** Goes to the next or previous line that starts a block, as python-nav-forward-block: whether it did. */
 function pyForwardBlock(arg: number): boolean {
-  const start = gnista.point();
+  const start = e8.point();
   if (arg > 0) {
     pyEndOfStatement();
-    while (gnista.reSearchForward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
+    while (e8.reSearchForward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
   } else {
     pyBeginningOfStatement();
-    while (gnista.reSearchBackward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
+    while (e8.reSearchBackward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
   }
   pyBeginningOfStatement();
-  if ((arg > 0 && gnista.point() < start) || !gnista.lookingAt(PY_BLOCK_START)) {
-    gnista.gotoChar(start);
+  if ((arg > 0 && e8.point() < start) || !e8.lookingAt(PY_BLOCK_START)) {
+    e8.gotoChar(start);
     return false;
   }
-  return gnista.point() !== start;
+  return e8.point() !== start;
 }
 
 /** Goes to the start of the block point is in, as python-nav-beginning-of-block: where, or undefined. */
 function pyBeginningOfBlock(): number | undefined {
-  const start = gnista.point();
-  while (gnista.point() > gnista.pointMin()) {
+  const start = e8.point();
+  while (e8.point() > e8.pointMin()) {
     pyBeginningOfStatement();
     if (!pyCommentOrEmptyLine()) break;
-    gnista.gotoChar(gnista.lineBeginningPosition() - 1);
+    e8.gotoChar(e8.lineBeginningPosition() - 1);
   }
   pyBeginningOfStatement();
-  if (gnista.lookingAt(PY_BLOCK_START)) return gnista.point();
-  const indent = gnista.currentIndentation() - Number(gnista.variable("python-indent-offset") ?? 4);
-  while (pyForwardBlock(-1) && gnista.currentIndentation() > indent);
-  if (gnista.lookingAt(PY_BLOCK_START) && gnista.currentIndentation() === indent) return gnista.point();
-  gnista.gotoChar(start);
+  if (e8.lookingAt(PY_BLOCK_START)) return e8.point();
+  const indent = e8.currentIndentation() - Number(e8.variable("python-indent-offset") ?? 4);
+  while (pyForwardBlock(-1) && e8.currentIndentation() > indent);
+  if (e8.lookingAt(PY_BLOCK_START) && e8.currentIndentation() === indent) return e8.point();
+  e8.gotoChar(start);
   return undefined;
 }
 
 /** Goes to the end of the block point is in, as python-nav-end-of-block. */
 function pyEndOfBlock(): number | undefined {
   if (pyBeginningOfBlock() === undefined) return undefined;
-  const indent = gnista.currentIndentation();
+  const indent = e8.currentIndentation();
   pyEndOfStatement();
   for (;;) {
-    const eol = gnista.lineEndPosition();
-    if (eol >= gnista.pointMax()) break;
-    gnista.gotoChar(eol + 1);
-    if (gnista.point() >= gnista.pointMax()) break;
-    if (!pyCommentOrEmptyLine() && gnista.currentIndentation() > indent) pyEndOfStatement();
+    const eol = e8.lineEndPosition();
+    if (eol >= e8.pointMax()) break;
+    e8.gotoChar(eol + 1);
+    if (e8.point() >= e8.pointMax()) break;
+    if (!pyCommentOrEmptyLine() && e8.currentIndentation() > indent) pyEndOfStatement();
     else if (!pyCommentOrEmptyLine()) break;
   }
   // Back over the comments and blank lines after it, as python-util-forward-comment.
-  gnista.forwardComment(-gnista.bufferSize());
-  return gnista.point();
+  e8.forwardComment(-e8.bufferSize());
+  return e8.point();
 }
 
 /** Whether point is at the start of a block, as python-info-looking-at-beginning-of-block. */
 function pyLookingAtBeginningOfBlock(): boolean {
-  const pos = gnista.point();
-  return gnista.saveExcursion(() => {
+  const pos = e8.point();
+  return e8.saveExcursion(() => {
     pyBeginningOfStatement();
-    gnista.gotoChar(gnista.lineBeginningPosition());
-    return gnista.point() <= pos && pos <= gnista.point() + gnista.currentIndentation() && gnista.lookingAt(PY_BLOCK_START_LINE);
+    e8.gotoChar(e8.lineBeginningPosition());
+    return e8.point() <= pos && pos <= e8.point() + e8.currentIndentation() && e8.lookingAt(PY_BLOCK_START_LINE);
   });
 }
 
-gnista.defun("python-nav-beginning-of-block", () => pyBeginningOfBlock());
-gnista.defun("python-info-looking-at-beginning-of-block", () => pyLookingAtBeginningOfBlock());
-gnista.defun("python-hideshow-forward-sexp-function", () => {
+e8.defun("python-nav-beginning-of-block", () => pyBeginningOfBlock());
+e8.defun("python-info-looking-at-beginning-of-block", () => pyLookingAtBeginningOfBlock());
+e8.defun("python-hideshow-forward-sexp-function", () => {
   pyEndOfBlock();
-  gnista.gotoChar(gnista.lineEndPosition());
+  e8.gotoChar(e8.lineEndPosition());
 });
-gnista.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, comments: gnista.Value) => {
-  const nextBlock = gnista.saveExcursion(() => {
-    if (pyLookingAtBeginningOfBlock() && gnista.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) return gnista.point();
-    if (pyForwardBlock(1) && gnista.point() < maxp && gnista.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) {
-      return gnista.point();
+e8.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, comments: e8.Value) => {
+  const nextBlock = e8.saveExcursion(() => {
+    if (pyLookingAtBeginningOfBlock() && e8.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) return e8.point();
+    if (pyForwardBlock(1) && e8.point() < maxp && e8.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) {
+      return e8.point();
     }
     return maxp + 1;
   });
   const nextComment =
     comments !== null && comments !== false && comments !== undefined
-      ? gnista.saveExcursion(() => {
-          while (gnista.reSearchForward("#", { bound: maxp, noerror: true }) != null) if (gnista.syntaxPpss().inComment !== null) return gnista.point();
+      ? e8.saveExcursion(() => {
+          while (e8.reSearchForward("#", { bound: maxp, noerror: true }) != null) if (e8.syntaxPpss().inComment !== null) return e8.point();
           return maxp + 1;
         })
       : maxp + 1;
   const next = Math.min(nextBlock, nextComment);
   if (next > maxp) return false;
-  gnista.gotoChar(next);
-  return gnista.saveExcursion(() => gnista.lookingAt(regexp, gnista.lineBeginningPosition()));
+  e8.gotoChar(next);
+  return e8.saveExcursion(() => e8.lookingAt(regexp, e8.lineBeginningPosition()));
 });
 
 {
-  const alist = gnista.variable("hs-special-modes-alist");
+  const alist = e8.variable("hs-special-modes-alist");
   const entries = (mode: string) => [
     mode,
     PY_BLOCK_START_LINE,
@@ -292,7 +292,7 @@ gnista.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, c
     "python-hideshow-find-next-block",
     "python-info-looking-at-beginning-of-block",
   ];
-  if (Array.isArray(alist)) gnista.setDefault("hs-special-modes-alist", [entries("python-ts-mode"), entries("python-mode"), ...alist]);
+  if (Array.isArray(alist)) e8.setDefault("hs-special-modes-alist", [entries("python-ts-mode"), entries("python-mode"), ...alist]);
 }
 
 // --- Indentation -------------------------------------------------------------
@@ -305,30 +305,30 @@ for (const [name, value, doc] of [
   ["python-indent-offset", 4, "How far Python indents each block."],
   ["sh-basic-offset", 4, "How far shell scripts indent each level."],
 ] as const) {
-  gnista.defineVariable({ name, value, doc });
+  e8.defineVariable({ name, value, doc });
 }
 
-const charAt = (p: number): string => gnista.charAfter(p) ?? "";
+const charAt = (p: number): string => e8.charAfter(p) ?? "";
 
-const indentationOf = (line: number): number => gnista.currentIndentation(gnista.lineStart(line));
+const indentationOf = (line: number): number => e8.currentIndentation(e8.lineStart(line));
 
 /** Indents point's line to `column`, point kept with the text after the indentation, as js-indent-line does. */
 function indentKeepingPoint(column: number): void {
-  const offset = gnista.point() - (gnista.lineBeginningPosition() + /^[ \t]*/.exec(gnista.lineText(gnista.lineOf(gnista.point())))![0].length);
-  gnista.indentLineTo(column);
-  if (offset > 0) gnista.gotoChar(gnista.point() + offset);
+  const offset = e8.point() - (e8.lineBeginningPosition() + /^[ \t]*/.exec(e8.lineText(e8.lineOf(e8.point())))![0].length);
+  e8.indentLineTo(column);
+  if (offset > 0) e8.gotoChar(e8.point() + offset);
 }
 
 const columnOf = (p: number): number =>
-  gnista.saveExcursion(() => {
-    gnista.gotoChar(p);
-    return gnista.currentColumn();
+  e8.saveExcursion(() => {
+    e8.gotoChar(p);
+    return e8.currentColumn();
   });
 
 const offsetFor = (): number => {
-  const mode = String(gnista.variable("major-mode"));
+  const mode = String(e8.variable("major-mode"));
   const name = mode === "rust-ts-mode" ? "rust-ts-mode-indent-offset" : mode === "json-ts-mode" ? "json-ts-mode-indent-offset" : "js-indent-level";
-  return Number(gnista.variable(name) ?? 4);
+  return Number(e8.variable(name) ?? 4);
 };
 
 /**
@@ -338,39 +338,39 @@ const offsetFor = (): number => {
  * same for its closing paren; with something after it, under that.
  */
 function bracedIndentation(line: number): number | undefined {
-  const start = gnista.lineStart(line);
-  const st = gnista.syntaxPpss(start);
+  const start = e8.lineStart(line);
+  const st = e8.syntaxPpss(start);
   // Strings and comments keep their indentation.
   if (st.inString !== null || st.inComment !== null) return undefined;
-  const text = gnista.lineText(line);
+  const text = e8.lineText(line);
   const first = start + /^[ \t]*/.exec(text)![0].length;
   const open = st.innermostStart;
   if (open === null) return 0;
-  const closing = gnista.charSyntax(charAt(first)) === ")";
+  const closing = e8.charSyntax(charAt(first)) === ")";
   // What follows the open paren on its line, if anything but a comment.
   let q = open + 1;
-  const lineEnd = gnista.lineEnd(gnista.lineOf(open));
+  const lineEnd = e8.lineEnd(e8.lineOf(open));
   while (q < lineEnd && " \t".includes(charAt(q))) q++;
-  const rest = gnista.bufferText(q, lineEnd);
+  const rest = e8.bufferText(q, lineEnd);
   if (q >= lineEnd || rest.startsWith("//") || rest.startsWith("/*")) {
     // The line the list starts on, from a condition's open paren if it closes just before.
     let p = open;
     while (p > 0 && " \t".includes(charAt(p - 1))) p--;
     if (charAt(p - 1) === ")") {
-      const back = gnista.scanLists(p, -1, 0);
+      const back = e8.scanLists(p, -1, 0);
       if (back !== null) p = back;
     }
-    const base = indentationOf(gnista.lineOf(p));
+    const base = indentationOf(e8.lineOf(p));
     return closing ? base : base + offsetFor();
   }
   return closing ? columnOf(open) : columnOf(q);
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "js-indent-line",
   doc: "Indent the current line of code by the braces and parens it is in, as js-mode does, by js-indent-level, or the mode's own offset.",
   run: () => {
-    const line = gnista.lineOf(gnista.point());
+    const line = e8.lineOf(e8.point());
     const column = bracedIndentation(line);
     if (column !== undefined) indentKeepingPoint(column);
   },
@@ -378,39 +378,39 @@ gnista.defineCommand({
 
 /** The column a line of Python goes to, as python-indent-line-function does on its first try. */
 function pythonIndentation(line: number): number | undefined {
-  const start = gnista.lineStart(line);
-  const st = gnista.syntaxPpss(start);
+  const start = e8.lineStart(line);
+  const st = e8.syntaxPpss(start);
   if (st.inString !== null) return undefined;
-  const offset = Number(gnista.variable("python-indent-offset") ?? 4);
-  const text = gnista.lineText(line).trim();
+  const offset = Number(e8.variable("python-indent-offset") ?? 4);
+  const text = e8.lineText(line).trim();
   // In parens: under what follows the open paren, or a block deeper than its line.
   if (st.innermostStart !== null) {
     const open = st.innermostStart;
     let q = open + 1;
-    const lineEnd = gnista.lineEnd(gnista.lineOf(open));
+    const lineEnd = e8.lineEnd(e8.lineOf(open));
     while (q < lineEnd && " \t".includes(charAt(q))) q++;
-    const closing = gnista.charSyntax(text[0] ?? "") === ")";
-    if (q >= lineEnd || charAt(q) === "#") return indentationOf(gnista.lineOf(open)) + (closing ? 0 : offset);
+    const closing = e8.charSyntax(text[0] ?? "") === ")";
+    if (q >= lineEnd || charAt(q) === "#") return indentationOf(e8.lineOf(open)) + (closing ? 0 : offset);
     return closing ? columnOf(open) : columnOf(q);
   }
   // The code line before, not blank or a comment.
   let prev = line - 1;
-  while (prev >= 0 && /^\s*(#.*)?$/.test(gnista.lineText(prev))) prev--;
+  while (prev >= 0 && /^\s*(#.*)?$/.test(e8.lineText(prev))) prev--;
   if (prev < 0) return 0;
   // A line ending a list goes from where the list started.
   let from = prev;
-  const prevSt = gnista.syntaxPpss(gnista.lineStart(prev));
-  if (prevSt.openParens.length > 0) from = gnista.lineOf(prevSt.openParens[0]);
-  const prevText = gnista.lineText(prev).replace(/\s*#.*$/, "").trimEnd();
+  const prevSt = e8.syntaxPpss(e8.lineStart(prev));
+  if (prevSt.openParens.length > 0) from = e8.lineOf(prevSt.openParens[0]);
+  const prevText = e8.lineText(prev).replace(/\s*#.*$/, "").trimEnd();
   let column = indentationOf(from);
   if (prevText.endsWith(":")) column += offset;
-  else if (/^\s*(return|pass|break|continue|raise)\b/.test(gnista.lineText(prev))) column = Math.max(0, column - offset);
+  else if (/^\s*(return|pass|break|continue|raise)\b/.test(e8.lineText(prev))) column = Math.max(0, column - offset);
   // A block's later parts go back to the block they belong to.
   const dedenter = /^(else|elif|except|finally)\b/.exec(text);
   if (dedenter !== null) {
     const opener = { else: /^(if|elif|for|while|try|except)\b/, elif: /^(if|elif)\b/, except: /^(try|except)\b/, finally: /^(try|except|else)\b/ }[dedenter[1] as "else"];
     for (let l = line - 1; l >= 0; l--) {
-      const t = gnista.lineText(l).trim();
+      const t = e8.lineText(l).trim();
       if (t === "" || t.startsWith("#")) continue;
       if (indentationOf(l) < column && opener.test(t)) return indentationOf(l);
       if (indentationOf(l) < column - offset) break;
@@ -420,11 +420,11 @@ function pythonIndentation(line: number): number | undefined {
   return column;
 }
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "python-indent-line-function",
   doc: "Indent the current line of Python as its block says: deeper after a line ending in a colon, back after return, and else, elif, except and finally with their block.",
   run: () => {
-    const column = pythonIndentation(gnista.lineOf(gnista.point()));
+    const column = pythonIndentation(e8.lineOf(e8.point()));
     if (column !== undefined) indentKeepingPoint(column);
   },
 });
@@ -432,12 +432,12 @@ gnista.defineCommand({
 // --- Tree-sitter indentation and navigation, as each mode's file has them ----------
 
 /** Whether a "*" starts the line, as c-ts-common-looking-at-star. */
-const lookingAtStar = (_n: unknown, _p: unknown, bol: number): boolean => gnista.charAfter(bol) === "*";
+const lookingAtStar = (_n: unknown, _p: unknown, bol: number): boolean => e8.charAfter(bol) === "*";
 
 /** Just after the "/*" a block comment starts with, as c-ts-common-comment-start-after-first-star. */
-const commentStartAfterFirstStar = (_n: unknown, parent: gnista.TreesitNode): number => {
-  const start = gnista.treesitNodeStart(parent)!;
-  return gnista.bufferText(start, start + 2) === "/*" ? start + 2 : start;
+const commentStartAfterFirstStar = (_n: unknown, parent: e8.TreesitNode): number => {
+  const start = e8.treesitNodeStart(parent)!;
+  return e8.bufferText(start, start + 2) === "/*" ? start + 2 : start;
 };
 
 const ruleFor = (type: string, offset: string) => [["parent-is", type], "parent-bol", offset];
@@ -468,8 +468,8 @@ const JSON_RULES = [
 
 /** JSX's rules for older or newer grammars, as js-jsx--treesit-indent-compatibility-bb1f97b chooses them. */
 function jsxCompatibility(): unknown[] {
-  const fragment = gnista.conditionCase(
-    () => (gnista.treesitQueryCompile("javascript", "(jsx_fragment) @capture"), true),
+  const fragment = e8.conditionCase(
+    () => (e8.treesitQueryCompile("javascript", "(jsx_fragment) @capture"), true),
     { error: () => false },
   );
   return fragment
@@ -514,36 +514,36 @@ const jsRules = (): unknown[] => {
   ];
 };
 
-const fieldText = (node: gnista.TreesitNode, field: string): string =>
-  String(nodeText(gnista.treesitNodeChildByFieldName(node, field), true) ?? "");
+const fieldText = (node: e8.TreesitNode, field: string): string =>
+  String(nodeText(e8.treesitNodeChildByFieldName(node, field), true) ?? "");
 
 /** rust-ts-mode--defun-name. */
-const rustDefunName = (node: gnista.TreesitNode): string | null => {
-  const type = gnista.treesitNodeType(node);
+const rustDefunName = (node: e8.TreesitNode): string | null => {
+  const type = e8.treesitNodeType(node);
   if (type === "impl_item") {
-    const trait = gnista.treesitNodeChildByFieldName(node, "trait");
+    const trait = e8.treesitNodeChildByFieldName(node, "trait");
     return `${trait ? `${nodeText(trait, true)} for ` : ""}${fieldText(node, "type")}`;
   }
   return ["enum_item", "function_item", "mod_item", "struct_item", "type_item"].includes(type ?? "") ? fieldText(node, "name") : null;
 };
 
 /** js--treesit-defun-name. */
-const jsDefunName = (node: gnista.TreesitNode): string | null => {
-  const type = gnista.treesitNodeType(node);
+const jsDefunName = (node: e8.TreesitNode): string | null => {
+  const type = e8.treesitNodeType(node);
   const named = type === "lexical_declaration" ? searchSubtree(node, "variable_declarator", false, false, 1) : ["function_declaration", "method_definition", "class_declaration"].includes(type ?? "") ? node : undefined;
   return named ? fieldText(named, "name") : null;
 };
 
 /** json-ts-mode--defun-name. */
-const jsonDefunName = (node: gnista.TreesitNode): string | null =>
-  ["pair", "object"].includes(gnista.treesitNodeType(node) ?? "") ? fieldText(node, "key").replace(/^"/, "").replace(/"$/, "") : null;
+const jsonDefunName = (node: e8.TreesitNode): string | null =>
+  ["pair", "object"].includes(e8.treesitNodeType(node) ?? "") ? fieldText(node, "key").replace(/^"/, "").replace(/"$/, "") : null;
 
 /** Any of these names as a whole symbol, as js--regexp-opt-symbol makes a regexp of them. */
 const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map(regexpQuote).join("\\|")}\\)\\_>`;
 
 /** js--treesit-valid-imenu-entry, as Emacs has it. */
-const jsValidImenuEntry = (node: gnista.TreesitNode): unknown =>
-  gnista.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
+const jsValidImenuEntry = (node: e8.TreesitNode): unknown =>
+  e8.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
 
 // --- Go, as go-ts-mode.el ------------------------------------------------------
 
@@ -584,7 +584,7 @@ const GO_BUILTINS = [
 
 /** Whether the grammar has a node type, as go-ts-mode--iota-query-supported-p asks. */
 const goHas = (type: string): boolean =>
-  gnista.conditionCase(() => (gnista.treesitQueryCompile("go", `(${type}) @cap`), true), { error: () => false });
+  e8.conditionCase(() => (e8.treesitQueryCompile("go", `(${type}) @cap`), true), { error: () => false });
 
 const quoted = (names: string[]) => names.map((n) => JSON.stringify(n)).join(" ");
 
@@ -635,19 +635,19 @@ const GO_FEATURES = [
 ];
 
 /** go-ts-mode--defun-name: a method's name with its receiver's type, as (T).name. */
-function goDefunName(node: gnista.TreesitNode): string | null {
-  switch (gnista.treesitNodeType(node)) {
+function goDefunName(node: e8.TreesitNode): string | null {
+  switch (e8.treesitNodeType(node)) {
     case "function_declaration":
-      return (nodeText(gnista.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null;
+      return (nodeText(e8.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null;
     case "method_declaration": {
-      const field = gnista.treesitNodeChildByFieldName(node, "receiver");
+      const field = e8.treesitNodeChildByFieldName(node, "receiver");
       const receiver = field && searchSubtree(field, "type_identifier");
-      const method = nodeText(gnista.treesitNodeChildByFieldName(node, "name"));
+      const method = nodeText(e8.treesitNodeChildByFieldName(node, "name"));
       return `(${nodeText(receiver) ?? ""}).${method ?? ""}`;
     }
     case "type_declaration": {
-      const spec = gnista.treesitNodeChild(node, 0, true);
-      return (nodeText(spec && gnista.treesitNodeChildByFieldName(spec, "name"), true) as string | undefined) ?? null;
+      const spec = e8.treesitNodeChild(node, 0, true);
+      return (nodeText(spec && e8.treesitNodeChildByFieldName(spec, "name"), true) as string | undefined) ?? null;
     }
     default:
       return null;
@@ -655,11 +655,11 @@ function goDefunName(node: gnista.TreesitNode): string | null {
 }
 
 /** Whether a type declaration is of a kind, as go-ts-mode--struct-node-p and its fellows ask. */
-const goTypeOf = (node: gnista.TreesitNode, type: string, depth: number): boolean =>
-  gnista.treesitNodeType(node) === "type_declaration" && searchSubtree(node, type, false, false, depth) !== undefined;
-const goStruct = (node: gnista.TreesitNode) => goTypeOf(node, "struct_type", 2);
-const goInterface = (node: gnista.TreesitNode) => goTypeOf(node, "interface_type", 2);
-const goAlias = (node: gnista.TreesitNode) => goTypeOf(node, "type_alias", 1);
+const goTypeOf = (node: e8.TreesitNode, type: string, depth: number): boolean =>
+  e8.treesitNodeType(node) === "type_declaration" && searchSubtree(node, type, false, false, depth) !== undefined;
+const goStruct = (node: e8.TreesitNode) => goTypeOf(node, "struct_type", 2);
+const goInterface = (node: e8.TreesitNode) => goTypeOf(node, "interface_type", 2);
+const goAlias = (node: e8.TreesitNode) => goTypeOf(node, "type_alias", 1);
 
 // --- Bash, as sh-script.el's bash-ts-mode ------------------------------------
 
@@ -702,8 +702,8 @@ const BASH_DECLARATIONS = ["declare", "typeset", "export", "readonly", "local"];
 
 const anyOf = (words: string[]) => `^(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`;
 
-gnista.defineFace({ name: "sh-heredoc", doc: "A here-document.", light: { foreground: "tan1" }, dark: { foreground: "yellow1", bold: true } });
-gnista.defineFace({ name: "sh-quoted-exec", doc: "A command substitution, as $(date).", light: { foreground: "magenta" }, dark: { foreground: "salmon" } });
+e8.defineFace({ name: "sh-heredoc", doc: "A here-document.", light: { foreground: "tan1" }, dark: { foreground: "yellow1", bold: true } });
+e8.defineFace({ name: "sh-quoted-exec", doc: "A command substitution, as $(date).", light: { foreground: "magenta" }, dark: { foreground: "salmon" } });
 
 /** sh-mode--treesit-settings, its queries in tree-sitter's syntax. */
 function bashFontLockSettings() {
@@ -746,7 +746,7 @@ const TREESIT_SETTINGS: Record<
   {
     rules: () => unknown[];
     defun: string;
-    name: (node: gnista.TreesitNode) => string | null;
+    name: (node: e8.TreesitNode) => string | null;
     electric: string;
     imenu: unknown[];
     things?: unknown[];
@@ -764,7 +764,7 @@ const TREESIT_SETTINGS: Record<
       ["Method", "\\`method_declaration\\'", null, null],
       ["Struct", "\\`type_declaration\\'", goStruct, null],
       ["Interface", "\\`type_declaration\\'", goInterface, null],
-      ["Type", "\\`type_declaration\\'", (n: gnista.TreesitNode) => !goStruct(n) && !goInterface(n) && !goAlias(n), null],
+      ["Type", "\\`type_declaration\\'", (n: e8.TreesitNode) => !goStruct(n) && !goInterface(n) && !goAlias(n), null],
       ["Alias", "\\`type_declaration\\'", goAlias, null],
     ],
     fontLock: () => ({ settings: goFontLockSettings(), features: GO_FEATURES }),
@@ -772,7 +772,7 @@ const TREESIT_SETTINGS: Record<
   bash: {
     rules: () => BASH_RULES,
     defun: "function_definition",
-    name: (node) => (nodeText(gnista.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null,
+    name: (node) => (nodeText(e8.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null,
     electric: "",
     imenu: [["Function", "\\`function_definition\\'", null, null]],
     things: [["sentence", "\\(?:comment\\|heredoc_\\(?:body\\|start\\)\\)"]],
@@ -821,7 +821,7 @@ const TREESIT_SETTINGS: Record<
   json: { rules: () => JSON_RULES, defun: "\\(?:object\\|pair\\)", name: jsonDefunName, electric: "{}():;,", imenu: [[null, "\\`pair\\'", null, null]] },
 };
 
-const alist = gnista.defaultValue("auto-mode-alist");
+const alist = e8.defaultValue("auto-mode-alist");
 const entries = Array.isArray(alist) ? [...alist] : [];
 
 /** A char literal, such as 'a', '"' or '\u{1F600}', rather than a lifetime. */
@@ -832,20 +832,20 @@ const RUST_CHAR = /'(?:\\(?:u\{[0-9a-fA-F]{1,6}\}|x[0-9a-fA-F]{2}|.)|[^\\'\n])'/
  * syntax-propertize does, so a quote inside one, as in '"', opens nothing.
  */
 function rustSyntaxPropertize(start: number, end: number): void {
-  const text = gnista.bufferText(start, end);
+  const text = e8.bufferText(start, end);
   for (const m of allMatches(RUST_CHAR, text)) {
     const at = start + charCount(text.slice(0, m.index));
     const close = at + charCount(m[0]) - 1;
     // As syntax-propertize puts them, silently.
-    gnista.withSilentModifications(() => {
-      gnista.putTextProperty(at, at + 1, "syntax-table", '"');
-      gnista.putTextProperty(close, close + 1, "syntax-table", '"');
+    e8.withSilentModifications(() => {
+      e8.putTextProperty(at, at + 1, "syntax-table", '"');
+      e8.putTextProperty(close, close + 1, "syntax-table", '"');
     });
   }
 }
 
 for (const mode of modes) {
-  gnista.defineMajorMode({
+  e8.defineMajorMode({
     name: mode.name,
     modeName: mode.modeName,
     parent: "prog-mode",
@@ -855,66 +855,66 @@ for (const mode of modes) {
     syntax: mode.syntax,
     setup: () => {
       // As treesit-ready-p: without the grammar, the mode is prog-mode with a warning.
-      if (!gnista.treesitLanguageAvailableP(mode.language)) {
-        // Not from a buffer of Gnista's own, such as the one Org fontifies a block in.
-        if (!gnista.bufferName().startsWith(" ")) gnista.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
+      if (!e8.treesitLanguageAvailableP(mode.language)) {
+        // Not from a buffer of E8's own, such as the one Org fontifies a block in.
+        if (!e8.bufferName().startsWith(" ")) e8.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
         return;
       }
-      gnista.treesitSetPrimaryLanguage(mode.language);
+      e8.treesitSetPrimaryLanguage(mode.language);
       if (mode.comment !== undefined) {
-        gnista.setVariable("comment-start", mode.comment.start);
-        gnista.setVariable("comment-end", "");
-        gnista.setVariable("comment-start-skip", mode.comment.skip);
+        e8.setVariable("comment-start", mode.comment.start);
+        e8.setVariable("comment-end", "");
+        e8.setVariable("comment-start-skip", mode.comment.skip);
       }
-      gnista.setVariable("parse-sexp-ignore-comments", true);
-      if (mode.tabs === false) gnista.setVariable("indent-tabs-mode", false);
+      e8.setVariable("parse-sexp-ignore-comments", true);
+      if (mode.tabs === false) e8.setVariable("indent-tabs-mode", false);
       // Python reindents the line it leaves only by hand, as electric-indent-inhibit says.
-      gnista.setVariable("electric-indent-inhibit", mode.language === "python");
+      e8.setVariable("electric-indent-inhibit", mode.language === "python");
       const settings = TREESIT_SETTINGS[mode.language];
       if (settings === undefined) {
-        gnista.setVariable("indent-line-function", "python-indent-line-function");
-        gnista.setVariable("electric-indent-chars", ["\n"]);
-        gnista.setVariable("imenu-create-index-function", "python-imenu-treesit-create-index");
-        gnista.setVariable("treesit-defun-type-regexp", "\\(?:class\\|function\\)_definition");
-        gnista.setVariable("treesit-defun-name-function", "python--treesit-defun-name");
+        e8.setVariable("indent-line-function", "python-indent-line-function");
+        e8.setVariable("electric-indent-chars", ["\n"]);
+        e8.setVariable("imenu-create-index-function", "python-imenu-treesit-create-index");
+        e8.setVariable("treesit-defun-type-regexp", "\\(?:class\\|function\\)_definition");
+        e8.setVariable("treesit-defun-name-function", "python--treesit-defun-name");
         majorModeSetup(`${mode.name}-map`);
       } else {
         // Typing these reindents the line, as the mode's electric-indent-chars has them.
-        gnista.setVariable("electric-indent-chars", ["\n", ...settings.electric]);
-        gnista.setVariable("treesit-simple-indent-rules", [[mode.language, settings.rules()]] as unknown as gnista.Value);
-        gnista.setVariable("treesit-defun-type-regexp", settings.defun);
-        gnista.setVariable("treesit-defun-name-function", gnista.defun(`${mode.name}--defun-name`, settings.name));
-        gnista.setVariable("treesit-simple-imenu-settings", settings.imenu as unknown as gnista.Value);
-        if (settings.things) gnista.setVariable("treesit-thing-settings", [[mode.language, settings.things]] as unknown as gnista.Value);
+        e8.setVariable("electric-indent-chars", ["\n", ...settings.electric]);
+        e8.setVariable("treesit-simple-indent-rules", [[mode.language, settings.rules()]] as unknown as e8.Value);
+        e8.setVariable("treesit-defun-type-regexp", settings.defun);
+        e8.setVariable("treesit-defun-name-function", e8.defun(`${mode.name}--defun-name`, settings.name));
+        e8.setVariable("treesit-simple-imenu-settings", settings.imenu as unknown as e8.Value);
+        if (settings.things) e8.setVariable("treesit-thing-settings", [[mode.language, settings.things]] as unknown as e8.Value);
         if (settings.fontLock) {
           const { settings: rules, features } = settings.fontLock();
-          gnista.setVariable("treesit-font-lock-settings", rules as unknown as gnista.Value);
-          gnista.setVariable("treesit-font-lock-feature-list", features);
+          e8.setVariable("treesit-font-lock-settings", rules as unknown as e8.Value);
+          e8.setVariable("treesit-font-lock-feature-list", features);
         }
         majorModeSetup(`${mode.name}-map`);
       }
       if (mode.language === "rust") {
-        gnista.setVariable("syntax-propertize-function", rustSyntaxPropertize);
-        gnista.setVariable("parse-sexp-lookup-properties", true);
+        e8.setVariable("syntax-propertize-function", rustSyntaxPropertize);
+        e8.setVariable("parse-sexp-lookup-properties", true);
       }
     },
   });
   if (mode.alias !== undefined) {
-    gnista.defineCommand({
+    e8.defineCommand({
       name: mode.alias,
-      doc: `Edit ${mode.what}, in ${mode.name}: Gnista's mode for it, as major-mode-remap-alist would have Emacs use.`,
-      run: () => gnista.call(mode.name as gnista.CommandName),
+      doc: `Edit ${mode.what}, in ${mode.name}: E8's mode for it, as major-mode-remap-alist would have Emacs use.`,
+      run: () => e8.call(mode.name as e8.CommandName),
     });
   }
   entries.push([mode.pattern, mode.name]);
 }
 
 // As js.el's (defalias 'javascript-mode 'js-mode), which Org's javascript blocks find.
-gnista.defineCommand({
+e8.defineCommand({
   name: "javascript-mode",
   doc: "Edit JavaScript, in js-ts-mode, as js-mode does.",
-  run: () => gnista.call("js-mode" as gnista.CommandName),
+  run: () => e8.call("js-mode" as e8.CommandName),
 });
-gnista.defineKey("python-ts-mode-map", "C-c C-j", "imenu");
+e8.defineKey("python-ts-mode-map", "C-c C-j", "imenu");
 
-gnista.setDefault("auto-mode-alist", entries);
+e8.setDefault("auto-mode-alist", entries);

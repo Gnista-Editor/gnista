@@ -1,7 +1,7 @@
 // Help: the *Help* buffer's mode, and describing variables and modes, after
 // Emacs's help-mode.el and help-fns.el.
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "help-mode",
   modeName: "Help",
   doc: "The major mode of the *Help* buffer. q goes back to the buffer before it.",
@@ -13,30 +13,30 @@ gnista.defineMajorMode({
 });
 
 /** A value as a script would write it. */
-function showValue(value: gnista.Value | undefined): string {
+function showValue(value: e8.Value | undefined): string {
   // Functions and symbols show by name, as Emacs shows a hook's symbols.
   const shown = (_: string, v: unknown) =>
     typeof v === "function" ? v.name || "anonymous function" : typeof v === "symbol" ? v.description : v;
   return value === undefined ? "void" : JSON.stringify(value, shown);
 }
 
-const describeVariable = gnista.defineCommand({
+const describeVariable = e8.defineCommand({
   name: "describe-variable",
   doc: "Show a variable's documentation, its value in the current buffer, and its global value.",
   params: [{ name: "variable", kind: "variable", prompt: "Describe variable: " }],
   run: (name) => {
-    if (gnista.variableDocumentation(name) === undefined) {
+    if (e8.variableDocumentation(name) === undefined) {
       throw new Error(`No such variable: ${name}`);
     }
-    const source = gnista.variableSource(name);
-    const kind = gnista.isHook(name) ? "hook" : "variable";
+    const source = e8.variableSource(name);
+    const kind = e8.isHook(name) ? "hook" : "variable";
     let text = `${name} is a ${kind}${source ? ` defined in ${source}` : ""}.\n\n`;
-    text += `Its value is ${showValue(gnista.variable(name))}\n`;
-    if (gnista.isLocalVariable(name)) {
-      text += `  Local in buffer ${gnista.bufferName()}; global value is ${showValue(gnista.defaultValue(name))}\n`;
+    text += `Its value is ${showValue(e8.variable(name))}\n`;
+    if (e8.isLocalVariable(name)) {
+      text += `  Local in buffer ${e8.bufferName()}; global value is ${showValue(e8.defaultValue(name))}\n`;
     }
-    text += `\n${gnista.variableDocumentation(name)}\n`;
-    gnista.showHelp(text);
+    text += `\n${e8.variableDocumentation(name)}\n`;
+    e8.showHelp(text);
   },
 });
 
@@ -52,72 +52,72 @@ function prettyModeName(name: string): string {
 }
 
 function describeOne(title: string, name: string): string {
-  const source = gnista.commandSource(name);
-  return `${title} (${name})${source ? `, defined in ${source}` : ""}:\n\n${gnista.documentation(name) ?? ""}\n`;
+  const source = e8.commandSource(name);
+  return `${title} (${name})${source ? `, defined in ${source}` : ""}:\n\n${e8.documentation(name) ?? ""}\n`;
 }
 
-const describeMode = gnista.defineCommand({
+const describeMode = e8.defineCommand({
   name: "describe-mode",
   doc: "Show the documentation of the current buffer's major mode and of the minor modes that are on.",
   run: () => {
-    const major = String(gnista.variable("major-mode"));
-    let text = describeOne(`The major mode is ${String(gnista.variable("mode-name"))} mode`, major);
-    const minors = gnista.enabledMinorModes();
+    const major = String(e8.variable("major-mode"));
+    let text = describeOne(`The major mode is ${String(e8.variable("mode-name"))} mode`, major);
+    const minors = e8.enabledMinorModes();
     if (minors.length > 0) {
       text += `\nMinor modes that are on: ${minors.map(prettyModeName).join(", ")}.\n`;
       for (const minor of minors) {
         text += `\n${describeOne(prettyModeName(minor), minor)}`;
       }
     }
-    gnista.showHelp(text);
+    e8.showHelp(text);
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "describe-face",
   doc: "Show a face's documentation and attributes, and what it looks like on dark and light backgrounds.",
   params: [{ name: "face", kind: "face", prompt: "Describe face: " }],
   run: (name) => {
-    const info = gnista.faceInfo(name);
+    const info = e8.faceInfo(name);
     if (info === undefined) {
       throw new Error(`No such face: ${name}`);
     }
-    const show = (attrs: gnista.FaceAttributes) => (Object.keys(attrs).length === 0 ? "none" : JSON.stringify(attrs));
+    const show = (attrs: e8.FaceAttributes) => (Object.keys(attrs).length === 0 ? "none" : JSON.stringify(attrs));
     let text = `${name} is a face${info.source ? ` defined in ${info.source}` : ""}.\n\n${info.doc}\n\n`;
     text += `Its own attributes: ${show(info.attributes)}\n`;
     if (Object.keys(info.dark).length > 0) text += `  On a dark background: ${show(info.dark)}\n`;
     if (Object.keys(info.light).length > 0) text += `  On a light background: ${show(info.light)}\n`;
-    text += `\nWith what it inherits, on a dark background: ${show(gnista.faceAttributes(name, { dark: true }))}\n`;
-    text += `On a light background: ${show(gnista.faceAttributes(name, { dark: false }))}\n`;
-    gnista.showHelp(text);
+    text += `\nWith what it inherits, on a dark background: ${show(e8.faceAttributes(name, { dark: true }))}\n`;
+    text += `On a light background: ${show(e8.faceAttributes(name, { dark: false }))}\n`;
+    e8.showHelp(text);
   },
 });
 
-gnista.bindKey("C-h v", describeVariable);
-gnista.bindKey("C-h m", describeMode);
+e8.bindKey("C-h v", describeVariable);
+e8.bindKey("C-h m", describeMode);
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "view-echo-area-messages",
   doc: "Show the *Messages* buffer: the messages shown in the echo area, newest last.",
   run: () => {
-    gnista.getBufferCreate("*Messages*");
-    gnista.withCurrentBuffer("*Messages*", () => {
-      gnista.setReadOnly(false);
-      gnista.deleteRegion(0, gnista.bufferSize());
-      const lines = gnista.messages();
-      gnista.insert(lines.length === 0 ? "" : lines.join("\n") + "\n");
-      gnista.setReadOnly(true);
-      gnista.setBufferModified(false);
-      gnista.gotoChar(gnista.bufferSize());
+    e8.getBufferCreate("*Messages*");
+    e8.withCurrentBuffer("*Messages*", () => {
+      e8.setReadOnly(false);
+      e8.deleteRegion(0, e8.bufferSize());
+      const lines = e8.messages();
+      e8.insert(lines.length === 0 ? "" : lines.join("\n") + "\n");
+      e8.setReadOnly(true);
+      e8.setBufferModified(false);
+      e8.gotoChar(e8.bufferSize());
     });
-    gnista.call("display-buffer", "*Messages*");
+    e8.call("display-buffer", "*Messages*");
   },
 });
-gnista.bindKey("C-h e", "view-echo-area-messages");
+e8.bindKey("C-h e", "view-echo-area-messages");
 
 // The keys typed lately, after help.el's view-lossage.
 
-const viewLossage = gnista.defineCommand({
+const viewLossage = e8.defineCommand({
   name: "view-lossage",
   doc:
     "Show the keys typed lately and the commands they ran, oldest first.\n\n" +
@@ -128,7 +128,7 @@ const viewLossage = gnista.defineCommand({
     // comment-indent leaves it, or a space after keys that reach past it.
     let text = "";
     let line = "";
-    for (const entry of gnista.recentKeys(true)) {
+    for (const entry of e8.recentKeys(true)) {
       if (typeof entry === "string") {
         line += ` ${entry}`;
         continue;
@@ -138,7 +138,7 @@ const viewLossage = gnista.defineCommand({
       text += `${line}${indent};; ${entry.command}\n`;
       line = "";
     }
-    gnista.showHelp(text + line);
+    e8.showHelp(text + line);
   },
 });
-gnista.bindKey("C-h l", viewLossage);
+e8.bindKey("C-h l", viewLossage);

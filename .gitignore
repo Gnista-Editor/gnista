@@ -1,7 +1,7 @@
 # A worktree's target is a symlink to the main checkout's (.claude/hooks/share-target.sh).
 /target
 # A worktree's own app, which make app builds there.
-/Gnista.app
+/E8.app
 spikes/*/target/
 .DS_Store
 

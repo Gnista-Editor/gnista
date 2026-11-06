@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27; its engine superseded by [0054](0054-v8-as-the-s
 
 ## Context
 
-AI agents will write most Gnista extensions, and a human reviews them. So the extension language should be one that models write most reliably, that reads well, and that gives an agent fast feedback on its mistakes. With org mode planned as a package ([ADR 0002](0002-start-simple.md)), this choice is hard to change later: the packages are the lock-in, not the runtime.
+AI agents will write most E8 extensions, and a human reviews them. So the extension language should be one that models write most reliably, that reads well, and that gives an agent fast feedback on its mistakes. With org mode planned as a package ([ADR 0002](0002-start-simple.md)), this choice is hard to change later: the packages are the lock-in, not the runtime.
 
 ## Options considered
 
@@ -20,15 +20,15 @@ TypeScript on QuickJS. Heavy work, such as parsing, belongs in Rust primitives i
 How it works:
 
 - **Types are erased, not compiled.** `swc_ts_fast_strip` in strip-only mode replaces types with whitespace, as Node does. Line and column numbers in errors match the TypeScript source, with no source maps. Only erasable syntax is allowed, so `enum` and parameter properties are rejected. The generated `tsconfig.json` sets `erasableSyntaxOnly` so `tsc` agrees. oxc was tried first, but its output does not keep source positions. The older `swc_fast_ts_strip` crate is out of date and does not build with current serde.
-- **Type checking is a development step.** Gnista writes `gnista.d.ts` from the command registry at startup, and writes a `tsconfig.json` if there is none, so `tsc -p ~/.config/gnista` and editors check scripts. `gnista --print-types` prints the declarations. The editor itself does not need `tsc` or Node.
-- **One API, from the command registry.** Scripts call commands by name through `gnista.call`, typed per command, plus a few functions that return values (`point`, `bufferText` and so on). `defineCommand` returns a branded name, so new commands type-check before `gnista.d.ts` is regenerated.
+- **Type checking is a development step.** E8 writes `e8.d.ts` from the command registry at startup, and writes a `tsconfig.json` if there is none, so `tsc -p ~/.config/e8` and editors check scripts. `e8 --print-types` prints the declarations. The editor itself does not need `tsc` or Node.
+- **One API, from the command registry.** Scripts call commands by name through `e8.call`, typed per command, plus a few functions that return values (`point`, `bufferText` and so on). `defineCommand` returns a branded name, so new commands type-check before `e8.d.ts` is regenerated.
 - **Each file runs in its own block scope**, so reloading a file with `load-file` does not fail on redeclared top-level `const`s.
 - **Reentrancy.** QuickJS's runtime lock is not reentrant. When a script runs a command that runs another script command, the nested call reuses the running context. Host functions reach the editor through a thread-local pointer that is set only while a script runs.
 - **Time limit.** A script that runs longer than 10 seconds is interrupted, since the editor is single threaded and would otherwise freeze.
 
 ## Consequences
 
-Scripts are checked against the real commands, with their documentation on hover. Async functions and ES module imports are not supported yet. A script has full access to whatever the `gnista` API exposes; there is no sandbox (ADR 0002).
+Scripts are checked against the real commands, with their documentation on hover. Async functions and ES module imports are not supported yet. A script has full access to whatever the `e8` API exposes; there is no sandbox (ADR 0002).
 
 ## Dependencies introduced
 

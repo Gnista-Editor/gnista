@@ -6,22 +6,22 @@ import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headi
 import { type Habit, buildGraph, habitUrgency, parseHabit } from "org-habit";
 import { allMatches, charCount } from "subr";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-agenda-window-setup",
   doc: "Where the agenda shows: reorganize-frame, this window and the agenda's; current-window; only-window; or other-window.",
   value: "reorganize-frame",
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-agenda-files",
   doc: "The files the agenda collects entries from, as a list of file names.",
   value: [],
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-agenda-show-inherited-tags",
   doc: "Whether agenda lines show the tags their headings inherit, from the file and the headings above, before their own.",
   value: true,
 });
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-deadline-warning-days",
   doc: "How many days ahead today's agenda warns of a deadline.",
   value: 14,
@@ -97,26 +97,26 @@ interface AgendaItem {
   /** The habit a scheduled line is, whose graph the line shows. */
   habit?: Habit;
   /** Markers at `pos` and `heading`, once the agenda shows the line, so they follow edits there. */
-  marks?: { pos: gnista.Marker; heading: gnista.Marker };
+  marks?: { pos: e8.Marker; heading: e8.Marker };
 }
 
 /** Where the line's entry is now: its marker's place, as Org's org-marker follows edits. */
 function posOf(item: AgendaItem): number {
-  return (item.marks && gnista.markerPosition(item.marks.pos)) ?? item.pos;
+  return (item.marks && e8.markerPosition(item.marks.pos)) ?? item.pos;
 }
 
 /** Where the entry's heading is now, as org-hd-marker. */
 function headingOf(item: AgendaItem): number {
-  return (item.marks && gnista.markerPosition(item.marks.heading)) ?? item.heading;
+  return (item.marks && e8.markerPosition(item.marks.heading)) ?? item.heading;
 }
 
 /** The buffer's category, as org-get-category gives it: #+CATEGORY, or the file's name. */
 function category(): string {
-  for (let l = 0; l < gnista.lineCount(); l++) {
-    const m = /^#\+CATEGORY:[ \t]*(\S.*?)[ \t]*$/i.exec(gnista.lineText(l));
+  for (let l = 0; l < e8.lineCount(); l++) {
+    const m = /^#\+CATEGORY:[ \t]*(\S.*?)[ \t]*$/i.exec(e8.lineText(l));
     if (m) return m[1];
   }
-  const file = gnista.bufferFileName();
+  const file = e8.bufferFileName();
   return file ? (file.split("/").pop() ?? file).replace(/\.[^.]*$/, "") : "???";
 }
 
@@ -131,8 +131,8 @@ let inheritedCache: { buffer: number; tick: number; map: Map<number, string[]> }
 
 /** The tags a heading inherits, as org-get-tags gives them with inheritance: the file's, then each ancestor's. */
 function inheritedTags(h: Heading): string[] {
-  const buffer = gnista.currentBuffer().id;
-  const tick = gnista.bufferModifiedTick();
+  const buffer = e8.currentBuffer().id;
+  const tick = e8.bufferModifiedTick();
   if (!inheritedCache || inheritedCache.buffer !== buffer || inheritedCache.tick !== tick) {
     const map = new Map<number, string[]>();
     const file: string[] = [];
@@ -155,30 +155,30 @@ function inheritedTags(h: Heading): string[] {
 
 /** A line's tags as the agenda shows them, inherited ones first and :: before the heading's own, as org-agenda-fix-displayed-tags writes them. */
 function displayedTags(h: Heading): string {
-  const show = gnista.variable("org-agenda-show-inherited-tags");
+  const show = e8.variable("org-agenda-show-inherited-tags");
   const inherited = show === null || show === false ? [] : inheritedTags(h).filter((t) => !h.tags.includes(t));
   if (inherited.length === 0) return h.tags.length === 0 ? "" : `:${h.tags.join(":")}:`;
   return `:${inherited.join(":")}:${h.tags.length === 0 ? ":" : `:${h.tags.join(":")}:`}`;
 }
 
 function agendaLine(h: Heading, cat: string, leader: string, removeTimestamp: boolean): string {
-  let text = gnista.lineText(h.line).replace(/^\*+[ \t]+/, "");
-  if (h.tagsAt !== undefined) text = text.slice(0, text.length - (gnista.lineEnd(h.line) - h.tagsAt) - 0).replace(/[ \t]+$/, "");
+  let text = e8.lineText(h.line).replace(/^\*+[ \t]+/, "");
+  if (h.tagsAt !== undefined) text = text.slice(0, text.length - (e8.lineEnd(h.line) - h.tagsAt) - 0).replace(/[ \t]+$/, "");
   if (removeTimestamp) text = text.replace(/<\d{4}-\d{2}-\d{2}[^>\n]*>/, "");
   const line = `  ${`${cat}:`.padEnd(12)}${leader === "" ? "" : `${leader} `}${text}`;
   const tags = displayedTags(h);
   if (tags === "") return line;
-  const width = (gnista.windowSize()?.width ?? 80) - 1;
+  const width = (e8.windowSize()?.width ?? 80) - 1;
   return line + " ".repeat(Math.max(1, width - charCount(line) - charCount(tags))) + tags;
 }
 
 /** The buffers of org-agenda-files, visited if need be. */
 function agendaBuffers(): string[] {
-  const files = gnista.variable("org-agenda-files");
+  const files = e8.variable("org-agenda-files");
   if (!Array.isArray(files) || files.length === 0) return [];
   // Relative names are in org-directory, as org-agenda-files expands them.
-  const dir = gnista.variable("org-directory");
-  return (files as string[]).map((file) => gnista.findFileNoselect(gnista.expandFileName(String(file), typeof dir === "string" ? gnista.expandFileName(dir) : undefined)));
+  const dir = e8.variable("org-directory");
+  return (files as string[]).map((file) => e8.findFileNoselect(e8.expandFileName(String(file), typeof dir === "string" ? e8.expandFileName(dir) : undefined)));
 }
 
 /** A heading's planning timestamps: when it is scheduled and due, and where those timestamps are. */
@@ -190,8 +190,8 @@ function planningOf(h: Heading): {
   deadlineAt?: number;
 } {
   const line = h.line + 1;
-  if (line >= gnista.lineCount() || !PLANNING.test(gnista.lineText(line))) return {};
-  const text = gnista.lineText(line);
+  if (line >= e8.lineCount() || !PLANNING.test(e8.lineText(line))) return {};
+  const text = e8.lineText(line);
   const out: ReturnType<typeof planningOf> = {};
   const s = /SCHEDULED:[ \t]*(<[^>\n]*>)/.exec(text);
   const d = /DEADLINE:[ \t]*(<[^>\n]*>)/.exec(text);
@@ -226,9 +226,9 @@ function scanBuffer(): { cat: string; entries: Scanned[] } {
   const entries = all.map((h, i): Scanned => {
     const stamps: Scanned["stamps"] = [];
     const end = entryEnd(all, i);
-    for (let l = h.line; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
-      if (l === h.line + 1 && PLANNING.test(gnista.lineText(l))) continue;
-      const text = gnista.lineText(l);
+    for (let l = h.line; l < e8.lineCount() && e8.lineStart(l) < end; l++) {
+      if (l === h.line + 1 && PLANNING.test(e8.lineText(l))) continue;
+      const text = e8.lineText(l);
       if (!text.includes("<")) continue;
       for (const m of allMatches(stamp, text)) {
         const ts = activeTimestamp(m[0]);
@@ -246,7 +246,7 @@ function scanBuffer(): { cat: string; entries: Scanned[] } {
 /** The items for a day from the current buffer, scanned once, as org-agenda-get-day-entries collects them. */
 function dayItems(scan: { cat: string; entries: Scanned[] }, day: number, today: number, buffer: string): AgendaItem[] {
   const cat = scan.cat;
-  const warning = Number(gnista.variable("org-deadline-warning-days") ?? 14);
+  const warning = Number(e8.variable("org-deadline-warning-days") ?? 14);
   const deadlines: AgendaItem[] = [];
   const scheduled: AgendaItem[] = [];
   const stamps: AgendaItem[] = [];
@@ -270,8 +270,8 @@ function dayItems(scan: { cat: string; entries: Scanned[] }, day: number, today:
       const onDay = day === plan.scheduled || (day > today && occursOn(ts, day));
       const past = day === today && plan.scheduled < today && !done;
       // A habit shows only today, as org-habit-show-habits-only-for-today says.
-      const hidden = habit !== undefined && (done || gnista.variable("org-habit-show-habits") !== true ||
-        (gnista.variable("org-habit-show-habits-only-for-today") === true && day !== today));
+      const hidden = habit !== undefined && (done || e8.variable("org-habit-show-habits") !== true ||
+        (e8.variable("org-habit-show-habits-only-for-today") === true && day !== today));
       if (((onDay && !(done && plan.scheduled !== day)) || past) && !hidden) {
         // A habit has no leader, its graph saying when it is due, and is as urgent as org-habit-get-urgency says.
         const leader = habit !== undefined ? "" : past ? `Sched.${String(diff).padStart(2)}x: ` : "Scheduled: ";
@@ -310,66 +310,66 @@ let agendaLines: (AgendaItem | undefined)[] = [];
  */
 function insertHabitGraphs(lines: { text: string; item?: AgendaItem }[]): void {
   const now = dayNumber(today_());
-  const column = Number(gnista.variable("org-habit-graph-column") ?? 40);
-  const before = Number(gnista.variable("org-habit-preceding-days") ?? 21);
-  const after = Number(gnista.variable("org-habit-following-days") ?? 7);
+  const column = Number(e8.variable("org-habit-graph-column") ?? 40);
+  const before = Number(e8.variable("org-habit-preceding-days") ?? 21);
+  const after = Number(e8.variable("org-habit-following-days") ?? 7);
   lines.forEach((l, line) => {
     const habit = l.item?.habit;
     if (habit === undefined) return;
     const graph = buildGraph(habit, now - before, now, now + after);
-    const start = gnista.lineStart(line);
-    const end = gnista.lineEnd(line);
+    const start = e8.lineStart(line);
+    const end = e8.lineEnd(line);
     const length = end - start;
     const at = start + Math.min(column, length);
-    gnista.gotoChar(at);
-    if (length < column) gnista.insert(" ".repeat(column - length));
-    const from = gnista.point();
-    gnista.deleteRegion(from, Math.min(from + before + after + 1, gnista.lineEnd(line)));
-    gnista.insert(`${graph.text} `);
-    graph.faces.forEach((face, k) => gnista.putTextProperty(from + k, from + k + 1, "face", face));
+    e8.gotoChar(at);
+    if (length < column) e8.insert(" ".repeat(column - length));
+    const from = e8.point();
+    e8.deleteRegion(from, Math.min(from + before + after + 1, e8.lineEnd(line)));
+    e8.insert(`${graph.text} `);
+    graph.faces.forEach((face, k) => e8.putTextProperty(from + k, from + k + 1, "face", face));
   });
 }
 
 /** Puts lines into the agenda buffer and shows it, as org-agenda-prepare and org-agenda-finalize do. */
 function showAgenda(lines: { text: string; item?: AgendaItem }[], pointLine: number): void {
-  gnista.getBufferCreate(AGENDA);
-  gnista.withCurrentBuffer(AGENDA, () => {
-    gnista.setReadOnly(false);
-    gnista.deleteRegion(0, gnista.bufferSize());
-    gnista.insert(lines.map((l) => l.text).join("\n") + "\n");
+  e8.getBufferCreate(AGENDA);
+  e8.withCurrentBuffer(AGENDA, () => {
+    e8.setReadOnly(false);
+    e8.deleteRegion(0, e8.bufferSize());
+    e8.insert(lines.map((l) => l.text).join("\n") + "\n");
     insertHabitGraphs(lines);
-    if (gnista.variable("major-mode") !== "org-agenda-mode") gnista.call("org-agenda-mode");
-    gnista.setReadOnly(true);
-    gnista.gotoChar(gnista.lineStart(pointLine));
+    if (e8.variable("major-mode") !== "org-agenda-mode") e8.call("org-agenda-mode");
+    e8.setReadOnly(true);
+    e8.gotoChar(e8.lineStart(pointLine));
   });
   // The lines' markers, made in the entries' buffers, as Org makes
   // org-marker and org-hd-marker; the last agenda's are freed.
   for (const old of agendaLines) {
     if (old?.marks) {
-      gnista.deleteMarker(old.marks.pos);
-      gnista.deleteMarker(old.marks.heading);
+      e8.deleteMarker(old.marks.pos);
+      e8.deleteMarker(old.marks.heading);
     }
   }
   agendaLines = lines.map((l) => l.item);
   for (const item of agendaLines) {
-    if (item && gnista.getBuffer(item.buffer)) {
+    if (item && e8.getBuffer(item.buffer)) {
       item.marks = {
-        pos: gnista.makeMarker(item.pos, { buffer: item.buffer }),
-        heading: gnista.makeMarker(item.heading, { buffer: item.buffer }),
+        pos: e8.makeMarker(item.pos, { buffer: item.buffer }),
+        heading: e8.makeMarker(item.heading, { buffer: item.buffer }),
       };
     }
   }
-  const setup = gnista.variable("org-agenda-window-setup");
-  if (gnista.windowBuffer() !== AGENDA) {
-    if (setup === "current-window") gnista.call("switch-to-buffer", AGENDA);
+  const setup = e8.variable("org-agenda-window-setup");
+  if (e8.windowBuffer() !== AGENDA) {
+    if (setup === "current-window") e8.call("switch-to-buffer", AGENDA);
     else if (setup === "only-window") {
-      gnista.call("delete-other-windows");
-      gnista.call("switch-to-buffer", AGENDA);
-    } else if (setup === "other-window") gnista.call("switch-to-buffer-other-window", AGENDA);
+      e8.call("delete-other-windows");
+      e8.call("switch-to-buffer", AGENDA);
+    } else if (setup === "other-window") e8.call("switch-to-buffer-other-window", AGENDA);
     else {
       // As org-agenda-window-setup's reorganize-frame: this window and the agenda's.
-      if (!gnista.windowList().some((w) => gnista.windowBuffer(w) === AGENDA)) gnista.call("delete-other-windows");
-      gnista.call("pop-to-buffer", AGENDA);
+      if (!e8.windowList().some((w) => e8.windowBuffer(w) === AGENDA)) e8.call("delete-other-windows");
+      e8.call("pop-to-buffer", AGENDA);
     }
   }
   if (setup === undefined || setup === null || setup === "reorganize-frame") fitAgendaWindow(lines.length);
@@ -380,12 +380,12 @@ function showAgenda(lines: { text: string; item?: AgendaItem }[], pointLine: num
  * of the frame, as org-agenda-window-frame-fractions has it.
  */
 function fitAgendaWindow(lines: number): void {
-  const windows = gnista.windowList();
+  const windows = e8.windowList();
   if (windows.length < 2) return;
-  const frame = windows.reduce((sum, w) => sum + (gnista.windowSize(w)?.fullWidth ? (gnista.windowSize(w)?.totalHeight ?? 0) : 0), 0) + 1;
+  const frame = windows.reduce((sum, w) => sum + (e8.windowSize(w)?.fullWidth ? (e8.windowSize(w)?.totalHeight ?? 0) : 0), 0) + 1;
   const wanted = Math.min(Math.floor(frame * 0.75), Math.max(Math.floor(frame * 0.5), lines + 1));
-  const now = gnista.windowSize()?.totalHeight ?? wanted;
-  if (wanted !== now) gnista.resizeWindow(undefined, wanted - now);
+  const now = e8.windowSize()?.totalHeight ?? wanted;
+  if (wanted !== now) e8.resizeWindow(undefined, wanted - now);
 }
 
 /** The week's agenda from a day, as org-agenda-list shows it for org-agenda-span week. */
@@ -395,7 +395,7 @@ function weekAgenda(start: number): void {
   const lines: { text: string; item?: AgendaItem }[] = [{ text: `Week-agenda (W${String(isoWeekOf(start)).padStart(2, "0")}):` }];
   let pointLine = 0;
   // Each file read once for the week, not once a day.
-  const scans = new Map(buffers.map((buffer) => [buffer, gnista.withCurrentBuffer(buffer, scanBuffer)]));
+  const scans = new Map(buffers.map((buffer) => [buffer, e8.withCurrentBuffer(buffer, scanBuffer)]));
   for (let day = start; day < start + 7; day++) {
     const d = dayFromNumber(day);
     const wd = new Date(day * 86400000).getUTCDay();
@@ -403,7 +403,7 @@ function weekAgenda(start: number): void {
     const week = wd === 1 ? ` W${String(isoWeekOf(day)).padStart(2, "0")}` : "";
     lines.push({ text: `${AGENDA_DAYS[wd].padEnd(10)} ${String(d.day).padStart(2)} ${AGENDA_MONTHS[d.month - 1]} ${d.year}${week}` });
     const items: AgendaItem[] = [];
-    for (const buffer of buffers) items.push(...gnista.withCurrentBuffer(buffer, () => dayItems(scans.get(buffer)!, day, today, buffer)));
+    for (const buffer of buffers) items.push(...e8.withCurrentBuffer(buffer, () => dayItems(scans.get(buffer)!, day, today, buffer)));
     for (const item of byUrgency(items)) lines.push({ text: item.text, item });
   }
   agendaView = { kind: "week", start };
@@ -426,7 +426,7 @@ function todoList(): void {
   const items: AgendaItem[] = [];
   const keywords = new Set<string>();
   for (const buffer of buffers) {
-    gnista.withCurrentBuffer(buffer, () => {
+    e8.withCurrentBuffer(buffer, () => {
       const cat = category();
       for (const k of allKeywords()) keywords.add(k);
       for (const h of headings()) {
@@ -447,32 +447,32 @@ function todoList(): void {
 }
 
 function redoAgenda(): void {
-  const line = gnista.lineOf(gnista.point());
+  const line = e8.lineOf(e8.point());
   if (agendaView.kind === "week") weekAgenda(agendaView.start);
   else todoList();
-  gnista.gotoChar(gnista.lineStart(Math.min(line, gnista.lineCount() - 1)));
+  e8.gotoChar(e8.lineStart(Math.min(line, e8.lineCount() - 1)));
 }
 
-const agendaList = gnista.defineCommand({
+const agendaList = e8.defineCommand({
   name: "org-agenda-list",
   doc: "Show the week's agenda: what is scheduled, due and timestamped each day, from org-agenda-files.",
   run: () => weekAgenda(weekStart(dayNumber(today_()))),
 });
 
-const todoListCommand = gnista.defineCommand({
+const todoListCommand = e8.defineCommand({
   name: "org-todo-list",
   doc: "Show the TODO items that are not done in org-agenda-files, most urgent first.",
   run: () => todoList(),
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-agenda",
   doc: "Show an agenda view, asking which by its key in *Agenda Commands*: a for the week's agenda, t for the TODO list.",
   run: () => {
     const key = agendaDispatch();
     if (key === "a") weekAgenda(weekStart(dayNumber(today_())));
     else if (key === "t") todoList();
-    else gnista.userError(`Gnista does not have that agenda view yet: ${key}`);
+    else e8.userError(`E8 does not have that agenda view yet: ${key}`);
   },
 });
 
@@ -491,27 +491,27 @@ s   Search for keywords                 S   Like s, but only TODO entries
 /** Asks for an agenda view by its key, showing the menu in *Agenda Commands*: q or C-g aborts. */
 function agendaDispatch(): string {
   const name = "*Agenda Commands*";
-  return gnista.saveWindowExcursion(() => {
-    gnista.call("delete-other-windows");
-    gnista.call("switch-to-buffer-other-window", name);
+  return e8.saveWindowExcursion(() => {
+    e8.call("delete-other-windows");
+    e8.call("switch-to-buffer-other-window", name);
     try {
-      gnista.letBind({ "inhibit-read-only": true }, () => {
-        gnista.deleteRegion(0, gnista.bufferSize());
-        gnista.insert(DISPATCH_HEADER);
+      e8.letBind({ "inhibit-read-only": true }, () => {
+        e8.deleteRegion(0, e8.bufferSize());
+        e8.insert(DISPATCH_HEADER);
         // The keys in bold, as Org shows them.
         const text = DISPATCH_HEADER;
         for (const m of allMatches(/(^|   |\()(\S)( |=)/gm, text)) {
           const at = charCount(text.slice(0, m.index + m[1].length));
-          gnista.putTextProperty(at, at + 1, "face", "bold");
+          e8.putTextProperty(at, at + 1, "face", "bold");
         }
       });
-      gnista.gotoChar(0);
-      gnista.call("shrink-window-if-larger-than-buffer");
-      const key = gnista.readKey("Press key for agenda command:");
-      if (key === "q" || key === "C-g") gnista.userError("Abort");
+      e8.gotoChar(0);
+      e8.call("shrink-window-if-larger-than-buffer");
+      const key = e8.readKey("Press key for agenda command:");
+      if (key === "q" || key === "C-g") e8.userError("Abort");
       return key;
     } finally {
-      if (gnista.bufferList().includes(name)) gnista.call("kill-buffer", name);
+      if (e8.bufferList().includes(name)) e8.call("kill-buffer", name);
     }
   });
 }
@@ -519,20 +519,20 @@ function agendaDispatch(): string {
 /** Writes the lines showing an entry again where they are, as org-agenda-change-all-lines does, rather than the agenda rebuilt. */
 function redrawEntry(item: AgendaItem): void {
   const heading = headingOf(item);
-  gnista.withCurrentBuffer(AGENDA, () => gnista.letBind({ "inhibit-read-only": true }, () => {
-    const point = gnista.point();
+  e8.withCurrentBuffer(AGENDA, () => e8.letBind({ "inhibit-read-only": true }, () => {
+    const point = e8.point();
     for (const [l, other] of agendaLines.entries()) {
       if (!other || other.buffer !== item.buffer || headingOf(other) !== heading) continue;
-      const text = gnista.withCurrentBuffer(item.buffer, () => {
+      const text = e8.withCurrentBuffer(item.buffer, () => {
         const h = headings().find((x) => x.start === heading);
         return h ? agendaLine(h, other.cat, other.leader, other.removeTimestamp) : other.text;
       });
       other.text = text;
-      gnista.deleteRegion(gnista.lineStart(l), gnista.lineEnd(l));
-      gnista.gotoChar(gnista.lineStart(l));
-      gnista.insert(text);
+      e8.deleteRegion(e8.lineStart(l), e8.lineEnd(l));
+      e8.gotoChar(e8.lineStart(l));
+      e8.insert(text);
     }
-    gnista.gotoChar(point);
+    e8.gotoChar(point);
   }));
 }
 
@@ -541,13 +541,13 @@ function redrawEntry(item: AgendaItem): void {
  * the agenda's commands do with org-agenda-with-point-at, then writes the
  * entry's lines again, its heading changed.
  */
-function atEntry(command: gnista.CommandName, interactive = true): void {
+function atEntry(command: e8.CommandName, interactive = true): void {
   const item = agendaItemHere();
-  gnista.withCurrentBuffer(item.buffer, () => {
-    gnista.saveExcursion(() => {
-      gnista.gotoChar(headingOf(item));
-      if (interactive) gnista.callInteractively(command);
-      else gnista.call(command);
+  e8.withCurrentBuffer(item.buffer, () => {
+    e8.saveExcursion(() => {
+      e8.gotoChar(headingOf(item));
+      if (interactive) e8.callInteractively(command);
+      else e8.call(command);
     });
   });
   redrawEntry(item);
@@ -559,69 +559,69 @@ for (const [name, command, doc] of [
   ["org-agenda-priority", "org-priority", "Set the priority of the entry the agenda line at point shows."],
   ["org-agenda-refile", "org-refile", "Refile the entry the agenda line at point shows."],
 ] as const) {
-  gnista.defineCommand({ name, doc, run: () => atEntry(command as gnista.CommandName) });
+  e8.defineCommand({ name, doc, run: () => atEntry(command as e8.CommandName) });
 }
-gnista.defineCommand({ name: "org-agenda-clock-out", doc: "Stop the running clock, from the agenda.", run: () => gnista.call("org-clock-out") });
-gnista.defineCommand({ name: "org-agenda-clock-cancel", doc: "Cancel the running clock, from the agenda.", run: () => gnista.call("org-clock-cancel") });
-gnista.defineCommand({ name: "org-agenda-clock-goto", doc: "Go to the entry with the running clock, from the agenda.", run: () => gnista.call("org-clock-goto") });
+e8.defineCommand({ name: "org-agenda-clock-out", doc: "Stop the running clock, from the agenda.", run: () => e8.call("org-clock-out") });
+e8.defineCommand({ name: "org-agenda-clock-cancel", doc: "Cancel the running clock, from the agenda.", run: () => e8.call("org-clock-cancel") });
+e8.defineCommand({ name: "org-agenda-clock-goto", doc: "Go to the entry with the running clock, from the agenda.", run: () => e8.call("org-clock-goto") });
 
 /** The entry the agenda line at point shows, or Org's error if it shows none. */
 function agendaItemHere(): AgendaItem {
-  const item = agendaLines[gnista.lineOf(gnista.point())];
-  if (!item) gnista.userError("Command not allowed in this line");
+  const item = agendaLines[e8.lineOf(e8.point())];
+  if (!item) e8.userError("Command not allowed in this line");
   return item;
 }
 
-const agendaNext = gnista.defineCommand({
+const agendaNext = e8.defineCommand({
   name: "org-agenda-next-line",
   doc: "Move to the next line of the agenda.",
-  run: () => gnista.callWithPrefix(gnista.prefixArg(), "next-line"),
+  run: () => e8.callWithPrefix(e8.prefixArg(), "next-line"),
 });
-const agendaPrevious = gnista.defineCommand({
+const agendaPrevious = e8.defineCommand({
   name: "org-agenda-previous-line",
   doc: "Move to the previous line of the agenda.",
-  run: () => gnista.callWithPrefix(gnista.prefixArg(), "previous-line"),
+  run: () => e8.callWithPrefix(e8.prefixArg(), "previous-line"),
 });
 
-const agendaSwitchTo = gnista.defineCommand({
+const agendaSwitchTo = e8.defineCommand({
   name: "org-agenda-switch-to",
   doc: "Go to the entry the agenda line at point shows, in this window.",
   run: () => {
     const item = agendaItemHere();
-    gnista.call("switch-to-buffer", item.buffer);
-    gnista.gotoChar(posOf(item));
+    e8.call("switch-to-buffer", item.buffer);
+    e8.gotoChar(posOf(item));
   },
 });
 
-const agendaGoto = gnista.defineCommand({
+const agendaGoto = e8.defineCommand({
   name: "org-agenda-goto",
   doc: "Show the entry the agenda line at point shows in another window, and go there.",
   run: () => {
     const item = agendaItemHere();
-    gnista.call("pop-to-buffer", item.buffer);
-    gnista.pushMark(gnista.point());
-    gnista.gotoChar(posOf(item));
+    e8.call("pop-to-buffer", item.buffer);
+    e8.pushMark(e8.point());
+    e8.gotoChar(posOf(item));
     // At the heading's title, as org-agenda-goto leaves it.
     const heading = headingOf(item);
     const h = headings().find((x) => x.start === heading);
-    if (h) gnista.gotoChar(h.titleAt);
+    if (h) e8.gotoChar(h.titleAt);
   },
 });
 
-const agendaTodo = gnista.defineCommand({
+const agendaTodo = e8.defineCommand({
   name: "org-agenda-todo",
   doc: "Change the TODO state of the entry the agenda line at point shows, as C-c C-t does there.",
   run: () => {
     const item = agendaItemHere();
-    gnista.withCurrentBuffer(item.buffer, () => {
-      gnista.gotoChar(headingOf(item));
-      gnista.callWithPrefix(gnista.prefixArg(), "org-todo");
+    e8.withCurrentBuffer(item.buffer, () => {
+      e8.gotoChar(headingOf(item));
+      e8.callWithPrefix(e8.prefixArg(), "org-todo");
     });
     redrawEntry(item);
   },
 });
 
-const agendaRedo = gnista.defineCommand({
+const agendaRedo = e8.defineCommand({
   name: "org-agenda-redo",
   doc: "Rebuild the agenda from the files, as they are now.",
   run: () => redoAgenda(),
@@ -630,7 +630,7 @@ const agendaRedo = gnista.defineCommand({
 /** Which day of the week view point's line is under, counting from 0. */
 function agendaDayIndex(): number {
   let index = -1;
-  for (let l = 1; l <= gnista.lineOf(gnista.point()); l++) if (agendaLines[l] === undefined) index++;
+  for (let l = 1; l <= e8.lineOf(e8.point()); l++) if (agendaLines[l] === undefined) index++;
   return Math.max(0, index);
 }
 
@@ -642,23 +642,23 @@ function shiftWeek(weeks: number): void {
   let seen = -1;
   for (let l = 1; l < agendaLines.length; l++) {
     if (agendaLines[l] === undefined && ++seen === index) {
-      gnista.gotoChar(gnista.lineStart(l));
+      e8.gotoChar(e8.lineStart(l));
       break;
     }
   }
 }
 
-const agendaLater = gnista.defineCommand({
+const agendaLater = e8.defineCommand({
   name: "org-agenda-later",
   doc: "Show the next week in the agenda.",
-  run: () => shiftWeek(gnista.prefixNumericValue()),
+  run: () => shiftWeek(e8.prefixNumericValue()),
 });
-const agendaEarlier = gnista.defineCommand({
+const agendaEarlier = e8.defineCommand({
   name: "org-agenda-earlier",
   doc: "Show the week before in the agenda.",
-  run: () => shiftWeek(-gnista.prefixNumericValue()),
+  run: () => shiftWeek(-e8.prefixNumericValue()),
 });
-const agendaToday = gnista.defineCommand({
+const agendaToday = e8.defineCommand({
   name: "org-agenda-goto-today",
   doc: "Show the week with today in it, and go to today.",
   run: () => {
@@ -667,16 +667,16 @@ const agendaToday = gnista.defineCommand({
   },
 });
 
-const agendaQuit = gnista.defineCommand({
+const agendaQuit = e8.defineCommand({
   name: "org-agenda-quit",
   doc: "Leave the agenda: its window goes, or another buffer takes its place.",
   run: () => {
-    if (gnista.windowList().length > 1) gnista.deleteWindow();
-    else gnista.call("switch-to-buffer", "");
+    if (e8.windowList().length > 1) e8.deleteWindow();
+    else e8.call("switch-to-buffer", "");
   },
 });
 
-gnista.defineMajorMode({
+e8.defineMajorMode({
   name: "org-agenda-mode",
   modeName: "Org-Agenda",
   doc:

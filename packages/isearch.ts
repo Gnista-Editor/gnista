@@ -18,17 +18,17 @@
 
 import { truthy, regexpQuote } from "subr";
 
-gnista.defineFace({
+e8.defineFace({
   name: "isearch",
   doc: "The match incremental search is at.",
   attributes: { background: "accent", foreground: "bg" },
 });
-gnista.defineFace({
+e8.defineFace({
   name: "lazy-highlight",
   doc: "Other matches for the string incremental search is looking for.",
   attributes: { background: "selection" },
 });
-gnista.defineFace({
+e8.defineFace({
   name: "isearch-fail",
   doc: "The part of the search string that does not match.",
   attributes: { background: "bad", foreground: "bg" },
@@ -72,14 +72,14 @@ for (const [name, doc, value, local] of [
   ["isearch-yank-flag", "Whether text was just yanked into the search string.", false, false],
   ["isearch-mode-end-hook-quit", "Whether the search being ended was cancelled, while isearch-mode-end-hook runs.", false, false],
 ] as const) {
-  gnista.defineVariable({ name, doc, value: value as unknown as gnista.Value, local });
+  e8.defineVariable({ name, doc, value: value as unknown as e8.Value, local });
 }
-gnista.defineHook("isearch-mode-hook", "Run as a search starts, in the buffer searched.");
-gnista.defineHook("isearch-mode-end-hook", "Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.");
-gnista.defineHook("isearch-update-post-hook", "Run after each change the search shows.");
+e8.defineHook("isearch-mode-hook", "Run as a search starts, in the buffer searched.");
+e8.defineHook("isearch-mode-end-hook", "Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.");
+e8.defineHook("isearch-update-post-hook", "Run after each change the search shows.");
 
-const get = (name: string) => gnista.variable(name);
-const set = (name: string, value: gnista.Value) => gnista.setVariable(name, value);
+const get = (name: string) => e8.variable(name);
+const set = (name: string, value: e8.Value) => e8.setVariable(name, value);
 const flag = (name: string) => truthy(get(name));
 const str = (name: string) => String(get(name) ?? "");
 
@@ -94,8 +94,8 @@ interface State {
   error: string | undefined;
   wrapped: boolean;
   barrier: number;
-  caseFold: gnista.Value;
-  popFun: gnista.Value | undefined;
+  caseFold: e8.Value;
+  popFun: e8.Value | undefined;
   match: { start: number; end: number } | undefined;
 }
 
@@ -104,7 +104,7 @@ let cmds: State[] = [];
 /** Whether the search has not yet searched, as isearch-just-started. */
 let justStarted = false;
 /** The case folding before this search began, as isearch-last-case-fold-search. */
-let lastCaseFold: gnista.Value = true;
+let lastCaseFold: e8.Value = true;
 /** The match isearch-search found, as isearch-match-data. */
 let matchData: { start: number; end: number } | undefined;
 /** Where yanking a word goes on from after a failing search, as isearch--yank-prev-point. */
@@ -118,7 +118,7 @@ function getState(): State {
   return {
     string: str("isearch-string"),
     message: str("isearch-message"),
-    point: gnista.point(),
+    point: e8.point(),
     success: flag("isearch-success"),
     forward: flag("isearch-forward"),
     otherEnd: (get("isearch-other-end") as number | null) ?? undefined,
@@ -126,7 +126,7 @@ function getState(): State {
     wrapped: flag("isearch-wrapped"),
     barrier: Number(get("isearch-barrier") ?? 0),
     caseFold: get("isearch-case-fold-search") ?? null,
-    popFun: truthy(pushFn) ? (gnista.funcall(pushFn as string) as gnista.Value) : undefined,
+    popFun: truthy(pushFn) ? (e8.funcall(pushFn as string) as e8.Value) : undefined,
     match: matchData,
   };
 }
@@ -143,8 +143,8 @@ function setState(cmd: State): void {
   set("isearch-barrier", cmd.barrier);
   set("isearch-case-fold-search", cmd.caseFold);
   matchData = cmd.match;
-  if (typeof cmd.popFun === "function" || (typeof cmd.popFun === "string" && gnista.fboundp(cmd.popFun))) gnista.funcall(cmd.popFun as string, cmd as unknown as gnista.Value);
-  gnista.gotoChar(cmd.point);
+  if (typeof cmd.popFun === "function" || (typeof cmd.popFun === "string" && e8.fboundp(cmd.popFun))) e8.funcall(cmd.popFun as string, cmd as unknown as e8.Value);
+  e8.gotoChar(cmd.point);
 }
 
 const pushState = () => cmds.unshift(getState());
@@ -186,7 +186,7 @@ export function isearchMessagePrefix(ellipsis = false, nonincremental = flag("is
   const m =
     (success ? "" : "failing ") +
     (get("isearch-adjusted") === true ? "pending " : "") +
-    (wrapped && !truthy(get("isearch-wrap-function")) && (forward ? gnista.point() > opoint : gnista.point() < opoint) ? "over" : "") +
+    (wrapped && !truthy(get("isearch-wrap-function")) && (forward ? e8.point() > opoint : e8.point() < opoint) ? "over" : "") +
     (wrapped ? "wrapped " : "") +
     (!success && !truthy(get("isearch-case-fold-search")) ? "case-sensitive " : "") +
     (flag("isearch-regexp") ? "regexp " : "") +
@@ -204,50 +204,50 @@ function messageSuffix(): string {
 
 /** Says where the search stands in the echo area, as isearch-message. */
 export function isearchMessage(_cqHack = false, ellipsis = false): void {
-  gnista.letBind({ "message-log-max": null }, () => gnista.message(isearchMessagePrefix(ellipsis) + str("isearch-message") + messageSuffix()));
+  e8.letBind({ "message-log-max": null }, () => e8.message(isearchMessagePrefix(ellipsis) + str("isearch-message") + messageSuffix()));
 }
-gnista.defun("isearch-message", (cq?: gnista.Value, ellipsis?: gnista.Value) => isearchMessage(truthy(cq), truthy(ellipsis)));
+e8.defun("isearch-message", (cq?: e8.Value, ellipsis?: e8.Value) => isearchMessage(truthy(cq), truthy(ellipsis)));
 
 function callMessage(cqHack = false, ellipsis = false): void {
   const f = get("isearch-message-function");
-  if (truthy(f)) gnista.funcall(f as string, cqHack, ellipsis);
+  if (truthy(f)) e8.funcall(f as string, cqHack, ellipsis);
   else isearchMessage(cqHack, ellipsis);
 }
 
 /** The function searching the buffer for the string as a regexp or literally, in the search's direction, as isearch-search-fun-default gives. */
-export function isearchSearchFunDefault(): (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined {
+export function isearchSearchFunDefault(): (string: string, bound?: e8.Value, noerror?: e8.Value) => number | undefined {
   return (string, bound, noerror) => {
     const forward = flag("isearch-forward");
     const options = { bound: typeof bound === "number" ? bound : undefined, noerror: truthy(noerror) };
-    if (flag("isearch-regexp")) return forward ? gnista.reSearchForward(string, options) : gnista.reSearchBackward(string, options);
+    if (flag("isearch-regexp")) return forward ? e8.reSearchForward(string, options) : e8.reSearchBackward(string, options);
     // A string is searched for literally, as search-forward does, which is
     // far faster in a large buffer than the regexp engine on it quoted.
-    const m = gnista.search(string, { backward: !forward, bound: options.bound });
+    const m = e8.search(string, { backward: !forward, bound: options.bound });
     if (m === undefined) {
       if (options.noerror) return undefined;
-      gnista.signal("search-failed", `Search failed: "${string}"`, [string]);
+      e8.signal("search-failed", `Search failed: "${string}"`, [string]);
     }
-    gnista.gotoChar(forward ? m!.end : m!.start);
-    return gnista.point();
+    e8.gotoChar(forward ? m!.end : m!.start);
+    return e8.point();
   };
 }
-gnista.defun("isearch-search-fun-default", isearchSearchFunDefault);
+e8.defun("isearch-search-fun-default", isearchSearchFunDefault);
 
 /** The function to search with, as isearch-search-fun: what isearch-search-fun-function gives. */
-export function isearchSearchFun(): (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined {
+export function isearchSearchFun(): (string: string, bound?: e8.Value, noerror?: e8.Value) => number | undefined {
   const f = get("isearch-search-fun-function");
   if (!truthy(f) || f === "isearch-search-fun-default") return isearchSearchFunDefault();
-  return gnista.funcall(f as string) as unknown as (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined;
+  return e8.funcall(f as string) as unknown as (string: string, bound?: e8.Value, noerror?: e8.Value) => number | undefined;
 }
 
-gnista.defun("isearch-filter-visible", () => true);
+e8.defun("isearch-filter-visible", () => true);
 
 /** Searches for the string, moving point to the match if found, as isearch-search-string. */
 function searchString(string: string, bound: number | undefined, noerror: boolean): number | undefined {
   const fn = isearchSearchFun();
-  const pos = gnista.saveExcursion(() => fn(string, bound ?? null, noerror));
+  const pos = e8.saveExcursion(() => fn(string, bound ?? null, noerror));
   if (pos === undefined || pos === null) return undefined;
-  gnista.gotoChar(pos);
+  e8.gotoChar(pos);
   return pos;
 }
 
@@ -256,29 +256,29 @@ function isearchSearch(): void {
   if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) {
     set("isearch-case-fold-search", isearchNoUpperCaseP(str("isearch-string"), flag("isearch-regexp")));
   }
-  gnista.conditionCase(
+  e8.conditionCase(
     () =>
-      gnista.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
+      e8.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
         set("isearch-error", null);
         const filter = get("isearch-filter-predicate");
         for (;;) {
           const found = searchString(str("isearch-string"), undefined, true) !== undefined;
           set("isearch-success", found);
           if (!found) break;
-          const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
-          if (!truthy(filter) || filter === "isearch-filter-visible" || truthy(gnista.funcall(filter as string, b, e))) break;
+          const [b, e] = [e8.matchBeginning(0)!, e8.matchEnd(0)!];
+          if (!truthy(filter) || filter === "isearch-filter-visible" || truthy(e8.funcall(filter as string, b, e))) break;
           if (b === e) {
             const forward = flag("isearch-forward");
-            if (forward ? gnista.point() >= gnista.pointMax() : gnista.point() <= gnista.pointMin()) {
+            if (forward ? e8.point() >= e8.pointMax() : e8.point() <= e8.pointMin()) {
               set("isearch-success", false);
               break;
             }
-            gnista.gotoChar(gnista.point() + (forward ? 1 : -1));
+            e8.gotoChar(e8.point() + (forward ? 1 : -1));
           }
         }
         justStarted = false;
         if (flag("isearch-success")) {
-          const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
+          const [b, e] = [e8.matchBeginning(0)!, e8.matchEnd(0)!];
           set("isearch-other-end", flag("isearch-forward") ? b : e);
           matchData = { start: b, end: e };
         }
@@ -297,15 +297,15 @@ function isearchSearch(): void {
   );
   if (!flag("isearch-success")) {
     const top = cmds[0];
-    if (typeof top.popFun === "function" || (typeof top.popFun === "string" && gnista.fboundp(top.popFun))) gnista.funcall(top.popFun as string, top as unknown as gnista.Value);
-    gnista.gotoChar(top.point);
+    if (typeof top.popFun === "function" || (typeof top.popFun === "string" && e8.fboundp(top.popFun))) e8.funcall(top.popFun as string, top as unknown as e8.Value);
+    e8.gotoChar(top.point);
   }
 }
 
 function clearHighlights(): void {
-  if (current !== undefined) gnista.deleteOverlay(current);
+  if (current !== undefined) e8.deleteOverlay(current);
   current = undefined;
-  for (const id of others) gnista.deleteOverlay(id);
+  for (const id of others) e8.deleteOverlay(id);
   others = [];
 }
 
@@ -314,26 +314,26 @@ function lazyHighlight(): void {
   const string = str("isearch-string");
   if (string === "" || truthy(get("isearch-error"))) return;
   const max = Number(get("lazy-highlight-max-at-a-time") ?? 200);
-  const line = gnista.lineOf(gnista.point());
-  const from = gnista.lineStart(Math.max(0, line - 100));
-  const to = gnista.lineEnd(Math.min(gnista.lineCount() - 1, line + 100));
+  const line = e8.lineOf(e8.point());
+  const from = e8.lineStart(Math.max(0, line - 100));
+  const to = e8.lineEnd(Math.min(e8.lineCount() - 1, line + 100));
   const forward = get("isearch-forward") ?? true;
-  gnista.saveExcursion(() =>
-    gnista.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
+  e8.saveExcursion(() =>
+    e8.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
       set("isearch-forward", true);
       try {
         const fn = isearchSearchFun();
-        gnista.gotoChar(from);
+        e8.gotoChar(from);
         while (others.length < max) {
-          const found = gnista.ignoreErrors(() => fn(string, to, true));
+          const found = e8.ignoreErrors(() => fn(string, to, true));
           if (found === undefined || found === null) break;
-          const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
+          const [b, e] = [e8.matchBeginning(0)!, e8.matchEnd(0)!];
           if (b === e) {
-            if (gnista.point() >= to) break;
-            gnista.gotoChar(gnista.point() + 1);
+            if (e8.point() >= to) break;
+            e8.gotoChar(e8.point() + 1);
             continue;
           }
-          if (!(matchData && b === matchData.start && e === matchData.end)) others.push(gnista.makeOverlay(b, e, { face: "lazy-highlight", priority: 1000 }));
+          if (!(matchData && b === matchData.start && e === matchData.end)) others.push(e8.makeOverlay(b, e, { face: "lazy-highlight", priority: 1000 }));
         }
       } finally {
         set("isearch-forward", forward);
@@ -347,12 +347,12 @@ function isearchUpdate(): void {
   callMessage();
   clearHighlights();
   const otherEnd = get("isearch-other-end");
-  if (typeof otherEnd === "number" && otherEnd !== gnista.point() && flag("isearch-success")) {
-    current = gnista.makeOverlay(Math.min(otherEnd, gnista.point()), Math.max(otherEnd, gnista.point()), { face: "isearch", priority: 1001 });
+  if (typeof otherEnd === "number" && otherEnd !== e8.point() && flag("isearch-success")) {
+    current = e8.makeOverlay(Math.min(otherEnd, e8.point()), Math.max(otherEnd, e8.point()), { face: "isearch", priority: 1001 });
   }
   set("isearch-adjusted", false);
   set("isearch-yank-flag", false);
-  gnista.runHooks("isearch-update-post-hook");
+  e8.runHooks("isearch-update-post-hook");
   lazyHighlight();
 }
 
@@ -361,7 +361,7 @@ function updateRing(string: string, regexp: boolean): void {
   const name = regexp ? "regexp-search-ring" : "search-ring";
   const ring = get(name);
   const previous = Array.isArray(ring) ? ring.filter((s) => typeof s === "string" && s !== string) : [];
-  set(name, [string, ...previous].slice(0, Number(get(regexp ? "regexp-search-ring-max" : "search-ring-max") ?? 16)) as gnista.Value);
+  set(name, [string, ...previous].slice(0, Number(get(regexp ? "regexp-search-ring-max" : "search-ring-max") ?? 16)) as e8.Value);
 }
 
 function ring(regexp: boolean): string[] {
@@ -380,7 +380,7 @@ export function isearchMode(forward: boolean, regexp = false): void {
   cmds = [];
   set("isearch-success", true);
   set("isearch-wrapped", false);
-  set("isearch-barrier", gnista.point());
+  set("isearch-barrier", e8.point());
   set("isearch-adjusted", false);
   set("isearch-yank-flag", false);
   set("isearch-error", null);
@@ -388,10 +388,10 @@ export function isearchMode(forward: boolean, regexp = false): void {
   justStarted = true;
   matchData = undefined;
   yankPrevPoint = undefined;
-  set("isearch-opoint", gnista.point());
+  set("isearch-opoint", e8.point());
   set("isearch-mode", " Isearch");
-  gnista.setOverridingMap("isearch-mode-map");
-  gnista.runHooks("isearch-mode-hook");
+  e8.setOverridingMap("isearch-mode-map");
+  e8.runHooks("isearch-mode-hook");
   pushState();
   isearchUpdate();
 }
@@ -401,23 +401,23 @@ const searching = () => get("isearch-mode") !== null && get("isearch-mode") !== 
 
 /** Ends the search, as isearch-done: with `nopush` the string is not added to the ring. */
 export function isearchDone(nopush = false, edit = false): void {
-  gnista.setOverridingMap(null);
+  e8.setOverridingMap(null);
   clearHighlights();
   set("isearch-mode", null);
   const string = str("isearch-string");
   if (string !== "" && !nopush) updateRing(string, flag("isearch-regexp"));
-  gnista.letBind({ "isearch-mode-end-hook-quit": nopush && !edit }, () => gnista.runHooks("isearch-mode-end-hook"));
-  const opoint = Number(get("isearch-opoint") ?? gnista.point());
-  if (gnista.point() !== opoint) {
-    if (!(truthy(get("transient-mark-mode")) && gnista.regionActive())) {
-      gnista.pushMark(opoint);
-      if (gnista.minibufferDepth() === 0 && !edit) gnista.message("Mark saved where search started");
+  e8.letBind({ "isearch-mode-end-hook-quit": nopush && !edit }, () => e8.runHooks("isearch-mode-end-hook"));
+  const opoint = Number(get("isearch-opoint") ?? e8.point());
+  if (e8.point() !== opoint) {
+    if (!(truthy(get("transient-mark-mode")) && e8.regionActive())) {
+      e8.pushMark(opoint);
+      if (e8.minibufferDepth() === 0 && !edit) e8.message("Mark saved where search started");
     }
-  } else if (!edit) gnista.message("");
+  } else if (!edit) e8.message("");
 }
 
 function requireSearch(): void {
-  if (!searching()) gnista.userError("Not searching");
+  if (!searching()) e8.userError("Not searching");
 }
 
 /** Searches again with the string grown, as isearch-search-and-update. */
@@ -432,14 +432,14 @@ function searchAndUpdate(): void {
       const string = str("isearch-string");
       let fold = truthy(get("isearch-case-fold-search"));
       if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) fold = isearchNoUpperCaseP(string, flag("isearch-regexp"));
-      const here = gnista.ignoreErrors(() => gnista.lookingAt(flag("isearch-regexp") ? string : regexpQuote(string), undefined, { caseFold: fold }));
-      matchedHere = here === true && (flag("isearch-yank-flag") || gnista.matchEnd(0)! <= Math.min(opoint, barrier));
+      const here = e8.ignoreErrors(() => e8.lookingAt(flag("isearch-regexp") ? string : regexpQuote(string), undefined, { caseFold: fold }));
+      matchedHere = here === true && (flag("isearch-yank-flag") || e8.matchEnd(0)! <= Math.min(opoint, barrier));
     }
     if (matchedHere) {
       set("isearch-success", true);
       set("isearch-error", null);
-      set("isearch-other-end", gnista.matchEnd(0)!);
-      matchData = { start: gnista.matchBeginning(0)!, end: gnista.matchEnd(0)! };
+      set("isearch-other-end", e8.matchEnd(0)!);
+      matchData = { start: e8.matchBeginning(0)!, end: e8.matchEnd(0)! };
       if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) {
         set("isearch-case-fold-search", isearchNoUpperCaseP(str("isearch-string"), flag("isearch-regexp")));
       }
@@ -447,7 +447,7 @@ function searchAndUpdate(): void {
       callMessage(false, true);
       const otherEnd = get("isearch-other-end");
       if (typeof otherEnd === "number" && !flag("isearch-adjusted")) {
-        gnista.gotoChar(forward ? otherEnd : Math.min(opoint, barrier, otherEnd + 1));
+        e8.gotoChar(forward ? otherEnd : Math.min(opoint, barrier, otherEnd + 1));
       }
       isearchSearch();
     }
@@ -486,25 +486,25 @@ function isearchRepeat(direction: "forward" | "backward", count = 1): void {
     } else if (!flag("isearch-success")) {
       set("isearch-wrapped", true);
       const wrap = get("isearch-wrap-function");
-      if (truthy(wrap)) gnista.funcall(wrap as string);
-      else gnista.gotoChar(forward ? gnista.pointMin() : gnista.pointMax());
+      if (truthy(wrap)) e8.funcall(wrap as string);
+      else e8.gotoChar(forward ? e8.pointMin() : e8.pointMax());
     }
   } else {
     const otherEnd = get("isearch-other-end");
-    if (typeof otherEnd === "number" && flag("isearch-repeat-on-direction-change")) gnista.gotoChar(otherEnd);
+    if (typeof otherEnd === "number" && flag("isearch-repeat-on-direction-change")) e8.gotoChar(otherEnd);
     set("isearch-forward", !flag("isearch-forward"));
     set("isearch-success", true);
   }
-  set("isearch-barrier", gnista.point());
+  set("isearch-barrier", e8.point());
   if (str("isearch-string") === "") set("isearch-success", true);
   else {
     const saved = [...cmds];
     while (count-- > 0) {
-      if (flag("isearch-success") && gnista.point() === get("isearch-other-end") && !justStarted) {
+      if (flag("isearch-success") && e8.point() === get("isearch-other-end") && !justStarted) {
         // After an empty match, step on so the search moves.
-        if (flag("isearch-forward") ? gnista.point() >= gnista.pointMax() : gnista.point() <= gnista.pointMin()) set("isearch-success", false);
+        if (flag("isearch-forward") ? e8.point() >= e8.pointMax() : e8.point() <= e8.pointMin()) set("isearch-success", false);
         else {
-          gnista.gotoChar(gnista.point() + (flag("isearch-forward") ? 1 : -1));
+          e8.gotoChar(e8.point() + (flag("isearch-forward") ? 1 : -1));
           isearchSearch();
         }
       } else isearchSearch();
@@ -517,10 +517,10 @@ function isearchRepeat(direction: "forward" | "backward", count = 1): void {
   isearchUpdate();
 }
 
-gnista.defineKeymap("isearch-mode-map");
+e8.defineKeymap("isearch-mode-map");
 
 /** C-s, C-r and their regexp forms: start a search, or while searching, find the next match. */
-function startOrRepeat(forward: boolean, regexp: boolean, arg: gnista.PrefixArg): void {
+function startOrRepeat(forward: boolean, regexp: boolean, arg: e8.PrefixArg): void {
   if (searching()) {
     isearchRepeat(forward ? "forward" : "backward");
     return;
@@ -529,7 +529,7 @@ function startOrRepeat(forward: boolean, regexp: boolean, arg: gnista.PrefixArg)
   isearchMode(forward, arg === null ? regexp : !regexp);
 }
 
-const isearchForward = gnista.defineCommand({
+const isearchForward = e8.defineCommand({
   name: "isearch-forward",
   doc:
     "Search forward incrementally: as you type, point moves to the next match of what you have typed.\n\n" +
@@ -539,31 +539,31 @@ const isearchForward = gnista.defineCommand({
     "does the same and then runs. C-g goes back to where the search started, or while it fails, removes " +
     "what does not match. Case is ignored unless the string has a capital letter. With a prefix argument, searches for a regexp.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => startOrRepeat(true, false, arg),
+  run: (arg: e8.PrefixArg) => startOrRepeat(true, false, arg),
 });
 
-const isearchBackward = gnista.defineCommand({
+const isearchBackward = e8.defineCommand({
   name: "isearch-backward",
   doc: "Search backward incrementally. See isearch-forward for the keys that work while searching.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => startOrRepeat(false, false, arg),
+  run: (arg: e8.PrefixArg) => startOrRepeat(false, false, arg),
 });
 
-const isearchForwardRegexp = gnista.defineCommand({
+const isearchForwardRegexp = e8.defineCommand({
   name: "isearch-forward-regexp",
   doc: "Search forward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => startOrRepeat(true, true, arg),
+  run: (arg: e8.PrefixArg) => startOrRepeat(true, true, arg),
 });
 
-const isearchBackwardRegexp = gnista.defineCommand({
+const isearchBackwardRegexp = e8.defineCommand({
   name: "isearch-backward-regexp",
   doc: "Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: gnista.PrefixArg) => startOrRepeat(false, true, arg),
+  run: (arg: e8.PrefixArg) => startOrRepeat(false, true, arg),
 });
 
-const repeatForward = gnista.defineCommand({
+const repeatForward = e8.defineCommand({
   name: "isearch-repeat-forward",
   doc: "Find the next match forward of the string being searched for.",
   run: () => {
@@ -572,7 +572,7 @@ const repeatForward = gnista.defineCommand({
   },
 });
 
-const repeatBackward = gnista.defineCommand({
+const repeatBackward = e8.defineCommand({
   name: "isearch-repeat-backward",
   doc: "Find the next match backward of the string being searched for.",
   run: () => {
@@ -588,24 +588,24 @@ function printingChar(key: string | undefined): string | undefined {
   return Array.from(key).length === 1 ? key : undefined;
 }
 
-const printingCharCommand = gnista.defineCommand({
+const printingCharCommand = e8.defineCommand({
   name: "isearch-printing-char",
   doc:
     "Add the character typed to the search string, or for any other key, end the search and run the key.\n\n" +
     "Bound as the default of isearch-mode-map, so it sees every key that map does not bind.",
   run: () => {
-    const key = gnista.lastKey();
+    const key = e8.lastKey();
     const c = printingChar(key);
     if (c !== undefined) {
       processSearchString(c, charDescription(c));
       return;
     }
     isearchDone();
-    if (key !== undefined) gnista.unreadKeys(key);
+    if (key !== undefined) e8.unreadKeys(key);
   },
 });
 
-const deleteChar = gnista.defineCommand({
+const deleteChar = e8.defineCommand({
   name: "isearch-delete-char",
   doc: "Take back the last change to the search: the last character typed, or the last C-s or C-r.",
   run: () => {
@@ -615,7 +615,7 @@ const deleteChar = gnista.defineCommand({
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "isearch-del-char",
   doc: "Take the last character off the search string and search again, keeping the effect of other commands.",
   params: [{ name: "n", kind: "count" }],
@@ -629,14 +629,14 @@ gnista.defineCommand({
     }
     callMessage(false, true);
     const otherEnd = get("isearch-other-end");
-    if (typeof otherEnd === "number") gnista.gotoChar(otherEnd);
+    if (typeof otherEnd === "number") e8.gotoChar(otherEnd);
     isearchSearch();
     pushState();
     isearchUpdate();
   },
 });
 
-const exit = gnista.defineCommand({
+const exit = e8.defineCommand({
   name: "isearch-exit",
   doc: "End the search, leaving point at the match and the mark where the search started.",
   run: () => {
@@ -648,12 +648,12 @@ const exit = gnista.defineCommand({
 /** Ends the search and goes back to where it started, as isearch-cancel. */
 function isearchCancel(): void {
   if (truthy(get("isearch-push-state-function")) && cmds.length > 0) setState(cmds[cmds.length - 1]);
-  else gnista.gotoChar(Number(get("isearch-opoint")));
+  else e8.gotoChar(Number(get("isearch-opoint")));
   isearchDone(true);
-  gnista.message("Quit");
+  e8.message("Quit");
 }
 
-const abort = gnista.defineCommand({
+const abort = e8.defineCommand({
   name: "isearch-abort",
   doc: "While the search fails, remove what does not match; otherwise end it and go back to where it started.",
   run: () => {
@@ -670,19 +670,19 @@ const abort = gnista.defineCommand({
 
 /** Adds the text from point to where `jump` moves, as isearch-yank-internal. */
 function yankInternal(jump: () => number): void {
-  const text = gnista.saveExcursion(() => {
+  const text = e8.saveExcursion(() => {
     const otherEnd = get("isearch-other-end");
-    if (!flag("isearch-forward") && typeof otherEnd === "number") gnista.gotoChar(otherEnd);
-    if (!flag("isearch-success") && yankPrevPoint !== undefined) gnista.gotoChar(yankPrevPoint);
-    const start = gnista.point();
+    if (!flag("isearch-forward") && typeof otherEnd === "number") e8.gotoChar(otherEnd);
+    if (!flag("isearch-success") && yankPrevPoint !== undefined) e8.gotoChar(yankPrevPoint);
+    const start = e8.point();
     const end = jump();
     yankPrevPoint = flag("isearch-success") ? undefined : end;
-    return gnista.bufferSubstringNoProperties(Math.min(start, end), Math.max(start, end));
+    return e8.bufferSubstringNoProperties(Math.min(start, end), Math.max(start, end));
   });
   yankString(text);
 }
 
-const yankWord = gnista.defineCommand({
+const yankWord = e8.defineCommand({
   name: "isearch-yank-word-or-char",
   doc: "Add the rest of the word after point to the search string, or the next character if point is not before a word.",
   params: [{ name: "n", kind: "count" }],
@@ -690,39 +690,39 @@ const yankWord = gnista.defineCommand({
     requireSearch();
     yankInternal(() => {
       for (let i = 0; i < n; i++) {
-        const word = (c: string | undefined) => c !== undefined && gnista.charSyntax(c) === "w";
-        if (word(gnista.charAfter()) || word(gnista.charAfter(gnista.point() + 1))) gnista.call("forward-word", 1);
-        else if (gnista.point() < gnista.pointMax()) gnista.gotoChar(gnista.point() + 1);
+        const word = (c: string | undefined) => c !== undefined && e8.charSyntax(c) === "w";
+        if (word(e8.charAfter()) || word(e8.charAfter(e8.point() + 1))) e8.call("forward-word", 1);
+        else if (e8.point() < e8.pointMax()) e8.gotoChar(e8.point() + 1);
       }
-      return gnista.point();
+      return e8.point();
     });
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "isearch-yank-char",
   doc: "Add the next character after point to the search string, or as many as the prefix argument says.",
   params: [{ name: "n", kind: "count" }],
   run: (n = 1) => {
     requireSearch();
     yankInternal(() => {
-      gnista.gotoChar(Math.min(gnista.pointMax(), gnista.point() + n));
-      return gnista.point();
+      e8.gotoChar(Math.min(e8.pointMax(), e8.point() + n));
+      return e8.point();
     });
   },
 });
 
-const yankKill = gnista.defineCommand({
+const yankKill = e8.defineCommand({
   name: "isearch-yank-kill",
   doc: "Add the last kill to the search string.",
   run: () => {
     if (!searching()) isearchMode(true);
-    const kill = gnista.currentKill();
+    const kill = e8.currentKill();
     if (kill !== undefined) yankString(kill);
   },
 });
 
-const toggleRegexp = gnista.defineCommand({
+const toggleRegexp = e8.defineCommand({
   name: "isearch-toggle-regexp",
   doc: "Switch between searching for a string and for a regular expression; what is typed next searches the new way.",
   run: () => {
@@ -734,12 +734,12 @@ const toggleRegexp = gnista.defineCommand({
   },
 });
 
-gnista.bindKey("C-s", isearchForward);
-gnista.bindKey("C-r", isearchBackward);
-gnista.bindKey("C-M-s", isearchForwardRegexp);
-gnista.bindKey("C-M-r", isearchBackwardRegexp);
+e8.bindKey("C-s", isearchForward);
+e8.bindKey("C-r", isearchBackward);
+e8.bindKey("C-M-s", isearchForwardRegexp);
+e8.bindKey("C-M-r", isearchBackwardRegexp);
 
-gnista.setKeymapDefault("isearch-mode-map", printingCharCommand);
+e8.setKeymapDefault("isearch-mode-map", printingCharCommand);
 for (const [keys, command] of [
   ["C-s", repeatForward],
   ["C-r", repeatBackward],
@@ -753,5 +753,5 @@ for (const [keys, command] of [
   ["M-r", toggleRegexp],
   ["M-s r", toggleRegexp],
 ] as const) {
-  gnista.bindKey(keys, command, "isearch-mode-map");
+  e8.bindKey(keys, command, "isearch-mode-map");
 }

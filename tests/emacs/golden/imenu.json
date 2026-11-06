@@ -243,7 +243,7 @@
     {
       "name": "imenu-org-top-heading",
       "input": {
-        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
+        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
         "point": 0,
         "keys": "M-x",
         "modes": [
@@ -256,9 +256,9 @@
           "Done"
         ]
       },
-      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
-      "visible": "* Inbox\nnotes\n** TODO [#A] Call Alice :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
-      "point": 111,
+      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
+      "visible": "* Inbox\nnotes\n** TODO [#A] Call Alice :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
+      "point": 107,
       "mark": 0,
       "mark_active": false,
       "kill_ring": [],
@@ -268,7 +268,7 @@
     {
       "name": "imenu-org-subheading",
       "input": {
-        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
+        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
         "point": 0,
         "keys": "M-x",
         "modes": [
@@ -282,8 +282,8 @@
           "Call.Alice"
         ]
       },
-      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
-      "visible": "* Inbox\nnotes\n** TODO [#A] Call Alice :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
+      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
+      "visible": "* Inbox\nnotes\n** TODO [#A] Call Alice :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
       "point": 14,
       "mark": 0,
       "mark_active": false,
@@ -294,7 +294,7 @@
     {
       "name": "imenu-org-folded-subheading-shows",
       "input": {
-        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
+        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
         "point": 0,
         "keys": "S-TAB M-x",
         "modes": [
@@ -305,11 +305,11 @@
         "answers": [
           "imenu",
           "Projects",
-          "Gnista"
+          "E8"
         ]
       },
-      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
-      "visible": "* Inbox\n* Projects\n** Gnista\n* Done\n",
+      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** E8\ntext\n* Done\n",
+      "visible": "* Inbox\n* Projects\n** E8\n* Done\n",
       "point": 96,
       "mark": 0,
       "mark_active": false,

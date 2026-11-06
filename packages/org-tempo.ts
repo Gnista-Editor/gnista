@@ -8,7 +8,7 @@ import { structureTemplates, upcaseBlock } from "org";
 import { fileRelativeName } from "files";
 import { charCount } from "subr";
 
-gnista.defineVariable({
+e8.defineVariable({
   name: "org-tempo-keywords-alist",
   doc: 'The keywords "<KEY" and TAB insert in Org, each a key and a keyword: ["L", "latex"] makes "<L" #+latex: .',
   value: [
@@ -50,7 +50,7 @@ function templates(): Map<string, Element[]> {
       INDENT,
     ]);
   }
-  const keywords = gnista.variable("org-tempo-keywords-alist");
+  const keywords = e8.variable("org-tempo-keywords-alist");
   for (const entry of Array.isArray(keywords) ? keywords : []) {
     // As org-tempo-add-keyword.
     if (Array.isArray(entry) && typeof entry[0] === "string" && typeof entry[1] === "string") {
@@ -62,27 +62,27 @@ function templates(): Map<string, Element[]> {
 
 /** "<I": #+include: and a file name, as org-tempo--include-file. */
 function includeFile(): void {
-  const file = gnista.readFileName("Include file: ");
-  gnista.insert(`#+include: ${JSON.stringify(fileRelativeName(file))} `);
+  const file = e8.readFileName("Include file: ");
+  e8.insert(`#+include: ${JSON.stringify(fileRelativeName(file))} `);
 }
 
 /** Inserts a template at point, leaving point at its first "p", as tempo-insert-template. */
 function insertTemplate(template: Element[]): void {
-  const start = gnista.makeMarker(gnista.point());
-  let mark: gnista.Marker | undefined;
+  const start = e8.makeMarker(e8.point());
+  let mark: e8.Marker | undefined;
   for (const element of template) {
-    if (typeof element === "string") gnista.insert(element);
+    if (typeof element === "string") e8.insert(element);
     else if (typeof element === "function") element();
-    else if ("p" in element) mark ??= gnista.makeMarker(gnista.point());
-    else if ("indent" in element) gnista.call("indent-according-to-mode");
-    else gnista.insert("\n");
+    else if ("p" in element) mark ??= e8.makeMarker(e8.point());
+    else if ("indent" in element) e8.call("indent-according-to-mode");
+    else e8.insert("\n");
   }
   // As tempo-forward-mark: the first mark after where the template starts, else its end.
   if (mark) {
-    gnista.gotoChar(gnista.markerPosition(mark)!);
-    gnista.deleteMarker(mark);
+    e8.gotoChar(e8.markerPosition(mark)!);
+    e8.deleteMarker(mark);
   }
-  gnista.deleteMarker(start);
+  e8.deleteMarker(start);
 }
 
 /**
@@ -92,12 +92,12 @@ function insertTemplate(template: Element[]): void {
  * completed. Whether a template was inserted.
  */
 function completeTag(): boolean {
-  const before = gnista.bufferText(gnista.lineStart(gnista.lineOf(gnista.point())), gnista.point());
+  const before = e8.bufferText(e8.lineStart(e8.lineOf(e8.point())), e8.point());
   // As tempo-match-finder: "^ *\\(<[[:word:]]+\\)\\=".
   const m = /^ *(<[\p{L}\p{N}]+)$/u.exec(before);
   if (!m) return false;
   const typed = m[1];
-  const from = gnista.point() - charCount(typed);
+  const from = e8.point() - charCount(typed);
   const all = templates();
   let template = all.get(typed);
   let completion = typed;
@@ -112,14 +112,14 @@ function completeTag(): boolean {
     });
     template = all.get(completion);
   }
-  gnista.deleteRegion(from, gnista.point());
+  e8.deleteRegion(from, e8.point());
   if (!template) {
-    gnista.insert(completion);
+    e8.insert(completion);
     return false;
   }
   insertTemplate(template);
-  gnista.deactivateMark();
+  e8.deactivateMark();
   return true;
 }
 
-gnista.addHook("org-tab-before-tab-emulation-hook", () => completeTag());
+e8.addHook("org-tab-before-tab-emulation-hook", () => completeTag());

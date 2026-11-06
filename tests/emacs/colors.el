@@ -1,6 +1,6 @@
-;;; colors.el --- Writes Emacs's colour names for Gnista  -*- lexical-binding: t -*-
+;;; colors.el --- Writes Emacs's colour names for E8  -*- lexical-binding: t -*-
 
-;; Writes crates/gnista-core/src/colors_data.rs: the colours Emacs knows by
+;; Writes crates/e8-core/src/colors_data.rs: the colours Emacs knows by
 ;; name, as `color-name-rgb-alist' (term/tty-colors.el) has them, each
 ;; name as Emacs compares names (lowercase, without spaces) with its red,
 ;; green and blue from 0 to 65535, sorted by name for a binary search:
@@ -10,7 +10,7 @@
 (load "term/tty-colors")
 
 (let* ((root (file-name-directory (directory-file-name (file-name-directory load-file-name))))
-       (out (expand-file-name "../crates/gnista-core/src/colors_data.rs" root))
+       (out (expand-file-name "../crates/e8-core/src/colors_data.rs" root))
        (entries (sort (copy-sequence color-name-rgb-alist)
                       (lambda (a b) (string< (car a) (car b))))))
   (with-temp-file out

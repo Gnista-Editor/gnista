@@ -4,7 +4,7 @@ Status: accepted · 2026-10-29
 
 ## Context
 
-Gnista could edit code but not build it, search a project and visit the results, comment it out, or indent it. In Emacs:
+E8 could edit code but not build it, search a project and visit the results, comment it out, or indent it. In Emacs:
 - compiling and grepping run programs in the background through process.c, with compile.el and grep.el reading their output and `next-error` from simple.el visiting each message;
 - newcomment.el comments and uncomments, through each mode's syntax table;
 - indent.el's `indent-for-tab-command` runs the mode's `indent-line-function`, and `electric-indent-mode` calls it on RET.
@@ -12,7 +12,7 @@ Gnista could edit code but not build it, search a project and visit the results,
 ## Options considered
 
 1. **Run programs synchronously.** Simple, but a long build would freeze the editor, as Emacs's compile never does.
-2. **Processes in the core, as process.c, and compile.el, grep.el and newcomment.el ported to TypeScript.** The core reads each process's output on a thread and takes it in when front ends run timers. That keeps the editor single-threaded, as the rest of Gnista is.
+2. **Processes in the core, as process.c, and compile.el, grep.el and newcomment.el ported to TypeScript.** The core reads each process's output on a thread and takes it in when front ends run timers. That keeps the editor single-threaded, as the rest of E8 is.
 3. **Tree-sitter indentation rules**, as `rust-ts-mode` and `js-ts-mode` use, or **the older modes' rules**, as js-mode's and python-mode's. The oracle has js-mode and python-mode, but no grammars for the ts modes, so only the older rules can be checked against Emacs.
 
 ## Decision
@@ -44,7 +44,7 @@ Options 2, and the older modes' rules.
 
 ## Consequences
 
-`M-x compile`, `M-g n` and `C-x p g` work as an Emacs user expects, and Gnista can build itself and step through the errors.
+`M-x compile`, `M-g n` and `C-x p g` work as an Emacs user expects, and E8 can build itself and step through the errors.
 
 Left out, or still to do:
 - Process output is not shown while the editor waits for a prompt.
@@ -72,7 +72,7 @@ A review of this work and ADR 0023's found, and the same round fixed:
   - a process whose child kept its output open never ended;
   - output went to the end of a narrowing rather than the process mark;
   - writing to a program that did not read froze the editor;
-  - processes were left running when Gnista exited;
+  - processes were left running when E8 exited;
   - a buffer with a running process was killed without asking.
 - **Undo, markers and change groups**:
   - undo moved advancing markers;

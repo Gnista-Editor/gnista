@@ -6,7 +6,7 @@
  * buffer, however made. Setting `pos` moves it into the current buffer,
  * as move-marker does.
  */
-export type Marker = { readonly id: gnista.Marker; pos: number };
+export type Marker = { readonly id: e8.Marker; pos: number };
 
 /** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
 export const markers: Marker[] = [];
@@ -22,14 +22,14 @@ export function lastingMarker(pos: number, advances = false): Marker {
 }
 
 export function marker(pos: number, advances = false): Marker {
-  const id = gnista.makeMarker(pos, { advances });
+  const id = e8.makeMarker(pos, { advances });
   const m: Marker = {
     id,
     get pos() {
-      return gnista.markerPosition(id) ?? 0;
+      return e8.markerPosition(id) ?? 0;
     },
     set pos(p: number) {
-      gnista.setMarker(id, p, gnista.bufferName());
+      e8.setMarker(id, p, e8.bufferName());
     },
   };
   markers.push(m);
@@ -41,7 +41,7 @@ export function dropMarker(m: Marker): void {
   if (i < 0) return;
   markers.splice(i, 1);
   lasting.delete(m);
-  gnista.deleteMarker(m.id);
+  e8.deleteMarker(m.id);
 }
 
 // A marker made here lives only while the command that made it runs, unless
@@ -49,48 +49,48 @@ export function dropMarker(m: Marker): void {
 // an error or a quit left behind, before the command dropped it, would be
 // moved on every later edit; it is dropped once the outermost command is
 // over, when no prompt or recursive edit keeps a command waiting partway.
-gnista.addHook("post-command-hook", () => {
-  if (markers.length === lasting.size || gnista.minibufferDepth() > 0 || gnista.recursionDepth() > 0) return;
+e8.addHook("post-command-hook", () => {
+  if (markers.length === lasting.size || e8.minibufferDepth() > 0 || e8.recursionDepth() > 0) return;
   for (const m of [...markers]) if (!lasting.has(m)) dropMarker(m);
 });
 
 /** Whether the region is active and not empty, as org-region-active-p asks. */
 export function orgRegionActive(): boolean {
-  const mark = gnista.mark();
-  return gnista.regionActive() && mark !== undefined && mark !== gnista.point();
+  const mark = e8.mark();
+  return e8.regionActive() && mark !== undefined && mark !== e8.point();
 }
 
 /** The line a position is on, point's by default. */
-export function lineAt(pos = gnista.point()): number {
-  return gnista.lineOf(pos);
+export function lineAt(pos = e8.point()): number {
+  return e8.lineOf(pos);
 }
 
 /** Where a line starts, or the end of the buffer past the last line. */
 export function lineStartOrEnd(line: number): number {
-  return line < gnista.lineCount() ? gnista.lineStart(line) : gnista.bufferSize();
+  return line < e8.lineCount() ? e8.lineStart(line) : e8.bufferSize();
 }
 
 /** The character at a position, or "" outside the buffer. */
 export function charAt(pos: number): string {
-  return pos >= 0 && pos < gnista.bufferSize() ? gnista.bufferText(pos, pos + 1) : "";
+  return pos >= 0 && pos < e8.bufferSize() ? e8.bufferText(pos, pos + 1) : "";
 }
 
 /** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
 export function placeMarkers(saved: [Marker, number][]): void {
-  const here = gnista.bufferName();
-  for (const [m, p] of saved) if (gnista.markerBuffer(m.id) === here) m.pos = p;
+  const here = e8.bufferName();
+  for (const [m, p] of saved) if (e8.markerBuffer(m.id) === here) m.pos = p;
 }
 
 export function edInsert(pos: number, text: string, beforeMarkers = false): void {
   if (text === "") return;
-  gnista.gotoChar(pos);
-  if (beforeMarkers) gnista.insertBeforeMarkers(text);
-  else gnista.insert(text);
+  e8.gotoChar(pos);
+  if (beforeMarkers) e8.insertBeforeMarkers(text);
+  else e8.insert(text);
 }
 
 export function edDelete(from: number, to: number): string {
   if (to <= from) return "";
-  return gnista.deleteRegion(from, to);
+  return e8.deleteRegion(from, to);
 }
 
 
@@ -101,10 +101,10 @@ export function edDelete(from: number, to: number): string {
  * only, lists those under it. Returns the entry, or for one of `specials`
  * its key; C-g aborts.
  */
-export function orgMks(table: gnista.Value[][], title: string, prompt = "Select: ", specials: [string, string][] = []): gnista.Value[] | string {
+export function orgMks(table: e8.Value[][], title: string, prompt = "Select: ", specials: [string, string][] = []): e8.Value[] | string {
   const name = "*Org Select*";
-  return gnista.saveWindowExcursion(() => {
-    gnista.call("switch-to-buffer-other-window", name);
+  return e8.saveWindowExcursion(() => {
+    e8.call("switch-to-buffer-other-window", name);
     try {
       let current = "";
       for (;;) {
@@ -132,29 +132,29 @@ export function orgMks(table: gnista.Value[][], title: string, prompt = "Select:
             allowed.add(key);
           }
         }
-        gnista.letBind({ "inhibit-read-only": true }, () => {
-          gnista.deleteRegion(0, gnista.bufferSize());
-          gnista.insert(text);
+        e8.letBind({ "inhibit-read-only": true }, () => {
+          e8.deleteRegion(0, e8.bufferSize());
+          e8.insert(text);
         });
-        gnista.gotoChar(0);
-        gnista.call("shrink-window-if-larger-than-buffer");
+        e8.gotoChar(0);
+        e8.call("shrink-window-if-larger-than-buffer");
         let pressed: string;
         for (;;) {
-          const key = gnista.readKey(prompt);
+          const key = e8.readKey(prompt);
           pressed = key === "SPC" || key === "TAB" || key === "RET" ? "\t" : key;
           if (pressed === "C-g" || allowed.has(pressed)) break;
-          gnista.message(`Invalid key: ‘${pressed}’`);
+          e8.message(`Invalid key: ‘${pressed}’`);
         }
-        if (pressed === "C-g") gnista.userError("Abort");
+        if (pressed === "C-g") e8.userError("Abort");
         current += pressed;
         if (prefixes.has(pressed)) continue;
         const entry = table.find((e) => e[0] === current);
         if (entry) return entry;
         if (specials.some(([k]) => k === current)) return current;
-        gnista.signal("error", "No entry available");
+        e8.signal("error", "No entry available");
       }
     } finally {
-      if (gnista.bufferList().includes(name)) gnista.call("kill-buffer", name);
+      if (e8.bufferList().includes(name)) e8.call("kill-buffer", name);
     }
   });
 }

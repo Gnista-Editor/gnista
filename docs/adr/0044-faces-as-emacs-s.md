@@ -4,7 +4,7 @@ Status: accepted · 2026-10-31
 
 ## Context
 
-Gnista's faces set a foreground, a background, a height and a family, and bold, italic, underline and strike-through were on or off. Colours were Gnista's palette names or `#rrggbb`. A `face` property could only name faces. Emacs's packages and themes rely on more, all of it from xfaces.c and faces.el:
+E8's faces set a foreground, a background, a height and a family, and bold, italic, underline and strike-through were on or off. Colours were E8's palette names or `#rrggbb`. A `face` property could only name faces. Emacs's packages and themes rely on more, all of it from xfaces.c and faces.el:
 
 - **Attributes:**
   - weights and slants by name;
@@ -34,7 +34,7 @@ Option 1.
   - `:inverse-video`, `:extend`, `:stipple`, `:font`, and `:inherit` as a list.
 
   `FaceAttrs::set` and `get` read and give each in Emacs's form, `unspecified` unsetting it. Inheritance merges the faces `:inherit` names, earlier ones winning.
-- **Colours.** `Color::parse` takes Gnista's palette names, the 657 names Emacs knows (`color-name-rgb-alist`, generated into `colors_data.rs` by `tests/emacs/colors.el`), and Emacs's colour specs, `#RGB` to `#RRRRGGGGBBBB`, `rgb:` and `rgbi:`. `color_distance` and `color_gray_p` are xfaces.c's.
+- **Colours.** `Color::parse` takes E8's palette names, the 657 names Emacs knows (`color-name-rgb-alist`, generated into `colors_data.rs` by `tests/emacs/colors.el`), and Emacs's colour specs, `#RGB` to `#RRRRGGGGBBBB`, `rgb:` and `rgbi:`. `color_distance` and `color_gray_p` are xfaces.c's.
 - **Anonymous faces.** A plist in a `face` property, alone or in a list with names, stands for an anonymous face. Each different plist is given a name of its own once, so rows, styles and their caches treat it as a named face.
 - **Drawing.** `Style` gains the underline's colour and wave, the overline, the strike-through's colour, the box, and `:extend`; inverse video swaps the colours when a style is resolved. A row records its newline's style when it extends.
   - The terminal draws coloured underlines and fills an extending background to the edge.
@@ -48,7 +48,7 @@ Option 1.
   - the commands `set-face-foreground`, `set-face-background`, `set-face-underline`, `set-face-inverse-video`, `set-face-extend`, `make-face-bold` and its kin, `invert-face` and `list-faces-display`;
   - facemenu.el's `list-colors-display`.
 
-`tests/faces.rs` in gnista-core and `tests/face_attributes.rs` in gnista-script check colour specs and names, attributes and inheritance against Emacs 30.2's values. Batch Emacs answers `color-distance` and `color-gray-p` for a terminal's few colours, so those follow xfaces.c's code instead. A snapshot shows the decorations drawn.
+`tests/faces.rs` in e8-core and `tests/face_attributes.rs` in e8-script check colour specs and names, attributes and inheritance against Emacs 30.2's values. Batch Emacs answers `color-distance` and `color-gray-p` for a terminal's few colours, so those follow xfaces.c's code instead. A snapshot shows the decorations drawn.
 
 ## Consequences
 

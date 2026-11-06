@@ -4,7 +4,7 @@
 // character is read, the minibuffer included.
 
 for (const [keys, text] of translations()) {
-  gnista.defineKey("key-translation-map", `C-x 8 ${keys}`, [...text]);
+  e8.defineKey("key-translation-map", `C-x 8 ${keys}`, [...text]);
 }
 
 // The table below is written by tests/emacs/iso-transl.el.

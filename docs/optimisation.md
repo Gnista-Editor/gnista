@@ -1,14 +1,14 @@
 # Optimisation
 
-The aim is for Gnista to be faster than Emacs in every situation, not only in most. [performance.md](performance.md) records what has been measured and changed; this document lists where Gnista is known to be slower than it could be, or than Emacs, and what would make it faster. Each entry says how it was measured, so it can be measured again before and after.
+The aim is for E8 to be faster than Emacs in every situation, not only in most. [performance.md](performance.md) records what has been measured and changed; this document lists where E8 is known to be slower than it could be, or than Emacs, and what would make it faster. Each entry says how it was measured, so it can be measured again before and after.
 
 Two rules carry over from the work so far. Measure first: a change goes in with the numbers it moved. And a faster path must give the same results as the path it stands in for, checked the way the slower one is checked (by the Emacs oracle, a fuzzer or the recorded cases), so speed never costs behaving like Emacs.
 
 ## Regular expressions: an automaton beside the backtracking matcher
 
-**Now.** Emacs regexps are matched by Gnista's own engine, a backtracking machine as Emacs's regex-emacs.c is ([ADR 0027](adr/0027-emacs-regexps.md)), which tries each start position in turn, skipping those whose first character cannot start a match. Failing searches over 10 MB of text, measured with `regexp_searches_over_a_large_buffer_are_fast` in `crates/gnista-script/tests/regexp.rs` against Emacs 30.2 on the same text:
+**Now.** Emacs regexps are matched by E8's own engine, a backtracking machine as Emacs's regex-emacs.c is ([ADR 0027](adr/0027-emacs-regexps.md)), which tries each start position in turn, skipping those whose first character cannot start a match. Failing searches over 10 MB of text, measured with `regexp_searches_over_a_large_buffer_are_fast` in `crates/e8-script/tests/regexp.rs` against Emacs 30.2 on the same text:
 
-| Regexp | Gnista | Emacs |
+| Regexp | E8 | Emacs |
 | --- | ---: | ---: |
 | `\<zzz\>` | 70 ms | 39 ms |
 | `^\* q` | 78 ms | 30 ms |
@@ -24,7 +24,7 @@ Like Emacs's, the matcher takes exponential time on some expressions: `\(x+x+\)+
 - word and symbol boundaries (`\b`, `\<`, `\>`, `\_<`, `\_>`) are look-arounds the automaton supports over those sets, which includes Emacs's boundaries between scripts only if they are expressed as character sets too, or else such regexps stay with the engine;
 - Emacs's own departures are kept: a loop that matches nothing ends, `\{N,M\}` is a loop that a matching-nothing iteration ends, and a `*` or `+` loop of non-words or non-symbols before `\_<` never gives characters back. Where these change what matches, the automaton finds where a match can start and the engine finds the match there.
 
-Everything else stays with the engine. The regexp fuzzer compares the two on every case, and the speed test above gains Gnista-only rows for the automaton.
+Everything else stays with the engine. The regexp fuzzer compares the two on every case, and the speed test above gains E8-only rows for the automaton.
 
 ## Electric Pair mode in a large buffer
 
@@ -36,7 +36,7 @@ Org keeps an index of its headings from its after-change hook since 2026-11-01, 
 
 ## Opening a large file
 
-`find-file` of the 100 MB text file takes 65 ms (`large_text_file` in the bench, [performance.md](performance.md)). A profile of it repeated (`GNISTA_PROFILE_KEY=find-file GNISTA_PROFILE_FILE=text` with `profile_key`) puts most of it in ropey building the rope, copying the text into its leaves. Of the rest, the bytes are checked as UTF-8 twice, once by `coding::detect` and again by `decode_as`, and then copied into a `String` the rope copies again: about 15% of the time. Decoding from the `Vec` the file was read into, `String::from_utf8` taking it without a copy, and detection handing on what it found, would save both; it means passing owned bytes through `decode`'s callers.
+`find-file` of the 100 MB text file takes 65 ms (`large_text_file` in the bench, [performance.md](performance.md)). A profile of it repeated (`E8_PROFILE_KEY=find-file E8_PROFILE_FILE=text` with `profile_key`) puts most of it in ropey building the rope, copying the text into its leaves. Of the rest, the bytes are checked as UTF-8 twice, once by `coding::detect` and again by `decode_as`, and then copied into a `String` the rope copies again: about 15% of the time. Decoding from the `Vec` the file was read into, `String::from_utf8` taking it without a copy, and detection handing on what it found, would save both; it means passing owned bytes through `decode`'s callers.
 
 ## Character tables
 

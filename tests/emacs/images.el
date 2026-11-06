@@ -3,8 +3,8 @@
 ;; Batch Emacs and Emacs on a terminal cannot load images: image-size and
 ;; the rest signal "Window system frame should be used".  So this runs in
 ;; a graphical Emacs, which opens a frame for a moment, records the
-;; answers the tests in crates/gnista-core/tests/images.rs and
-;; crates/gnista-script/tests/images.rs compare with, and quits:
+;; answers the tests in crates/e8-core/tests/images.rs and
+;; crates/e8-script/tests/images.rs compare with, and quits:
 ;;
 ;;   emacs -Q -l $PWD/tests/emacs/images.el
 ;;
@@ -13,7 +13,7 @@
 ;; The tests' metrics are those of the frame it ran in: Emacs 30.2's NS
 ;; port with Menlo at 12 pixels, 7 wide, 14 high and 11 above the baseline.
 
-(defvar probe-dir (expand-file-name "../../crates/gnista-core/tests/images/" (file-name-directory load-file-name)))
+(defvar probe-dir (expand-file-name "../../crates/e8-core/tests/images/" (file-name-directory load-file-name)))
 (defvar probe-out (expand-file-name "../../target/image-answers.el" (file-name-directory load-file-name)))
 (defun probe-try (f)
   (condition-case err (funcall f) (error (list 'error err))))

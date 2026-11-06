@@ -105,7 +105,7 @@
     "keys": "C-x 3 C-x b C-x o M-> C-x o C-x b",
     "answers": [
       "b",
-      "*gnista-oracle*"
+      "*e8-oracle*"
     ],
     "windows": true
   },

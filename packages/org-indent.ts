@@ -5,7 +5,7 @@
 // #+STARTUP: indent, turns it on when a file opens.
 //
 // Copyright (C) 2009-2025 Free Software Foundation, Inc.
-// Ported to Gnista in 2026.
+// Ported to E8 in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -15,26 +15,26 @@
 import { itemParts } from "org-list";
 import { PerBuffer } from "subr";
 
-const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
+const defvar = (name: string, value: e8.Value, doc: string) => e8.defineVariable({ name, value, doc });
 defvar("org-indent-indentation-per-level", 2, "How many columns each level of headings indents the text under it.");
 defvar("org-indent-boundary-char", " ", "The character that ends the indentation of text, a space by default; | shows where it ends.");
 defvar("org-indent-mode-turns-on-hiding-stars", true, "Whether org-indent-mode turns org-hide-leading-stars on.");
 defvar("org-indent-mode-turns-off-org-adapt-indentation", true, "Whether org-indent-mode turns org-adapt-indentation off.");
-gnista.defineHook("org-indent-post-buffer-init-functions", "Functions called with the buffer once org-indent-mode has indented all of it.");
-gnista.defineFace({ name: "org-indent", doc: "The indentation org-indent-mode shows.", attributes: { inherit: "org-hide" } });
+e8.defineHook("org-indent-post-buffer-init-functions", "Functions called with the buffer once org-indent-mode has indented all of it.");
+e8.defineFace({ name: "org-indent", doc: "The indentation org-indent-mode shows.", attributes: { inherit: "org-hide" } });
 
 const DEEPEST = 50;
 
 /** The line prefixes of text and headings at each level, as org-indent--compute-prefixes. */
-function computePrefixes(): { text: gnista.PropertizedString[]; heading: gnista.PropertizedString[] } {
-  const per = Number(gnista.variable("org-indent-indentation-per-level") ?? 2);
-  const boundary = String(gnista.variable("org-indent-boundary-char") ?? " ").slice(0, 1) || " ";
-  const text: gnista.PropertizedString[] = [];
-  const heading: gnista.PropertizedString[] = [];
+function computePrefixes(): { text: e8.PropertizedString[]; heading: e8.PropertizedString[] } {
+  const per = Number(e8.variable("org-indent-indentation-per-level") ?? 2);
+  const boundary = String(e8.variable("org-indent-boundary-char") ?? " ").slice(0, 1) || " ";
+  const text: e8.PropertizedString[] = [];
+  const heading: e8.PropertizedString[] = [];
   for (let n = 0; n < DEEPEST; n++) {
     const indentation = per <= 0 ? 0 : n <= 1 ? 0 : (per - 1) * (n - 1);
-    heading.push(gnista.propertize("*".repeat(indentation), { face: "org-indent" }));
-    text.push(gnista.propertize(" ".repeat(per <= 0 ? 0 : n + indentation) + (per > 0 && n > 0 ? boundary : ""), { face: "org-indent" }));
+    heading.push(e8.propertize("*".repeat(indentation), { face: "org-indent" }));
+    text.push(e8.propertize(" ".repeat(per <= 0 ? 0 : n + indentation) + (per > 0 && n > 0 ? boundary : ""), { face: "org-indent" }));
   }
   return { text, heading };
 }
@@ -44,11 +44,11 @@ let prefixes = computePrefixes();
 /** The column where an item's text starts, as org-list-item-body-column: one after its bullet. */
 function itemBodyColumn(text: string): number {
   const m = /^[ \t]*\S+/.exec(text);
-  return m ? gnista.stringWidth(m[0].replace(/\t/g, " ".repeat(Number(gnista.variable("tab-width") ?? 8)))) + 1 : 0;
+  return m ? e8.stringWidth(m[0].replace(/\t/g, " ".repeat(Number(e8.variable("tab-width") ?? 8)))) + 1 : 0;
 }
 
 /** The wrap prefixes made so far, by kind, level and indentation, so each is made once. */
-let wraps = new Map<string, gnista.PropertizedString>();
+let wraps = new Map<string, e8.PropertizedString>();
 
 /** Gives a line its prefixes, as org-indent-set-line-properties. */
 function setLineProperties(line: number, level: number, indentation: number, heading: boolean): void {
@@ -57,21 +57,21 @@ function setLineProperties(line: number, level: number, indentation: number, hea
   const key = `${heading ? "h" : "t"}${lvl}:${indentation}`;
   let wrap = wraps.get(key);
   if (wrap === undefined) {
-    wrap = gnista.propertize(String(prefix) + (heading ? `${"*".repeat(level)} ` : " ".repeat(indentation)), { face: "org-indent" });
+    wrap = e8.propertize(String(prefix) + (heading ? `${"*".repeat(level)} ` : " ".repeat(indentation)), { face: "org-indent" });
     wraps.set(key, wrap);
   }
-  const start = gnista.lineStart(line);
-  const end = line + 1 < gnista.lineCount() ? gnista.lineStart(line + 1) : gnista.bufferSize();
+  const start = e8.lineStart(line);
+  const end = line + 1 < e8.lineCount() ? e8.lineStart(line + 1) : e8.bufferSize();
   // Down to the next line, so that empty lines are indented too.
   if (end > start) {
-    gnista.putTextProperty(start, end, "line-prefix", prefix);
-    gnista.putTextProperty(start, end, "wrap-prefix", wrap);
+    e8.putTextProperty(start, end, "line-prefix", prefix);
+    e8.putTextProperty(start, end, "wrap-prefix", wrap);
   }
 }
 
 /** A line's indentation, as current-indentation measures it. */
 function indentationOf(text: string): number {
-  const tab = Number(gnista.variable("tab-width") ?? 8);
+  const tab = Number(e8.variable("tab-width") ?? 8);
   let col = 0;
   for (const c of text) {
     if (c === " ") col++;
@@ -86,7 +86,7 @@ const HEADING = /^(\*+)[ \t]/;
 /** The level of the heading a line is under, 0 before the first, as org-current-level. */
 function levelAt(line: number): number {
   for (let l = line; l >= 0; l--) {
-    const m = HEADING.exec(gnista.lineText(l));
+    const m = HEADING.exec(e8.lineText(l));
     if (m) return m[1].length;
   }
   return 0;
@@ -98,15 +98,15 @@ function levelAt(line: number): number {
  * stops when the deadline passes and returns where it stopped.
  */
 export function addProperties(beg: number, end: number, deadline?: number): number | undefined {
-  return gnista.saveRestriction(() => {
-    gnista.widen();
-    return gnista.withSilentModifications(() => {
-      const first = gnista.lineOf(beg);
-      const last = gnista.lineOf(Math.min(end, gnista.bufferSize()));
+  return e8.saveRestriction(() => {
+    e8.widen();
+    return e8.withSilentModifications(() => {
+      const first = e8.lineOf(beg);
+      const last = e8.lineOf(Math.min(end, e8.bufferSize()));
       let level = levelAt(first);
-      for (let l = first; l <= last && gnista.lineStart(l) < gnista.bufferSize(); l++) {
-        if (deadline !== undefined && (l - first) % 64 === 63 && Date.now() > deadline) return gnista.lineStart(l);
-        const text = gnista.lineText(l);
+      for (let l = first; l <= last && e8.lineStart(l) < e8.bufferSize(); l++) {
+        if (deadline !== undefined && (l - first) % 64 === 63 && Date.now() > deadline) return e8.lineStart(l);
+        const text = e8.lineText(l);
         const m = HEADING.exec(text);
         if (m) {
           level = m[1].length;
@@ -123,36 +123,36 @@ export function addProperties(beg: number, end: number, deadline?: number): numb
 }
 
 /** Where each buffer's first indenting has got to, as org-indent--initial-marker. */
-const initial = new PerBuffer<gnista.Marker>();
+const initial = new PerBuffer<e8.Marker>();
 
 /**
  * Indents the rest of a buffer for at most 50 milliseconds, then lets
  * typing in, carrying on by a timer until it is done, as org-indent's agent
  * does in idle time.
  */
-function initializeBuffer(buffer: gnista.Buffer): void {
-  if (!gnista.bufferLiveP(buffer)) return;
-  gnista.withCurrentBuffer(buffer, () => {
+function initializeBuffer(buffer: e8.Buffer): void {
+  if (!e8.bufferLiveP(buffer)) return;
+  e8.withCurrentBuffer(buffer, () => {
     const marker = initial.get(buffer);
-    if (gnista.variable("org-indent-mode") !== true || marker === undefined) return;
-    const from = gnista.markerPosition(marker) ?? 0;
-    const stopped = addProperties(from, gnista.bufferSize(), Date.now() + 50);
+    if (e8.variable("org-indent-mode") !== true || marker === undefined) return;
+    const from = e8.markerPosition(marker) ?? 0;
+    const stopped = addProperties(from, e8.bufferSize(), Date.now() + 50);
     if (stopped === undefined) {
-      gnista.deleteMarker(marker);
+      e8.deleteMarker(marker);
       initial.delete(buffer);
-      gnista.runHooks("org-indent-post-buffer-init-functions", buffer);
+      e8.runHooks("org-indent-post-buffer-init-functions", buffer);
     } else {
-      gnista.setMarker(marker, stopped);
-      gnista.runWithTimer(0.05, null, () => initializeBuffer(buffer));
+      e8.setMarker(marker, stopped);
+      e8.runWithTimer(0.05, null, () => initializeBuffer(buffer));
     }
   });
 }
 
 /** Takes the prefixes off, as org-indent-remove-properties. */
 function removeProperties(beg: number, end: number): void {
-  gnista.withSilentModifications(() => {
-    gnista.removeTextProperty(beg, end, "line-prefix");
-    gnista.removeTextProperty(beg, end, "wrap-prefix");
+  e8.withSilentModifications(() => {
+    e8.removeTextProperty(beg, end, "line-prefix");
+    e8.removeTextProperty(beg, end, "wrap-prefix");
   });
 }
 
@@ -160,35 +160,35 @@ function removeProperties(beg: number, end: number): void {
 let modifiedHeadline = false;
 
 function notifyModifiedHeadline(beg: number, end: number): void {
-  if (gnista.variable("org-indent-mode") !== true) return;
-  const first = gnista.lineOf(beg);
-  const last = gnista.lineOf(end);
-  const m = HEADING.exec(gnista.lineText(first));
-  modifiedHeadline = (m !== null && beg < gnista.lineStart(first) + m[0].length) ||
-    Array.from({ length: last - first }, (_, i) => first + 1 + i).some((l) => HEADING.test(gnista.lineText(l)));
+  if (e8.variable("org-indent-mode") !== true) return;
+  const first = e8.lineOf(beg);
+  const last = e8.lineOf(end);
+  const m = HEADING.exec(e8.lineText(first));
+  modifiedHeadline = (m !== null && beg < e8.lineStart(first) + m[0].length) ||
+    Array.from({ length: last - first }, (_, i) => first + 1 + i).some((l) => HEADING.test(e8.lineText(l)));
 }
 
 /** Gives the lines a change touched their prefixes again, up to the next heading if it touched one, as org-indent-refresh-maybe. */
 function refreshMaybe(beg: number, end: number): void {
-  if (gnista.variable("org-indent-mode") !== true) return;
-  gnista.saveRestriction(() => {
-    gnista.widen();
-    const first = gnista.lineOf(beg);
-    const last = gnista.lineOf(Math.min(end, gnista.bufferSize()));
+  if (e8.variable("org-indent-mode") !== true) return;
+  e8.saveRestriction(() => {
+    e8.widen();
+    const first = e8.lineOf(beg);
+    const last = e8.lineOf(Math.min(end, e8.bufferSize()));
     let touched = modifiedHeadline;
-    for (let l = first; !touched && l <= last; l++) touched = HEADING.test(gnista.lineText(l));
+    for (let l = first; !touched && l <= last; l++) touched = HEADING.test(e8.lineText(l));
     if (touched) {
       let next = last + 1;
-      while (next < gnista.lineCount() && !HEADING.test(gnista.lineText(next))) next++;
+      while (next < e8.lineCount() && !HEADING.test(e8.lineText(next))) next++;
       modifiedHeadline = false;
-      addProperties(beg, next < gnista.lineCount() ? gnista.lineStart(next) : gnista.bufferSize());
+      addProperties(beg, next < e8.lineCount() ? e8.lineStart(next) : e8.bufferSize());
     } else {
       addProperties(beg, end);
     }
   });
 }
 
-export const orgIndentMode = gnista.defineMinorMode({
+export const orgIndentMode = e8.defineMinorMode({
   name: "org-indent-mode",
   lighter: " Ind",
   doc:
@@ -196,58 +196,58 @@ export const orgIndentMode = gnista.defineMinorMode({
     "and long lines continue at the text's indentation. Turns org-hide-leading-stars on, so each heading shows its last star.",
   onChange: (enabled) => {
     if (enabled) {
-      gnista.makeLocalVariable("indent-tabs-mode");
-      gnista.setVariable("indent-tabs-mode", false);
-      if (gnista.variable("org-indent-mode-turns-off-org-adapt-indentation") === true && gnista.variable("org-adapt-indentation") !== "headline-data") {
-        gnista.makeLocalVariable("org-adapt-indentation");
-        gnista.setVariable("org-adapt-indentation", null);
+      e8.makeLocalVariable("indent-tabs-mode");
+      e8.setVariable("indent-tabs-mode", false);
+      if (e8.variable("org-indent-mode-turns-off-org-adapt-indentation") === true && e8.variable("org-adapt-indentation") !== "headline-data") {
+        e8.makeLocalVariable("org-adapt-indentation");
+        e8.setVariable("org-adapt-indentation", null);
       }
-      if (gnista.variable("org-indent-mode-turns-on-hiding-stars") === true) {
-        gnista.makeLocalVariable("org-hide-leading-stars");
-        gnista.setVariable("org-hide-leading-stars", true);
+      if (e8.variable("org-indent-mode-turns-on-hiding-stars") === true) {
+        e8.makeLocalVariable("org-hide-leading-stars");
+        e8.setVariable("org-hide-leading-stars", true);
       }
       prefixes = computePrefixes();
       wraps = new Map();
-      gnista.addHook("after-change-functions", refreshMaybe, { local: true });
-      gnista.addHook("before-change-functions", notifyModifiedHeadline, { local: true });
-      gnista.saveRestriction(() => {
-        gnista.widen();
-        removeProperties(gnista.pointMin(), gnista.pointMax());
+      e8.addHook("after-change-functions", refreshMaybe, { local: true });
+      e8.addHook("before-change-functions", notifyModifiedHeadline, { local: true });
+      e8.saveRestriction(() => {
+        e8.widen();
+        removeProperties(e8.pointMin(), e8.pointMax());
       });
-      const old = initial.get(gnista.currentBuffer());
-      if (old !== undefined) gnista.deleteMarker(old);
-      initial.set(gnista.currentBuffer(), gnista.makeMarker(0));
-      initializeBuffer(gnista.currentBuffer());
+      const old = initial.get(e8.currentBuffer());
+      if (old !== undefined) e8.deleteMarker(old);
+      initial.set(e8.currentBuffer(), e8.makeMarker(0));
+      initializeBuffer(e8.currentBuffer());
     } else {
-      const marker = initial.get(gnista.currentBuffer());
-      if (marker !== undefined) gnista.deleteMarker(marker);
-      initial.delete(gnista.currentBuffer());
-      gnista.killLocalVariable("org-adapt-indentation");
-      gnista.killLocalVariable("org-hide-leading-stars");
-      gnista.removeHook("after-change-functions", refreshMaybe, { local: true });
-      gnista.removeHook("before-change-functions", notifyModifiedHeadline, { local: true });
-      gnista.saveRestriction(() => {
-        gnista.widen();
-        removeProperties(gnista.pointMin(), gnista.pointMax());
+      const marker = initial.get(e8.currentBuffer());
+      if (marker !== undefined) e8.deleteMarker(marker);
+      initial.delete(e8.currentBuffer());
+      e8.killLocalVariable("org-adapt-indentation");
+      e8.killLocalVariable("org-hide-leading-stars");
+      e8.removeHook("after-change-functions", refreshMaybe, { local: true });
+      e8.removeHook("before-change-functions", notifyModifiedHeadline, { local: true });
+      e8.saveRestriction(() => {
+        e8.widen();
+        removeProperties(e8.pointMin(), e8.pointMax());
       });
     }
-    gnista.call("font-lock-flush");
+    e8.call("font-lock-flush");
   },
 });
 
-gnista.defineCommand({
+e8.defineCommand({
   name: "org-indent-indent-buffer",
   doc: "Give the whole buffer org-indent-mode's indentation again.",
   run: () => {
-    if (!gnista.derivedModeP("org-mode")) gnista.signal("error", "Not in Org mode");
-    gnista.message("Setting buffer indentation.  It may take a few seconds...");
-    removeProperties(gnista.pointMin(), gnista.pointMax());
-    addProperties(gnista.pointMin(), gnista.pointMax());
-    gnista.message("Indentation of buffer set.");
+    if (!e8.derivedModeP("org-mode")) e8.signal("error", "Not in Org mode");
+    e8.message("Setting buffer indentation.  It may take a few seconds...");
+    removeProperties(e8.pointMin(), e8.pointMax());
+    addProperties(e8.pointMin(), e8.pointMax());
+    e8.message("Indentation of buffer set.");
   },
 });
 
 // Text copied out of an indented buffer leaves the prefixes behind, as
 // org-indent-remove-properties-from-string sees to in Org.
-const excluded = gnista.variable("yank-excluded-properties");
-if (Array.isArray(excluded)) gnista.setVariable("yank-excluded-properties", [...excluded, "line-prefix", "wrap-prefix"]);
+const excluded = e8.variable("yank-excluded-properties");
+if (Array.isArray(excluded)) e8.setVariable("yank-excluded-properties", [...excluded, "line-prefix", "wrap-prefix"]);

@@ -175,14 +175,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 4,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*<2>",
+          "buffer": "*e8-oracle*<2>",
           "point": 4,
           "width": 80,
           "height": 12,
@@ -211,14 +211,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*gnista-oracle*",
+          "buffer": "*e8-oracle*",
           "point": 0,
           "width": 80,
           "height": 12,
           "selected": true
         },
         {
-          "buffer": "*gnista-oracle*<2>",
+          "buffer": "*e8-oracle*<2>",
           "point": 0,
           "width": 80,
           "height": 12,
