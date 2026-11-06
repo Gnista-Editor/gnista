@@ -162,3 +162,28 @@ ertDeftest("keys-edit-and-undo", () => {
     let (status, ed, _dir) = run(&[("keys-tests.ts", test)], &["-l", "keys-tests.ts", "-f", "ert-run-tests-batch-and-exit"]);
     assert_eq!(status, 0, "{}", logged(&ed));
 }
+
+/// sleep-for and sit-for wait without reading input in batch mode, as
+/// batch Emacs's do, running timers and process output meanwhile: there is
+/// no keyboard to read, and reading standard input would fail.
+const SLEEPING: &str = r#"
+const start = Date.now();
+let ran = false;
+e8.runWithTimer(0.01, null, () => { ran = true; });
+e8.sleepFor(0.05);
+const slept = Date.now() - start;
+const sat = e8.sitFor(0.02);
+e8.message(`slept ${slept >= 45} timer ${ran} sat ${sat}`);
+const p = e8.makeProcess({ name: "echo", buffer: "*echo*", command: ["sh", "-c", "echo hello"] });
+for (let i = 0; i < 200 && !e8.withCurrentBuffer("*echo*", () => e8.bufferSubstringNoProperties(e8.pointMin(), e8.pointMax())).includes("hello"); i++) e8.sleepFor(0.01);
+e8.message(`output ${JSON.stringify(e8.withCurrentBuffer("*echo*", () => e8.bufferSubstringNoProperties(e8.pointMin(), e8.pointMax())).trim().split("\n")[0])}`);
+"#;
+
+#[test]
+fn sleep_for_and_sit_for_wait_without_reading_input() {
+    let (status, ed, _dir) = run(&[("sleep.ts", SLEEPING)], &["-l", "sleep.ts"]);
+    let log = logged(&ed);
+    assert_eq!(status, 0, "{log}");
+    assert!(log.contains("slept true timer true sat true"), "{log}");
+    assert!(log.contains("output \"hello\""), "{log}");
+}
