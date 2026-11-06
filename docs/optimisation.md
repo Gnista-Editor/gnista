@@ -47,3 +47,19 @@ Classes, categories, scripts and case past ASCII are binary searches in sorted r
 With the GUI's metrics, rows built for moving point (`C-n` over continued lines, keeping point in sight) work out their faces, as their wrapping depends on the fonts, where with cells they need none. That is most of what `C-n` costs over the terminal: 0.75 ms a key against 0.42 in a 50,000-line Org file, and 0.98 ms in `variable-pitch-mode` (`gui_layout` in the bench, [performance.md](performance.md)). A buffer whose rows have all been on the grid could skip the faces until a face with another height or a proportional family is in effect, or rows' measured widths could be kept per line between keys until the text or faces there change, as Emacs's glyph matrices are.
 
 Later on 2026-10-31, rows off the grid cost 0.1 to 0.2 ms a key more than in the table above: `C-n` 0.93 ms with `text-scale-adjust` twice against 0.79, and in `variable-pitch-mode` `C-v` 3.38 ms against 3.17 and `C-n` 1.12 against 0.99. Running `gui_layout` on each commit of that day put the rise before images, bidirectional text and the fringe indicators: at `6f8f6e7`, faces with Emacs's attributes and the GUI's fringes, `variable-pitch-mode` already took 3.44 and 1.16 ms, and the merges after it moved nothing beyond noise. So the cost is in resolving faces' extra attributes or in the fringes' extra column for rows off the grid, and a profile of `C-n` in `variable-pitch-mode` should say which.
+
+## Installing packages at startup
+
+**Now.** `e8.usePackage` installs a missing package with `git clone` while init.ts waits, one package after another. Each clone of an `e8-editor` port took about 2 s on 2026-11-07, nearly all of it reaching GitHub: a shallow clone of `e8-magit` took 1.80 s against 1.96 s for a full one. Mark's configuration, fourteen packages, held a first start for about 30 s. Since then the window shows the editor before init.ts runs, and each message as it comes, so progress shows; and on a machine that has `e8-lock.json` but not the packages, the first `usePackage` clones every package the lock file names at once: the fourteen took 2.05 s, the whole of `e8 --batch -l init.ts` with a configuration directory holding only `init.ts` and the lock file. A package named for the first time, which the lock file does not know yet, is still cloned on its own while init.ts waits, and the editor cannot be used until init.ts finishes.
+
+**Idea.** Install in the background, as elpaca does for Emacs: `usePackage` starts a missing package's clone and returns at once, and what the configuration does with the package goes in a callback that runs once it is installed and required, as use-package's `:config` does:
+
+```ts
+e8.usePackage("e8-editor/e8-magit", {
+  config() {
+    e8.defineKey("magit-section-mode-map", "C-a", "magit-section-up");
+  },
+});
+```
+
+init.ts would finish in well under a second, every missing package cloning at once; E8's own commands would work meanwhile, each package turning on as it arrived, with a buffer listing the queue, as elpaca's does. A package waits for those it `requires`, and one that fails says so without stopping the rest. A configuration written as today's, settings after the call, keeps working for packages already installed; for a missing one it needs the callback, so this wants an ADR deciding whether `usePackage` without `config` waits, as now, or defers. Measured with the same command as above, with an empty lock file so nothing is known in advance.

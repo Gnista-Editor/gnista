@@ -82,6 +82,9 @@ fn start_in(
         ed.message(format!("An extension failed to load: {e}"));
     }
     if load_init {
+        // The window shows the editor while init.ts runs, which can take a
+        // while, as when it installs packages, and its messages as they come.
+        ed.redisplay_now();
         self::load_init(ed, &scripting, &dir);
     }
     // As Emacs runs them once its init file is loaded, with -q too.
