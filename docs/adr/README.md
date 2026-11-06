@@ -63,4 +63,5 @@ One record per decision, in the order they were made; a later one can change an 
 - [0059](0059-packages-are-git-repositories.md) Packages are git repositories
 - [0060](0060-releases.md) Releases
 - [0061](0061-agents-over-acp.md) Agents over ACP
-- [0062](0062-the-name-e8.md) The name E8
+- [0062](0062-agents-through-gnista-mcp-ask-first.md) Agents through gnista-mcp ask first
+- [0063](0063-the-name-e8.md) The name E8

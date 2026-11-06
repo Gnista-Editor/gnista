@@ -39,7 +39,7 @@ Gnista talks to coding agents over ACP, launching whatever adapter the configura
 Later, in this order, each when it is wanted:
 
 1. Terminals: `terminal/create` and the rest, on `makeProcess`, shown in the tool call's block.
-2. `gnista-mcp` given to each session as an MCP server, so an ACP agent can use the editor's commands too, under `check_permission` as ADR 0019's agent does.
+2. `gnista-mcp` given to each session as an MCP server, so an ACP agent can use the editor's commands too, under `check_permission` as ADR 0019's agent does. Done: [ADR 0062](0062-agents-through-gnista-mcp-ask-first.md).
 3. One `M-x agent`, its buffer's code in TypeScript, with `gnista-agent` one backend and ACP agents the others.
 4. An agent's edits arriving as changes to review and accept by hunk, rather than written at once.
 5. The frame as what the agent sees, from `describe_frame`.
@@ -52,6 +52,7 @@ Later, in this order, each when it is wanted:
 - Using Claude this way needs Node 22 or newer and the adapter (`npm install -g @agentclientprotocol/claude-agent-acp`), which Gnista neither ships nor installs.
 - There are two agent buffers until the third item above, `M-x agent` and `M-x agent-shell`.
 - `acp.ts` follows GPL-3 code closely; `docs/licensing.md` records it, as for the Org files. `agent-shell.ts` follows only the design.
+- Found on 2026-11-06, running Claude Code's adapter: it reads and writes files with its own tools, asking under Claude Code's permission settings, and calls neither `fs/` method nor `session/request_permission` while those settings allow the edit. So with Claude the buffer-backed file methods go unused, and `agent-shell.ts` reverts the unmodified buffers of files a finished tool call touched instead. Agents that do call them get buffers; `gnista-mcp` as the session's MCP server (later, item 2) is the way to put Claude's edits through buffers.
 - Watch for: QuickJS keeping up with a fast stream (if not, a native for splitting lines, not the whole client); and the protocol's version 2, which the Claude adapter already serves to clients that ask for it.
 
 ## Dependencies introduced

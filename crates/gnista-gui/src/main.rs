@@ -66,7 +66,12 @@ fn main() -> eframe::Result {
             // only this user can open; a request wakes the window to answer it.
             let ctx = cc.egui_ctx.clone();
             let requests = match gnista_mcp::socket::listen(&gnista_mcp::socket::default_path(), move || ctx.request_repaint()) {
-                Ok(requests) => Some(requests),
+                Ok(requests) => {
+                    // So agent-shell can give its agents this editor (gnista-mcp --socket).
+                    let path = gnista_mcp::socket::default_path().display().to_string();
+                    app.run(move |editor| editor.set_variable("gnista-mcp-socket", gnista_core::Value::Str(path)));
+                    Some(requests)
+                }
                 Err(e) => {
                     app.message(format!("No agent socket: {e}"));
                     None

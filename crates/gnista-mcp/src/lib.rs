@@ -9,7 +9,7 @@
 
 pub mod socket;
 
-use gnista_core::{Arg, Editor, Key, PrefixArg, format_keys};
+use gnista_core::{Arg, Editor, Key, PrefixArg, WindowId, format_keys};
 use gnista_script::Scripting;
 use serde_json::{Value, json};
 
@@ -23,7 +23,7 @@ const MAX_LINES: usize = 400;
 /// Answers one MCP message, a line of JSON. Returns the reply to send, or
 /// `None` for a notification, which has none.
 pub fn handle_message(ed: &mut Editor, scripting: Option<&Scripting>, line: &str) -> Option<String> {
-    handle(ed, scripting, line, false)
+    handle(ed, scripting, line, false, None)
 }
 
 /// What the editor remembers of a client of the editor a user has open,
@@ -33,16 +33,29 @@ pub struct Client {
     /// What waited for input when the client's last request finished, a
     /// prompt its own keys opened, which its next request may answer.
     left_open: Option<u64>,
+    /// Its name, as it gave it when it connected, for asking the user.
+    name: Option<String>,
+    /// Effects the user allowed it for its next call, and for as long as
+    /// Gnista runs.
+    once: Vec<String>,
+    always: Vec<String>,
+    /// The window it acts in, as its last call left it.
+    target: Option<WindowId>,
 }
 
 /// As [`handle_message`], for a client of the editor a user has open, as
-/// the GUI's socket serves: while something waits for input that the
+/// the front ends' socket serves. It acts as an agent, with the safety
+/// rules of Gnista's own (ADR 0019): writing files, discarding unsaved
+/// work, quitting and running code wait for the user's approval, asked
+/// when the call wants them, and the call's result says what the user
+/// answered. It acts in the window the user works in, never one showing an
+/// agent's conversation. While something waits for input that the
 /// client's own keys did not open, a question the user, a command of
-/// theirs or Gnista's own agent asked, the client may only read, so it
-/// cannot answer for the user.
+/// theirs or Gnista's own agent asked, it may only read, so it cannot
+/// answer for the user.
 pub fn handle_client_message(ed: &mut Editor, scripting: Option<&Scripting>, line: &str, client: &mut Client) -> Option<String> {
     let waiting = ed.waiting_for_input();
-    let reply = handle(ed, scripting, line, waiting.is_some() && waiting != client.left_open);
+    let reply = handle(ed, scripting, line, waiting.is_some() && waiting != client.left_open, Some(client));
     client.left_open = ed.waiting_for_input();
     reply
 }
@@ -50,7 +63,7 @@ pub fn handle_client_message(ed: &mut Editor, scripting: Option<&Scripting>, lin
 /// The tools that only read, which run whatever waits for input.
 const READING_TOOLS: &[&str] = &["list_commands", "describe_command", "read_buffer", "screen", "list_buffers"];
 
-fn handle(ed: &mut Editor, scripting: Option<&Scripting>, line: &str, only_reading: bool) -> Option<String> {
+fn handle(ed: &mut Editor, scripting: Option<&Scripting>, line: &str, only_reading: bool, client: Option<&mut Client>) -> Option<String> {
     let message: Value = match serde_json::from_str(line) {
         Ok(v) => v,
         Err(e) => return Some(error_reply(Value::Null, -32700, &format!("Parse error: {e}")).to_string()),
@@ -59,10 +72,15 @@ fn handle(ed: &mut Editor, scripting: Option<&Scripting>, line: &str, only_readi
     let method = message.get("method").and_then(Value::as_str).unwrap_or_default();
     let params = message.get("params").cloned().unwrap_or(Value::Null);
     let result = match method {
-        "initialize" => Ok(initialize(&params)),
+        "initialize" => {
+            if let Some(client) = client {
+                client.name = params.pointer("/clientInfo/name").and_then(Value::as_str).map(str::to_string);
+            }
+            Ok(initialize(&params))
+        }
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({ "tools": tools() })),
-        "tools/call" => Ok(call_tool(ed, scripting, &params, only_reading)),
+        "tools/call" => Ok(call_tool(ed, scripting, &params, only_reading, client)),
         _ => Err((-32601, format!("Method not found: {method}"))),
     };
     Some(match result {
@@ -176,16 +194,128 @@ pub fn tools() -> Value {
 
 /// Runs a tool call. Failures are tool results with `isError`, as MCP has
 /// them, so the agent sees what went wrong.
-fn call_tool(ed: &mut Editor, scripting: Option<&Scripting>, params: &Value, only_reading: bool) -> Value {
+fn call_tool(ed: &mut Editor, scripting: Option<&Scripting>, params: &Value, only_reading: bool, client: Option<&mut Client>) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or_default();
     let args = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
     let (text, failed) = if only_reading && !READING_TOOLS.contains(&name) {
         let asked = ed.prompt().unwrap_or("something").trim().to_string();
         (format!("Gnista is waiting for its user to answer {asked:?}; only the reading tools run until it is answered."), true)
     } else {
-        run_tool(ed, scripting, name, &args)
+        match client {
+            Some(client) if !READING_TOOLS.contains(&name) => run_as_agent(ed, scripting, name, &args, client),
+            _ => run_tool(ed, scripting, name, &args),
+        }
     };
     json!({ "content": [{ "type": "text", "text": text }], "isError": failed })
+}
+
+/// Whether a buffer is an agent's conversation, which agents' tools never act in.
+pub fn is_agent_buffer(ed: &Editor, name: &str) -> bool {
+    ed.find_buffer(name).is_some_and(|i| ed.variable_in(&ed.buffers()[i], "agent-buffer").is_some_and(|v| v.is_true()))
+}
+
+/// Runs a client's tool as an agent: in the window it acts in, with the
+/// effects the user allowed it, asking the user about one it wants that
+/// they have not.
+fn run_as_agent(ed: &mut Editor, scripting: Option<&Scripting>, name: &str, args: &Value, client: &mut Client) -> (String, bool) {
+    let target = client.target.unwrap_or_else(|| ed.selected_window());
+    // What the user allowed once is for this call, the one made again after they said yes.
+    let allowed: Vec<String> = client.once.drain(..).chain(client.always.iter().cloned()).collect();
+    let (text, failed, now) = in_window(ed, &is_agent_buffer, target, |ed| {
+        ed.set_agent_acting(true);
+        for effect in &allowed {
+            ed.allow_effect(effect);
+        }
+        let (mut text, failed) = run_tool(ed, scripting, name, args);
+        // Keys nothing read yet would run later, as the user's and past the permission check.
+        let unused = ed.discard_typeahead();
+        ed.set_agent_acting(false);
+        if unused > 0 {
+            text.push_str(&format!("\n{unused} of the keys were not used: nothing was reading them."));
+        }
+        (text, failed)
+    });
+    client.target = Some(now);
+    let requested = ed.take_permission_request();
+    ed.clear_permissions();
+    let Some(effect) = requested else { return (text, failed) };
+    // Asked only when nothing else waits for the user's keys, so the
+    // question never lands inside another, nor can the client's own keys
+    // answer it.
+    if ed.waiting_for_input().is_some() {
+        return (
+            format!("{text}\nThis needs the user's approval, which Gnista asks for once nothing else is waiting for their answer: call again then."),
+            true,
+        );
+    }
+    let who = client.name.clone().unwrap_or_else(|| "the agent".into());
+    let answer = ed.read_char_choice(&format!("Let {who} {effect}? (y, ! for always or n) "), &['y', '!', 'n']).unwrap_or_default();
+    ed.take_error();
+    let said = match answer.as_str() {
+        "y" => {
+            client.once.push(effect.clone());
+            format!("The user allowed this once: make the same call again to {effect}.")
+        }
+        "!" => {
+            client.always.push(effect.clone());
+            format!("The user allowed you to {effect} from now on: make the same call again.")
+        }
+        _ => format!("The user declined to let you {effect}. Do not try another way to do the same; say what you could not do."),
+    };
+    (format!("{text}\n{said}"), true)
+}
+
+/// Runs `f` with the window an agent acts in selected: `target` if it is
+/// still there and shows no agent's conversation (as `avoid` tells, by a
+/// buffer's name), else another window that shows none, else a new one.
+/// Returns what `f` returned and the window selected afterwards, as tools
+/// can move between windows.
+pub fn in_window(
+    ed: &mut Editor,
+    avoid: &dyn Fn(&Editor, &str) -> bool,
+    target: WindowId,
+    f: impl FnOnce(&mut Editor) -> (String, bool),
+) -> (String, bool, WindowId) {
+    // With a prompt open, one the agent's own keys opened, as no other lets
+    // it act, what it types goes there, wherever the windows are.
+    if ed.prompt().is_some() {
+        let (text, failed) = f(ed);
+        return (text, failed, target);
+    }
+    let selected = ed.selected_window();
+    let windows: Vec<(WindowId, bool)> = ed.windows().iter().map(|w| (w.id, avoid(ed, &w.buffer.name))).collect();
+    let usable = |id: WindowId| windows.iter().any(|(w, avoided)| *w == id && !avoided);
+    let window = if usable(target) {
+        Some(target)
+    } else if usable(selected) {
+        Some(selected)
+    } else {
+        windows.iter().find(|(_, avoided)| !avoided).map(|(w, _)| *w)
+    };
+    let window = match window {
+        Some(w) => w,
+        None => match ed.split_window(Some(selected), false) {
+            Ok(w) => {
+                let other = ed.buffers().iter().map(|b| b.name.clone()).find(|name| !name.starts_with(' ') && !avoid(ed, name));
+                if let Some(other) = other {
+                    let _ = ed.set_window_buffer(w, &other);
+                }
+                w
+            }
+            Err(e) => return (format!("No window to act in: {e}"), true, target),
+        },
+    };
+    let _ = ed.select_window(window);
+    let (text, failed) = f(ed);
+    // A prompt the call opened keeps the minibuffer selected, for its next keys.
+    if ed.prompt().is_some() {
+        return (text, failed, window);
+    }
+    let now = ed.selected_window();
+    if ed.windows().iter().any(|w| w.id == selected) {
+        let _ = ed.select_window(selected);
+    }
+    (text, failed, now)
 }
 
 /// Runs a tool by name with its arguments, returning its text and whether
@@ -208,6 +338,10 @@ pub fn run_tool(ed: &mut Editor, scripting: Option<&Scripting>, name: &str, args
         "list_buffers" => Ok(list_buffers(ed)),
         "eval_typescript" => match scripting {
             Some(s) => {
+                // An agent needs the user's approval to run code, as M-: does.
+                if let Err(e) = ed.check_permission("run TypeScript") {
+                    return (e.to_string(), true);
+                }
                 let result = s.eval_typescript(ed, "agent.ts", text("code").unwrap_or_default());
                 report(ed, result.err().map(|e| e.to_string()))
             }

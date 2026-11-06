@@ -147,6 +147,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/xref.ts", include_str!("../../../packages/xref.ts")),
     ("packages/project.ts", include_str!("../../../packages/project.ts")),
     ("packages/eglot.ts", include_str!("../../../packages/eglot.ts")),
+    ("packages/acp.ts", include_str!("../../../packages/acp.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
     ("packages/dired-aux.ts", include_str!("../../../packages/dired-aux.ts")),
     ("packages/dired-x.ts", include_str!("../../../packages/dired-x.ts")),
@@ -185,6 +186,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/ob-tangle.ts", include_str!("../../../packages/ob-tangle.ts")),
     // Preloaded for its commands, which Emacs autoloads.
     ("packages/package-vc.ts", include_str!("../../../packages/package-vc.ts")),
+    ("packages/agent-shell.ts", include_str!("../../../packages/agent-shell.ts")),
 ];
 
 /// The packages that ship with Gnista but load only when a configuration

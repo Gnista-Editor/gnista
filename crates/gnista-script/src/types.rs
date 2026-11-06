@@ -1108,8 +1108,12 @@ const API: &str = r##"
     filter?: (process: string, output: string) => void;
     /** Called with the process and what happened, "finished\n" or "exited abnormally with code 2\n", when it ends. */
     sentinel?: (process: string, event: string) => void;
-    /** Whether standard error comes in as output too: true by default; on a pseudo-terminal it always does. */
-    stderr?: boolean;
+    /**
+     * Whether standard error comes in as output too: true by default; on a
+     * pseudo-terminal it always does. A buffer instead takes it on its own,
+     * made if there is none, as make-process's :stderr; on pipes only.
+     */
+    stderr?: boolean | BufferLike;
     /**
      * A pseudo-terminal, "pty", as a shell or a program that asks questions
      * wants, or pipes, "pipe"; as process-connection-type says by default.

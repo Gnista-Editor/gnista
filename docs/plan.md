@@ -85,9 +85,10 @@ Done ([ADR 0012](adr/0012-org-mode.md)). `org.ts` and `org-table.ts` follow Emac
 Started: `gnista-mcp` serves the command registry over MCP, so an agent such as Claude Code can drive the editor the user has open ([ADR 0015](adr/0015-mcp-server.md)). Commands can now ask questions partway through, which asking before an agent acts will need ([ADR 0018](adr/0018-files-and-saving.md)). Then the agent buffer ([ADR 0019](adr/0019-agent-buffer.md)): `M-x agent` talks to Claude in an Org buffer, the model calls commands as tools in the user's window, writing files, discarding unsaved work, quitting and running code wait for the user's approval, enforced by the core, and each turn undoes in one step. Sixteen scripted scenarios run headless. Next: token use on the mode line and spending caps, explaining the last action, region commands, and the same permissions for agents over MCP.
 
 Agents over ACP ([ADR 0061](adr/0061-agents-over-acp.md)): Gnista talks to Claude Code, Gemini CLI and other coding agents over the Agent Client Protocol, launching the adapter a configuration names and leaving its login to it. In order:
-1. `packages/acp.ts`, a port of Emacs's `acp.el`, with `make-process`'s `:stderr` buffer in the core.
-2. `packages/agent-shell.ts`: `M-x agent-shell` in ADR 0019's Org buffer, serving permission requests and file reads and writes through buffers.
-3. Terminals for the agent; `gnista-mcp` given to each session; one `M-x agent` with `gnista-agent` as one backend; edits to review by hunk; the frame as what the agent sees; porting Emacs Lisp packages with an agent, as drafts.
+1. Done: `packages/acp.ts`, a port of Emacs's `acp.el`, with `make-process`'s `:stderr` buffer in the core.
+2. Done: `packages/agent-shell.ts`, `M-x agent-shell` in ADR 0019's Org buffer, serving permission requests and file reads and writes through buffers. Twelve scenarios run against a fake agent; an ignored test runs Claude Code's adapter.
+3. Done: `gnista-mcp` given to each session, connected to this editor, and every client of the user's editor asking before writes, discards, quitting and running code ([ADR 0062](adr/0062-agents-through-gnista-mcp-ask-first.md)); a live test had Claude Code edit and save a buffer through it, asked first.
+4. Next: terminals for the agent; one `M-x agent` with `gnista-agent` as one backend; edits to review by hunk; the frame as what the agent sees; porting Emacs Lisp packages with an agent, as drafts.
 
 **Since then**, outside the milestones:
 - Windows as window.el has them: `display-buffer`, the `C-x 4` commands, resizing and balancing ([ADR 0009](adr/0009-windows.md)), and frames on `C-x 5`, each a native window in the GUI ([ADR 0017](adr/0017-frames.md)).
@@ -108,7 +109,7 @@ Agents over ACP ([ADR 0061](adr/0061-agents-over-acp.md)): Gnista talks to Claud
 1. Done: `gnista-version`, stamped in `gnista.d.ts`, for a package to require.
 2. Done: the shipped packages written in `shipped/` beside `gnista.d.ts`, and `gnista --print-types DIR`, so a package outside the tree type-checks.
 3. Done: batch mode, `gnista --batch -l FILE -f FUNCTION --eval EXPRESSION`, and `ert.ts`.
-4. Done: releases of Gnista ([ADR 0060](adr/0060-releases.md)): the terminal editor and `gnista-mcp` for Apple silicon and Linux, and `Gnista.app` since 0.2.1, built by `.github/workflows/release.yml` on a version tag. Other platforms, signing, a Homebrew tap and the update check come later.
+4. Done: releases of Gnista ([ADR 0060](adr/0060-releases.md)): the terminal editor and `gnista-mcp` for Apple silicon and Linux, and `Gnista.app` since 0.2.1, built by `.github/workflows/release.yml` on a version tag. `brew install gnista-editor/tap/gnista` installs it, from [the tap](https://github.com/Gnista-Editor/homebrew-tap). Other platforms, signing and the update check come later.
 5. Done but for `list-packages`, which waits for the organisation's list: `package-vc.ts` and `use-package.ts`, with `gnista.usePackage`, installing with git, `gnista-lock.json`, `package-vc-install`, `package-vc-upgrade`, `package-vc-upgrade-all` and `package-delete`.
 6. The ports in `examples/packages/` moved to `Gnista-Editor` repositories one at a time, smallest first, with their tests rewritten as ERT (`gnista.executeKbdMacro` types their keys), from `gnista-package-template`; `gnista-vundo` first, then `gnista-nord-theme`, the first under a permissive licence, and a job in Gnista's CI running the curated set's tests against `main` (`.github/workflows/test.yml`, the `Ports` job).
 

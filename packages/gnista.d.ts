@@ -317,6 +317,38 @@ declare global {
        */
       "add-mode-abbrev": [arg?: PrefixArg | boolean];
       /**
+       * Talk to a coding agent in a buffer of its own, in another window: one of agent-shell-agents, asked for unless agent-shell-default-agent names one. Type a request under * You and send it with C-c RET. The agent works in the current project, and asks before its tools act.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell": [];
+      /**
+       * Talk to Claude Code, through claude-agent-acp, in a buffer of its own: M-x agent-shell with the claude agent.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-anthropic-start-claude-code": [];
+      /**
+       * Stop the agent's turn in this buffer: it is told to cancel, and its questions are answered as cancelled.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-interrupt": [];
+      /**
+       * The mode of a conversation with a coding agent, started with M-x agent-shell.
+       *
+       * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent; each tool call is a line, with its output or diff in the block below it, folded once the turn ends (TAB shows it). The agent asks before its tools act. C-c C-k stops the turn.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-mode": [];
+      /**
+       * Send the request under the last * You heading to the agent.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-send": [];
+      /**
        * Make the next kill join onto the last one on the kill ring, as consecutive kills do.
        *
        * Defined in packages/simple.ts.
@@ -6982,6 +7014,24 @@ declare global {
        */
       "abbrev-mode-map": Value;
       /**
+       * Seconds acp shutdown waits for the agent to exit before killing it. Shutdown first sends the agent's process group SIGTERM, so the agent can stop the processes it started itself.
+       *
+       * Defined in packages/acp.ts.
+       */
+      "acp--shutdown-grace-period": Value;
+      /**
+       * Seconds one drain of a client's message queue may spend routing messages. Routing runs the client's handlers, which usually draw; once the budget is spent, the drain goes on at the next timer, so the editor can redisplay and read keys meanwhile. Order is kept and nothing is dropped. At least one message is routed each time, so a budget smaller than one handler still makes progress. Null drains the whole queue at once.
+       *
+       * Defined in packages/acp.ts.
+       */
+      "acp-drain-time-budget": Value;
+      /**
+       * Whether ACP traffic and messages are logged, to each client's log and traffic buffers (acp-logs-buffer).
+       *
+       * Defined in packages/acp.ts.
+       */
+      "acp-logging-enabled": Value;
+      /**
        * What the prefix of a paragraph's only line must look like for the lines filling makes to take it too; otherwise they take as many spaces.
        *
        * Defined in packages/fill.ts.
@@ -6999,6 +7049,32 @@ declare global {
        * Defined in packages/fill.ts.
        */
       "adaptive-fill-regexp": Value;
+      /**
+       * Whether this buffer is a conversation with an agent, as *agent* and agent-shell's are: an agent's tools act in another window, never in one showing it.
+       */
+      "agent-buffer": Value;
+      /**
+       * The agents M-x agent-shell can start: a list of [name, command], or [name, command, environment], the command a program and its arguments that speak the Agent Client Protocol, and the environment "VAR=value" strings. Claude Code's is claude-agent-acp: npm install -g @agentclientprotocol/claude-agent-acp.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-agents": Value;
+      /**
+       * The agent M-x agent-shell starts without asking, by its name in agent-shell-agents; null to ask.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-default-agent": Value;
+      /**
+       * Whether agents also get Gnista's own tools, its commands, keys and buffers, through gnista-mcp connected to this editor, as an MCP server of their session. Writing files, discarding unsaved work, quitting and running code through them ask you first. Needs this Gnista to answer on a socket (gnista-mcp-socket) and gnista-mcp beside it or on PATH.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-gnista-tools": Value;
+      /**
+       * Keymap agent-shell-mode-map.
+       */
+      "agent-shell-mode-map": Value;
       /**
        * What comint does with ANSI escape sequences in output: t colours the text, filter removes them, nil leaves them.
        *
@@ -8380,6 +8456,10 @@ declare global {
        */
       "global-visual-line-mode-map": Value;
       /**
+       * The socket this Gnista answers gnista-mcp on, so an agent can use it (`gnista-mcp --socket FILE`), or nil when it answers none, as in batch mode or when another Gnista already listens.
+       */
+      "gnista-mcp-socket": Value;
+      /**
        * The version of Gnista that is running, as Emacs's emacs-version: a package's manifest names the oldest it runs on.
        */
       "gnista-version": Value;
@@ -8722,6 +8802,14 @@ declare global {
        * Keymap input-decode-map.
        */
       "input-decode-map": Value;
+      /**
+       * The directory of the program that is running, ending in a slash, as Emacs's invocation-directory: where gnista-mcp is beside gnista, in a release or Gnista.app.
+       */
+      "invocation-directory": Value;
+      /**
+       * The name of the program that is running, without its directory, as Emacs's invocation-name.
+       */
+      "invocation-name": Value;
       /**
        * Whether point has been moved back so that the string may match from further back.
        *
@@ -12089,6 +12177,10 @@ declare global {
        */
       "after-save-hook": Value;
       /**
+       * Run after entering Agent Shell mode, after the hooks of the modes it is built on.
+       */
+      "agent-shell-mode-hook": Value;
+      /**
        * Run after Auto-Fill mode is turned on or off.
        */
       "auto-fill-mode-hook": Value;
@@ -13433,6 +13525,14 @@ declare global {
     function minibufferSelectedWindow(): number | undefined;
     /** How many minibuffers are open, one inside another, as minibuffer-depth. */
     function minibufferDepth(): number;
+    /**
+     * What waits for the user's input now, a prompt or a command reading a
+     * key, as a number no other has had, or undefined when nothing waits.
+     * Code that asks the user from a timer, as agent-shell asks for an
+     * agent's permission, waits until it is undefined, so its question
+     * never takes the keys meant for another.
+     */
+    function waitingForInput(): number | undefined;
     /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
     function setReadOnly(on: boolean): void;
     /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
@@ -14652,8 +14752,12 @@ declare global {
       filter?: (process: string, output: string) => void;
       /** Called with the process and what happened, "finished\n" or "exited abnormally with code 2\n", when it ends. */
       sentinel?: (process: string, event: string) => void;
-      /** Whether standard error comes in as output too: true by default; on a pseudo-terminal it always does. */
-      stderr?: boolean;
+      /**
+       * Whether standard error comes in as output too: true by default; on a
+       * pseudo-terminal it always does. A buffer instead takes it on its own,
+       * made if there is none, as make-process's :stderr; on pipes only.
+       */
+      stderr?: boolean | BufferLike;
       /**
        * A pseudo-terminal, "pty", as a shell or a program that asks questions
        * wants, or pipes, "pipe"; as process-connection-type says by default.

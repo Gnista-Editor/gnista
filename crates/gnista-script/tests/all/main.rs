@@ -8,6 +8,8 @@
 mod driven;
 
 mod abbrev;
+mod acp;
+mod agent_shell;
 mod awaiting;
 mod batch;
 mod blocking;

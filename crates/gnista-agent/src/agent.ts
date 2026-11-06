@@ -15,5 +15,9 @@ gnista.defineMajorMode({
     "What it changes in a turn undoes in one step.",
   bindings: { "C-c RET": "agent-send", "C-c C-k": "agent-abort" },
   // A conversation wraps at words, rather than Org's truncated lines.
-  setup: () => gnista.call("visual-line-mode"),
+  setup: () => {
+    gnista.call("visual-line-mode");
+    // Agents' tools act in other windows than this one.
+    gnista.setVariable("agent-buffer", true);
+  },
 });

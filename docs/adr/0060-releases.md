@@ -26,13 +26,14 @@ A release is a tag `vX.Y.Z` on `main` matching the workspace version in `Cargo.t
 
 The same workflow builds, without releasing, on a pull request that changes it or the dependencies, so a broken release build shows before a tag.
 
+A Homebrew tap, [`Gnista-Editor/homebrew-tap`](https://github.com/Gnista-Editor/homebrew-tap), installs a release: `brew install gnista-editor/tap/gnista` gives `gnista` and `gnista-mcp` on Apple silicon and Linux, and `Gnista.app` on macOS. A workflow in the tap rewrites the formula from the newest release each day, with the tap's own token, so a release needs nothing more here. Homebrew downloads with `curl`, so macOS does not quarantine the app, and it opens without a Developer ID: confirmed on 2026-11-06 on a Mac that did not build it.
+
 To release: bump `version` in the workspace `Cargo.toml` in a pull request, merge it, then tag the merge and push the tag. The version is what `gnista-version` reports and what a package's manifest compares with ([ADR 0059](0059-packages-are-git-repositories.md)), so it changes when the script API changes in a way a package would notice, as well as at each release.
 
 Left for later, each when it is wanted:
 
 - **Signing the app.** Since 0.2.1 the macOS release carries `Gnista.app`, signed ad hoc as `make app` signs it. macOS opens it when `curl` or Homebrew fetched it, but quarantines it when a browser did, and then asks the user to override Gatekeeper; a Developer ID and notarisation would end that, at $99 a year.
 - **Intel Macs, Linux on ARM and Windows.** A line in the workflow's matrix each, once someone needs them.
-- **A Homebrew tap**, `Gnista-Editor/homebrew-tap`, with a formula pointing at the release tarballs.
 - **The update check**: `check-for-updates`, opt-in, at most daily, through a `urlRetrieve` native in the script API, never in `gnista-core`.
 - **An action for package repositories**, `setup-gnista`, which downloads a release onto CI's PATH. It comes with the package template ([ADR 0059](0059-packages-are-git-repositories.md)).
 

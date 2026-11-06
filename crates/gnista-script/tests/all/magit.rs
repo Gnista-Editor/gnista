@@ -343,7 +343,9 @@ fn an_interactive_rebase_edits_the_todo_list_in_gnista() {
     // Fold Two into One, and leave Three out.
     d.press("n f d");
     d.press("C-c C-c");
-    settle(&d, || git(p, &["log", "--format=%s"]) == "One\n");
+    // Done once git has finished the rebase, not when the log first shows
+    // One alone, as it does after the pick and before the fixup.
+    settle(&d, || !p.join(".git/rebase-merge").exists() && git(p, &["log", "--format=%s"]) == "One\n");
     assert_eq!(git(p, &["log", "--format=%s"]), "One\n");
     assert_eq!(git(p, &["show", "--name-only", "--format=", "HEAD"]), "one.txt\ntwo.txt\n");
 }
