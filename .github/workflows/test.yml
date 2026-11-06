@@ -56,12 +56,15 @@ jobs:
           curl -LsSf "https://get.nexte.st/latest/$platform" | tar zxf - -C "$bin"
           PATH="$bin:$PATH" cargo nextest --version
 
-      # Ispell for flyspell's oracle cases, the version Emacs's answers were
-      # recorded with.
-      - name: Install Ispell
+      # What Emacs's answers were recorded with: Ispell for flyspell's
+      # oracle cases, and GNU's coreutils first on PATH, as on the Mac they
+      # were recorded on, for the cases that run commands such as wc, whose
+      # output macOS's own pad differently.
+      - name: Install Ispell and GNU coreutils
         run: |
           if [ "$RUNNER_OS" = macOS ]; then
-            HOMEBREW_NO_AUTO_UPDATE=1 brew install ispell
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install ispell coreutils
+            echo "$(brew --prefix)/opt/coreutils/libexec/gnubin" >> "$GITHUB_PATH"
           else
             sudo apt-get update -q && sudo apt-get install -y -q ispell iamerican
           fi
