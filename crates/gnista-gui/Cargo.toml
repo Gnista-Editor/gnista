@@ -12,12 +12,12 @@ v8 = ["gnista-script/v8", "gnista-agent/v8", "gnista-mcp/v8"]
 
 [dependencies]
 arboard = "3.7"
-gnista-agent = { version = "0.2.1", path = "../gnista-agent", default-features = false }
+gnista-agent = { version = "0.2.2", path = "../gnista-agent", default-features = false }
 eframe = "0.37"
 egui = "0.37"
-gnista-core = { version = "0.2.1", path = "../gnista-core" }
-gnista-script = { version = "0.2.1", path = "../gnista-script", default-features = false }
-gnista-mcp = { version = "0.2.1", path = "../gnista-mcp", default-features = false }
+gnista-core = { version = "0.2.2", path = "../gnista-core" }
+gnista-script = { version = "0.2.2", path = "../gnista-script", default-features = false }
+gnista-mcp = { version = "0.2.2", path = "../gnista-mcp", default-features = false }
 fontique = "0.11"
 
 [target.'cfg(target_os = "macos")'.dependencies]
