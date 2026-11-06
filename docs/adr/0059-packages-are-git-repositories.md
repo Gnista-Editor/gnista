@@ -1,6 +1,6 @@
 # 0059. Packages are git repositories
 
-Status: proposed · 2026-11-06
+Status: accepted · 2026-11-06
 
 ## Context
 
@@ -24,7 +24,7 @@ A Gnista package is a git repository, installed by a checkout into `package-user
 
 **A repository** holds, at its root:
 
-- its modules, each named after its feature as today (`org-roam.ts`, `org-roam-node.ts`), importing each other and Gnista's packages by name; the module named after the repository is the one `require` loads;
+- its modules, each named after its feature as today (`org-roam.ts`, `org-roam-node.ts`), importing each other and Gnista's packages by name; the module named by the manifest's `name` is the one `require` loads;
 - `gnista-package.json`, the manifest: the package's `name`, a one-line `description`, the oldest Gnista it runs on as `gnista`, and the packages it needs as `requires`, each a source and the oldest version that will do, as Emacs's `Package-Requires` header gives minimums:
 
   ```json
@@ -32,7 +32,7 @@ A Gnista package is a git repository, installed by a checkout into `package-user
     "name": "org-roam",
     "description": "Notes as a graph of Org files",
     "gnista": "0.2.0",
-    "requires": { "magit-section": "Gnista-Editor/magit-section@0.1.0" }
+    "requires": { "magit-section": "Gnista-Editor/gnista-magit-section@0.1.0" }
   }
   ```
 - its upstream's `LICENSE`, which for a port is the original's, not necessarily Gnista's;
@@ -41,10 +41,12 @@ A Gnista package is a git repository, installed by a checkout into `package-user
 
 **Versions are tags**, `vMAJOR.MINOR.PATCH`. There is no version in the manifest to drift from them. A package can also be followed at a branch, as elpaca allows, at the user's choice.
 
+**A port's repository is named `gnista-` and the upstream's name**: `Gnista-Editor/gnista-org-roam` is the port of `org-roam/org-roam`, so neither a search nor a person mistakes one for the other, and the name says what the repository is when it is seen outside Gnista. The package inside keeps the upstream's name: its manifest's `name` is `org-roam`, its modules are `org-roam.ts` and the rest, it is checked out as `elpa/org-roam`, and a configuration requires `org-roam`, so code and documentation read as Emacs's do. `gn-` was the other prefix considered, and is too easily read as Google's GN build tool. A package written for Gnista, a port of nothing, takes no prefix.
+
 **A configuration** names what it uses:
 
 ```ts
-gnista.usePackage("Gnista-Editor/org-roam", { rev: "v0.3.1" });
+gnista.usePackage("Gnista-Editor/gnista-org-roam", { rev: "v0.3.1" });
 gnista.usePackage("vertico", { url: "https://codeberg.org/someone/gnista-vertico" });
 ```
 
