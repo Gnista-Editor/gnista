@@ -7,8 +7,9 @@
 //   * You       what you ask, sent with C-c RET
 //   * Agent     its reply as it streams in, its Markdown made Org a line
 //               at a time; each tool call a line, its output or diff in a
-//               block under it, folded into the line once the turn ends
-//               (TAB shows it), and its plan as a checklist
+//               block under it, folded into the line as it comes (TAB
+//               shows it), and its plan as a checklist; Claude Code's own
+//               bookkeeping calls left out (agent-shell-hidden-tools)
 //
 // The session starts as the buffer opens, and the header line shows its
 // model, mode and thought level: C-c C-v picks the model, C-c C-t the
@@ -54,6 +55,13 @@ e8.defineVariable({
     "it or on PATH.",
 });
 e8.defineVariable({
+  name: "agent-shell-hidden-tools",
+  value: ["ToolSearch", "TodoWrite"],
+  doc:
+    "The tools, by the name the agent gives them, whose calls the buffer leaves out: Claude Code's own bookkeeping, " +
+    "finding its tools and keeping its to-do list, which shows as the plan.",
+});
+e8.defineVariable({
   name: "agent-shell-default-agent",
   value: null,
   doc: "The agent M-x agent-shell starts without asking, by its name in agent-shell-agents; null to ask.",
@@ -71,6 +79,13 @@ const SHOWN_OUTPUT = 4000;
 interface ToolCall {
   title: string;
   status: string;
+  /** The tool's own name, as Claude Code's adapter gives it, and what it was called with. */
+  toolName?: string;
+  input?: { [key: string]: unknown };
+  /** Whether its block is folded into its line: at first, and until TAB opens it. */
+  folded: boolean;
+  /** Whether it is one of agent-shell-hidden-tools, which the buffer leaves out. */
+  hidden: boolean;
   /** The files it names, by its diffs and locations. */
   paths: Set<string>;
   /** Its text, rendered: the line and its block. */
@@ -84,6 +99,7 @@ interface ToolCall {
 interface Permission {
   id: number | string;
   title: string;
+  toolCallId?: string;
   options: { optionId: string; name: string; kind: string }[];
 }
 
@@ -108,8 +124,9 @@ interface Shell {
   markdown: MarkdownState;
   toolCalls: Map<string, ToolCall>;
   plan?: { start: e8.Marker; end: e8.Marker };
-  /** Where this turn's blocks start, to fold them once it ends. */
-  blocks: e8.Marker[];
+  /** Where the thinking being written starts, its #+begin_example line, and whether it is folded. */
+  thought?: e8.Marker;
+  thoughtFolded: boolean;
   permissions: Permission[];
   asking: boolean;
   askTimer?: number;
@@ -155,8 +172,9 @@ e8.defineMajorMode({
   doc:
     "The mode of a conversation with a coding agent, started with M-x agent-shell.\n\n" +
     "Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under " +
-    "* Agent, its Markdown made Org; each tool call is a line, with its output or diff folded under it once the " +
-    "turn ends (TAB on the line shows it). The agent asks before its tools act. C-c C-k stops the turn. The mode " +
+    "* Agent, its Markdown made Org; each tool call is a line, with its output or diff folded into it as it comes " +
+    "(TAB on the line shows it, and a call the agent asks about shows its diff while it asks), as is its thinking. " +
+    "The tools agent-shell-hidden-tools names are left out. The agent asks before its tools act. C-c C-k stops the turn. The mode " +
     "line shows whether the agent is working and how much of its context the conversation fills.\n\n" +
     "The header line shows the session's model, mode and thought level. C-c TAB, or C-<tab> as in Emacs's " +
     "agent-shell where tab-bar-mode does not take it, moves to the next mode, C-c C-v " +
@@ -176,6 +194,9 @@ e8.defineMajorMode({
     // Agents' tools, e8-mcp's included, act in other windows than this one.
     e8.setVariable("agent-buffer", true);
     e8.setVariable("header-line-format", ` ${KEYS}`);
+    // ~code~ and *bold* without their markers, as a chat shows them.
+    e8.makeLocalVariable("org-hide-emphasis-markers");
+    e8.setVariable("org-hide-emphasis-markers", true);
     e8.addHook("org-cycle-tab-first-hook", toggleBlockBelow, { local: true });
   },
 });
@@ -215,7 +236,8 @@ function blockBelow(pos: number): [number, number] | undefined {
     next = lineAround(next.end + 1);
     if (next.text === "#+end_example") return [line.end, next.end];
   }
-  return undefined;
+  // Thinking still coming: the block so far.
+  return [line.end, e8.bufferSize()];
 }
 
 /** Folds or shows the block under the line at `pos`, if it has one, or folds it when `hide` says so. */
@@ -228,7 +250,17 @@ function foldBlockBelow(pos: number, hide?: boolean): boolean {
 
 /** TAB on a tool call's line or a Thinking: line: shows the block folded into it, or folds it. */
 function toggleBlockBelow(): boolean {
-  return foldBlockBelow(e8.point());
+  if (!foldBlockBelow(e8.point())) return false;
+  // Remembered, so the call's next update, or more thinking, keeps it so.
+  const shell = shells.get(e8.bufferName() ?? "");
+  if (shell !== undefined) {
+    const line = e8.lineBeginningPosition();
+    const shown = !folded(e8.lineEndPosition(), "org-hide-block");
+    for (const call of shell.toolCalls.values()) if (e8.markerPosition(call.start) === line) call.folded = !shown;
+    const thought = shell.thought && e8.markerPosition(shell.thought);
+    if (thought !== undefined && thought > 0 && e8.lineBeginningPosition(thought - 1) === line) shell.thoughtFolded = !shown;
+  }
+  return true;
 }
 
 // --- The buffer -----------------------------------------------------------------
@@ -422,6 +454,10 @@ function closeOpen(shell: Shell): void {
   if (shell.open === "thought") {
     startLine(shell);
     put(shell, "#+end_example\n");
+    const at = shell.thought && e8.markerPosition(shell.thought);
+    if (at !== undefined && at > 0) inBuffer(shell, () => foldBlockBelow(at - 1, shell.thoughtFolded));
+    if (shell.thought) e8.deleteMarker(shell.thought);
+    shell.thought = undefined;
   } else if (shell.open === "text") {
     flushReply(shell);
     startLine(shell);
@@ -484,8 +520,39 @@ function quoteTitle(title: string): string {
   return t;
 }
 
-function renderToolCall(call: ToolCall): string {
-  const line = `→ ${quoteTitle(call.title)}${STATUS[call.status] ?? ""}\n`;
+/** A value of a tool's input, short. */
+function shortValue(v: unknown): string {
+  const text = typeof v === "string" ? v : JSON.stringify(v);
+  return text.length > 40 ? `${text.slice(0, 39)}…` : text;
+}
+
+/**
+ * What a tool call's line names: its title, an MCP tool's mcp__SERVER__TOOL
+ * as "SERVER: TOOL" with what it was called with, the project's directory
+ * left out of paths and the home directory as ~.
+ */
+function toolTitle(shell: Shell, call: ToolCall): string {
+  let title = call.title;
+  const mcp = /^mcp__(.+?)__(.+)$/.exec(call.toolName ?? call.title);
+  if (mcp) {
+    const args = Object.entries(call.input ?? {})
+      .map(([k, v]) => `${k}=${shortValue(v)}`)
+      .join(" ");
+    title = `${mcp[1]}: ${mcp[2]}${args ? ` ${args}` : ""}`;
+    if (title.length > 100) title = `${title.slice(0, 99)}…`;
+  }
+  const dir = shell.directory.replace(/\/+$/, "");
+  const home = e8.expandFileName("~").replace(/\/+$/, "");
+  if (dir !== "") title = title.split(`${dir}/`).join("").split(dir).join(".");
+  if (home !== "") title = title.split(`${home}/`).join("~/");
+  return title;
+}
+
+function renderToolCall(shell: Shell, call: ToolCall): string {
+  if (call.hidden) return "";
+  // A command's description, as Claude Code's Bash tool gives one, after it.
+  const description = typeof call.input?.description === "string" ? ` — ${call.input.description.replace(/\n/g, " ")}` : "";
+  const line = `→ ${quoteTitle(toolTitle(shell, call))}${STATUS[call.status] ?? ""}${description}\n`;
   return call.content === "" ? line : line + exampleBlock(call.content, call.status === "failed" ? "Failed:\n" : "");
 }
 
@@ -497,9 +564,14 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
     closeOpen(shell);
     startLine(shell);
     const at = inBuffer(shell, () => e8.bufferSize()) ?? 0;
+    const toolName = update._meta?.claudeCode?.toolName ? String(update._meta.claudeCode.toolName) : undefined;
+    const hiddenTools = e8.variable("agent-shell-hidden-tools");
     call = {
       title: String(update.title ?? update.kind ?? "tool"),
       status: String(update.status ?? "pending"),
+      toolName,
+      folded: true,
+      hidden: toolName !== undefined && Array.isArray(hiddenTools) && hiddenTools.includes(toolName),
       content: "",
       paths: new Set(),
       start: e8.makeMarker(at, { buffer: shell.buffer, advances: true }),
@@ -510,6 +582,7 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
     return;
   }
   if (update.title) call.title = String(update.title);
+  if (update.rawInput && typeof update.rawInput === "object" && Object.keys(update.rawInput).length > 0) call.input = update.rawInput;
   const finished = update.status && update.status !== call.status && (update.status === "completed" || update.status === "failed");
   if (update.status) call.status = String(update.status);
   for (const c of Array.isArray(update.content) ? update.content : []) if (c?.type === "diff" && c.path) call.paths.add(String(c.path));
@@ -520,10 +593,12 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
   }
   const start = e8.markerPosition(call.start) ?? 0;
   const end = e8.markerPosition(call.end) ?? start;
-  const text = renderToolCall(call);
+  const text = renderToolCall(shell, call);
   replace(shell, start, end, text);
   e8.setMarker(call.start, start, shell.buffer);
   e8.setMarker(call.end, start + text.length, shell.buffer);
+  // Its output folds into its line as it comes, unless TAB opened it.
+  if (text !== "" && call.content !== "") inBuffer(shell, () => foldBlockBelow(start, call.folded));
   if (finished) revertTouched(call.paths);
 }
 
@@ -585,13 +660,19 @@ function onUpdate(shell: Shell, notification: acp.Json): void {
           startLine(shell);
           put(shell, "Thinking:\n");
           const at = put(shell, "#+begin_example\n");
-          shell.blocks.push(e8.makeMarker(at, { buffer: shell.buffer, advances: true }));
+          shell.thought = e8.makeMarker(at, { buffer: shell.buffer, advances: true });
+          shell.thoughtFolded = true;
           shell.open = "thought";
         }
         // Indented, as in every example block, so a line of it cannot end the block.
         const text = String(update.content.text ?? "");
         const indented = text.replace(/\n(?!$)/g, "\n  ");
         put(shell, atLineStart(shell) ? `  ${indented}` : indented);
+        // Folded into its line as it comes, unless TAB opened it.
+        const begin = shell.thought && e8.markerPosition(shell.thought);
+        if (begin !== undefined && begin > 0 && shell.thoughtFolded) {
+          inBuffer(shell, () => flag(begin - 1, e8.bufferSize(), true, "org-hide-block"));
+        }
       }
       break;
     case "tool_call":
@@ -663,6 +744,10 @@ function askPermissions(shell: Shell): void {
   const keys = choices(permission.options);
   const listed = [...keys.keys()].map((k) => (k === "!" ? "! for always" : k)).join(", ").replace(/, ([^,]*)$/, " or $1");
   shell.asking = true;
+  // What it asks about, its diff most often, shows while it asks.
+  const call = permission.toolCallId === undefined ? undefined : shell.toolCalls.get(permission.toolCallId);
+  const at = call && call.content !== "" ? e8.markerPosition(call.start) : undefined;
+  if (at !== undefined) inBuffer(shell, () => foldBlockBelow(at, false));
   let answer: string | undefined;
   try {
     answer = e8.readCharChoice(`Let ${shell.agent} ${lowerFirst(permission.title)}? (${listed}) `, [...keys.keys()].join(""));
@@ -670,6 +755,8 @@ function askPermissions(shell: Shell): void {
     answer = undefined;
   } finally {
     shell.asking = false;
+    const back = call && e8.markerPosition(call.start);
+    if (call && back !== undefined && call.content !== "") inBuffer(shell, () => foldBlockBelow(back, call.folded));
   }
   // C-c C-k may have answered it meanwhile.
   if (shell.permissions[0] !== permission) return;
@@ -754,6 +841,7 @@ function onRequest(shell: Shell, request: acp.Json): void {
       shell.permissions.push({
         id: request.id,
         title: String(params.toolCall?.title ?? params.toolCall?.kind ?? "use a tool"),
+        toolCallId: params.toolCall?.toolCallId ? String(params.toolCall.toolCallId) : undefined,
         options: Array.isArray(params.options) ? params.options : [],
       });
       if (params.toolCall?.toolCallId) showToolCall(shell, params.toolCall, !shell.toolCalls.has(String(params.toolCall.toolCallId)));
@@ -850,23 +938,11 @@ function finish(shell: Shell, text?: string): void {
   if (text) note(shell, text);
   startLine(shell);
   put(shell, "\n* You\n");
-  inBuffer(shell, () => {
-    for (const call of shell.toolCalls.values()) {
-      const start = e8.markerPosition(call.start);
-      if (start !== undefined && call.content !== "") foldBlockBelow(start, true);
-    }
-    for (const block of shell.blocks) {
-      const at = e8.markerPosition(block);
-      // The block's #+begin_example line, under its Thinking: line.
-      if (at !== undefined && at > 0) foldBlockBelow(at - 1, true);
-    }
-  });
   for (const call of shell.toolCalls.values()) {
     e8.deleteMarker(call.start);
     e8.deleteMarker(call.end);
   }
   shell.toolCalls.clear();
-  for (const m of shell.blocks.splice(0)) e8.deleteMarker(m);
   if (shell.plan) {
     e8.deleteMarker(shell.plan.start);
     e8.deleteMarker(shell.plan.end);
@@ -1231,7 +1307,7 @@ export function start(name: string): string {
       partial: "",
       markdown: {},
       toolCalls: new Map(),
-      blocks: [],
+      thoughtFolded: true,
       permissions: [],
       asking: false,
       stderrTail: "",

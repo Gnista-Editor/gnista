@@ -172,6 +172,7 @@ const variables: [string, string, e8.Value][] = [
   ["org-priority-lowest", "The lowest priority, a capital letter.", "C"],
   ["org-priority-default", "The priority S-<up> and S-<down> start from, and that headings without one count as.", "B"],
   ["org-link-descriptive", "Whether links show only their description, hiding the brackets and target.", true],
+  ["org-hide-emphasis-markers", "Whether the markers around emphasised text are hidden, the stars of *bold* and the tildes of ~code~, showing only its face.", false],
   [
     "org-indirect-buffer-display",
     'Where C-c C-x b shows the indirect buffer it makes: "current-window", "other-window", "new-frame" each time, ' +
@@ -1374,8 +1375,8 @@ function face(start: number, end: number, name: string): void {
   if (end > start) e8.addFaceTextProperty(start, end, name);
 }
 
-function hide(start: number, end: number): void {
-  if (end > start) e8.putTextProperty(start, end, "invisible", "org-link");
+function hide(start: number, end: number, spec = "org-link"): void {
+  if (end > start) e8.putTextProperty(start, end, "invisible", spec);
 }
 
 export const LINK = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^\n]+?)\])?\]/g;
@@ -1446,6 +1447,10 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
     const end = i + m[2].length;
     if (overlaps(i, end)) continue;
     face(pos(i), pos(end), EMPHASIS_FACES[m[3]]);
+    if (e8.variable("org-hide-emphasis-markers") === true) {
+      hide(pos(i), pos(i + 1), "org-emphasis");
+      hide(pos(end - 1), pos(end), "org-emphasis");
+    }
   }
 }
 
@@ -5865,6 +5870,7 @@ e8.defineMajorMode({
     e8.addToInvisibilitySpec("org-hide-drawer", { ellipsis: true });
     e8.addToInvisibilitySpec("org-hide-block", { ellipsis: true });
     e8.addToInvisibilitySpec("org-link");
+    e8.addToInvisibilitySpec("org-emphasis");
     storeTodoSets();
     if (e8.variable("org-startup-truncated") === true) e8.setVariable("truncate-lines", true);
     // A folded heading ends in org-ellipsis, through the buffer's display table, as org-mode sets it up.
