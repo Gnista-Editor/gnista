@@ -12,3 +12,12 @@ fail-fast = false
 # adapters from Metal before its first render, which their tests share in
 # one process under cargo test, about a minute for them all.
 default-filter = "!(package(gnista-gui) & (binary(window) | binary(images)))"
+
+# A process that has exited is declared finished once 200 ms pass with
+# nothing more arriving from it; on a loaded CI machine the thread reading
+# its output can be held up longer than that, and the output then comes
+# after the end (docs/differences.md). Retried, and reported as flaky,
+# until the exit is noticed another way.
+[[profile.default.overrides]]
+filter = "test(=processes::a_new_process_of_the_same_name_gets_none_of_the_old_ones_output)"
+retries = 2

@@ -216,7 +216,8 @@ fn output_and_input_in_the_process_coding() {
     );
     ed.accept_process_output(Duration::from_secs(5));
     let text = buffer_text(&ed, "*l*");
-    assert!(text.contains(" e9\n"), "sent as Latin-1: {text:?}");
+    // od's spacing differs between macOS's and GNU's: compare the byte it printed.
+    assert_eq!(text.split_whitespace().next(), Some("e9"), "sent as Latin-1: {text:?}");
     assert!(text.contains("é\n"), "read as Latin-1: {text:?}");
     assert_eq!(s.eval_expression(&mut ed, "JSON.stringify(codings)").unwrap(), r#""[\"iso-latin-1\",\"iso-latin-1\"]""#);
     // UTF-8 split between reads still decodes whole.

@@ -63,6 +63,14 @@ fn annotations_are_what_marginalia_gives_in_emacs() {
         // Emacs in batch formats no mode line, so its buffer status is empty: compare the file.
         let (gnista, emacs) = if r.category == "buffer" {
             (gnista.map(|a| a.chars().rev().take(20).collect::<String>()), r.annotation.clone().map(|a| a.chars().rev().take(20).collect::<String>()))
+        } else if r.category == "file" {
+            // Emacs was recorded as mark; the file belongs to whoever runs the
+            // test. marginalia shows the owner only when the file's group is
+            // not the user's own: so on macOS, where /tmp's files are wheel's,
+            // and not on Linux, where they are the user's.
+            let user = std::env::var("USER").unwrap_or_default();
+            let owner = format!("  {user}:wheel");
+            (gnista, r.annotation.clone().map(|a| a.replace("  mark:wheel", if cfg!(target_os = "linux") { "" } else { &owner })))
         } else {
             (gnista, r.annotation.clone())
         };
