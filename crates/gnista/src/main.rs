@@ -108,7 +108,12 @@ fn main() -> io::Result<()> {
         })
     };
     let requests = match requests {
-        Ok(requests) => Some(requests),
+        Ok(requests) => {
+            // So agent-shell can give its agents this editor (gnista-mcp --socket).
+            let path = gnista_mcp::socket::default_path().display().to_string();
+            driver.run(move |editor| editor.set_variable("gnista-mcp-socket", gnista_core::Value::Str(path)));
+            Some(requests)
+        }
         Err(e) => {
             driver.run(move |editor| editor.message(format!("No agent socket: {e}")));
             None

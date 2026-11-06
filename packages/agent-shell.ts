@@ -22,6 +22,7 @@
 import * as acp from "acp";
 import { findBufferVisiting } from "files";
 import { current as projectRoot } from "project";
+import { executableFind, truthy } from "subr";
 
 gnista.defineVariable({
   name: "agent-shell-agents",
@@ -35,6 +36,15 @@ gnista.defineVariable({
     "The agents M-x agent-shell can start: a list of [name, command], or [name, command, environment], the command a " +
     'program and its arguments that speak the Agent Client Protocol, and the environment "VAR=value" strings. ' +
     "Claude Code's is claude-agent-acp: npm install -g @agentclientprotocol/claude-agent-acp.",
+});
+gnista.defineVariable({
+  name: "agent-shell-gnista-tools",
+  value: true,
+  doc:
+    "Whether agents also get Gnista's own tools, its commands, keys and buffers, through gnista-mcp connected to this " +
+    "editor, as an MCP server of their session. Writing files, discarding unsaved work, quitting and running code " +
+    "through them ask you first. Needs this Gnista to answer on a socket (gnista-mcp-socket) and gnista-mcp beside " +
+    "it or on PATH.",
 });
 gnista.defineVariable({
   name: "agent-shell-default-agent",
@@ -109,7 +119,11 @@ gnista.defineMajorMode({
     "* Agent; each tool call is a line, with its output or diff in the block below it, folded once the turn ends " +
     "(TAB shows it). The agent asks before its tools act. C-c C-k stops the turn.",
   bindings: { "C-c RET": "agent-shell-send", "C-c C-k": "agent-shell-interrupt" },
-  setup: () => gnista.call("visual-line-mode"),
+  setup: () => {
+    gnista.call("visual-line-mode");
+    // Agents' tools, gnista-mcp's included, act in other windows than this one.
+    gnista.setVariable("agent-buffer", true);
+  },
 });
 
 // --- The buffer -----------------------------------------------------------------
@@ -613,6 +627,32 @@ function finish(shell: Shell, text?: string): void {
   }
 }
 
+/**
+ * Gnista's own MCP server for a session: gnista-mcp, beside this program
+ * or on PATH, connected to this editor's socket, so the agent's calls act in
+ * the editor the user sees and ask before what they cannot undo. Undefined
+ * when agent-shell-gnista-tools is off or either is missing.
+ */
+export function gnistaMcpServer(): acp.Json | undefined {
+  if (!truthy(gnista.variable("agent-shell-gnista-tools"))) return undefined;
+  const socket = gnista.variable("gnista-mcp-socket");
+  if (typeof socket !== "string" || socket === "") return undefined;
+  const dir = gnista.variable("invocation-directory");
+  const beside = typeof dir === "string" ? `${dir}gnista-mcp` : undefined;
+  const program = beside !== undefined && gnista.fileExecutableP(beside) ? beside : executableFind("gnista-mcp");
+  if (program === undefined) return undefined;
+  return { name: "gnista", command: program, args: ["--socket", socket], env: [] };
+}
+
+/** What the agent is told of Gnista's tools, after its own system prompt. */
+const GNISTA_TOOLS_PROMPT =
+  "You are running inside Gnista, a text editor that works the way Emacs works, and the user is talking to you " +
+  "from it. The gnista MCP server's tools act in that editor, in the window the user works in: its commands by " +
+  "name (find-file, save-buffer, org-agenda and the rest), keys, and the text of its buffers, unsaved changes " +
+  "included. Use them to show the user what you are working on, or when they ask for something in the editor. " +
+  "Writing files, discarding unsaved changes, quitting and running code through them wait for the user's approval; " +
+  "if a call's result says the user allowed it, make the same call again.";
+
 /** Sends the prompt, starting the agent and its session first if need be. */
 function prompt(shell: Shell, text: string): void {
   const failed = (error: acp.RpcError) => finish(shell, `Error: ${describe(shell, error)}`);
@@ -656,7 +696,12 @@ function prompt(shell: Shell, text: string): void {
         if (shell.cancelled) return finish(shell, "Stopped.");
         acp.sendRequest({
           client: shell.client,
-          request: acp.makeSessionNewRequest({ cwd: shell.directory }),
+          request: (() => {
+            const server = gnistaMcpServer();
+            return server
+              ? acp.makeSessionNewRequest({ cwd: shell.directory, mcpServers: [server], meta: { systemPrompt: { append: GNISTA_TOOLS_PROMPT } } })
+              : acp.makeSessionNewRequest({ cwd: shell.directory });
+          })(),
           onSuccess: (result: any) => {
             shell.sessionId = String(result?.sessionId ?? "");
             if (result?.modes?.currentModeId) shell.mode = String(result.modes.currentModeId);

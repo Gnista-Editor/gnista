@@ -789,6 +789,23 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Str(env!("CARGO_PKG_VERSION").to_string()),
         ),
         Variable::new(
+            "invocation-directory",
+            "The directory of the program that is running, ending in a slash, as Emacs's invocation-directory: where gnista-mcp is beside gnista, in a release or Gnista.app.",
+            invocation().0,
+        ),
+        Variable::new("invocation-name", "The name of the program that is running, without its directory, as Emacs's invocation-name.", invocation().1),
+        Variable::new(
+            "gnista-mcp-socket",
+            "The socket this Gnista answers gnista-mcp on, so an agent can use it (`gnista-mcp --socket FILE`), or nil when it answers none, as in batch mode or when another Gnista already listens.",
+            false,
+        ),
+        Variable::new(
+            "agent-buffer",
+            "Whether this buffer is a conversation with an agent, as *agent* and agent-shell's are: an agent's tools act in another window, never in one showing it.",
+            false,
+        )
+        .local(),
+        Variable::new(
             "noninteractive",
             "Whether Gnista runs without a frame, as `gnista --batch` does, with messages printed to standard error, as Emacs's noninteractive.",
             false,
@@ -1105,5 +1122,18 @@ pub(crate) fn install(ed: &mut Editor) {
         ("after-change-major-mode-hook", "Run after a major mode and its hooks have run."),
     ] {
         ed.define_hook(name, doc);
+    }
+}
+
+/// The running program's directory, with a slash at its end, and its name,
+/// for invocation-directory and invocation-name; nil for each if unknown.
+fn invocation() -> (Value, Value) {
+    match std::env::current_exe() {
+        Ok(path) => {
+            let dir = path.parent().map(|d| format!("{}/", d.display()));
+            let name = path.file_name().map(|n| n.to_string_lossy().into_owned());
+            (dir.map_or(Value::Bool(false), Value::Str), name.map_or(Value::Bool(false), Value::Str))
+        }
+        Err(_) => (Value::Bool(false), Value::Bool(false)),
     }
 }

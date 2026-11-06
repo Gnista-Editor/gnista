@@ -87,7 +87,8 @@ Started: `gnista-mcp` serves the command registry over MCP, so an agent such as 
 Agents over ACP ([ADR 0061](adr/0061-agents-over-acp.md)): Gnista talks to Claude Code, Gemini CLI and other coding agents over the Agent Client Protocol, launching the adapter a configuration names and leaving its login to it. In order:
 1. Done: `packages/acp.ts`, a port of Emacs's `acp.el`, with `make-process`'s `:stderr` buffer in the core.
 2. Done: `packages/agent-shell.ts`, `M-x agent-shell` in ADR 0019's Org buffer, serving permission requests and file reads and writes through buffers. Twelve scenarios run against a fake agent; an ignored test runs Claude Code's adapter.
-3. Next: terminals for the agent; `gnista-mcp` given to each session; one `M-x agent` with `gnista-agent` as one backend; edits to review by hunk; the frame as what the agent sees; porting Emacs Lisp packages with an agent, as drafts.
+3. Done: `gnista-mcp` given to each session, connected to this editor, and every client of the user's editor asking before writes, discards, quitting and running code ([ADR 0062](adr/0062-agents-through-gnista-mcp-ask-first.md)); a live test had Claude Code edit and save a buffer through it, asked first.
+4. Next: terminals for the agent; one `M-x agent` with `gnista-agent` as one backend; edits to review by hunk; the frame as what the agent sees; porting Emacs Lisp packages with an agent, as drafts.
 
 **Since then**, outside the milestones:
 - Windows as window.el has them: `display-buffer`, the `C-x 4` commands, resizing and balancing ([ADR 0009](adr/0009-windows.md)), and frames on `C-x 5`, each a native window in the GUI ([ADR 0017](adr/0017-frames.md)).

@@ -7050,6 +7050,10 @@ declare global {
        */
       "adaptive-fill-regexp": Value;
       /**
+       * Whether this buffer is a conversation with an agent, as *agent* and agent-shell's are: an agent's tools act in another window, never in one showing it.
+       */
+      "agent-buffer": Value;
+      /**
        * The agents M-x agent-shell can start: a list of [name, command], or [name, command, environment], the command a program and its arguments that speak the Agent Client Protocol, and the environment "VAR=value" strings. Claude Code's is claude-agent-acp: npm install -g @agentclientprotocol/claude-agent-acp.
        *
        * Defined in packages/agent-shell.ts.
@@ -7061,6 +7065,12 @@ declare global {
        * Defined in packages/agent-shell.ts.
        */
       "agent-shell-default-agent": Value;
+      /**
+       * Whether agents also get Gnista's own tools, its commands, keys and buffers, through gnista-mcp connected to this editor, as an MCP server of their session. Writing files, discarding unsaved work, quitting and running code through them ask you first. Needs this Gnista to answer on a socket (gnista-mcp-socket) and gnista-mcp beside it or on PATH.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-gnista-tools": Value;
       /**
        * Keymap agent-shell-mode-map.
        */
@@ -8446,6 +8456,10 @@ declare global {
        */
       "global-visual-line-mode-map": Value;
       /**
+       * The socket this Gnista answers gnista-mcp on, so an agent can use it (`gnista-mcp --socket FILE`), or nil when it answers none, as in batch mode or when another Gnista already listens.
+       */
+      "gnista-mcp-socket": Value;
+      /**
        * The version of Gnista that is running, as Emacs's emacs-version: a package's manifest names the oldest it runs on.
        */
       "gnista-version": Value;
@@ -8788,6 +8802,14 @@ declare global {
        * Keymap input-decode-map.
        */
       "input-decode-map": Value;
+      /**
+       * The directory of the program that is running, ending in a slash, as Emacs's invocation-directory: where gnista-mcp is beside gnista, in a release or Gnista.app.
+       */
+      "invocation-directory": Value;
+      /**
+       * The name of the program that is running, without its directory, as Emacs's invocation-name.
+       */
+      "invocation-name": Value;
       /**
        * Whether point has been moved back so that the string may match from further back.
        *

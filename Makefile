@@ -36,10 +36,12 @@ QUICKJS_FEATURES := --no-default-features --features quickjs
 .PHONY: app clean-app check tidy
 
 app:
-	cargo build --release -p gnista-gui $(FEATURES)
+	cargo build --release -p gnista-gui -p gnista-mcp $(FEATURES)
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp target/release/gnista-gui $(APP)/Contents/MacOS/
+	# Beside it, so agent-shell's agents can use this editor (ADR 0061).
+	cp target/release/gnista-mcp $(APP)/Contents/MacOS/
 	sed 's/@VERSION@/$(VERSION)/g' crates/gnista-gui/macos/Info.plist > $(APP)/Contents/Info.plist
 	codesign --force --deep --sign - $(APP)
 	@echo "Built $(APP) ($(ENGINE), version $(VERSION))"
