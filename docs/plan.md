@@ -103,7 +103,7 @@ Started: `gnista-mcp` serves the command registry over MCP, so an agent such as 
 1. Done: `gnista-version`, stamped in `gnista.d.ts`, for a package to require.
 2. Done: the shipped packages written in `shipped/` beside `gnista.d.ts`, and `gnista --print-types DIR`, so a package outside the tree type-checks.
 3. Done: batch mode, `gnista --batch -l FILE -f FUNCTION --eval EXPRESSION`, and `ert.ts`.
-4. Releases of Gnista, for package repositories' CI to download one.
+4. Releases of Gnista, for package repositories' CI to download one ([ADR 0060](adr/0060-releases.md)): the terminal editor and `gnista-mcp` for Apple silicon and Linux, built by `.github/workflows/release.yml` on a version tag. The GUI app, other platforms, a Homebrew tap and the update check come later.
 5. Done but for `list-packages`, which waits for the organisation's list: `package-vc.ts` and `use-package.ts`, with `gnista.usePackage`, installing with git, `gnista-lock.json`, `package-vc-install`, `package-vc-upgrade`, `package-vc-upgrade-all` and `package-delete`.
 6. The ports in `examples/packages/` moved to `Gnista-Editor` repositories one at a time, smallest first, with their tests, and a job in Gnista's CI running the curated set's tests against `main`.
 
