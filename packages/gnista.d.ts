@@ -9773,7 +9773,7 @@ declare global {
        */
       "overwrite-mode-map": Value;
       /**
-       * The directory packages are installed in, each in a directory named after it; nil for elpa/ in user-emacs-directory, as Emacs's.
+       * The directory packages are installed in, each in a directory named after it; nil for repos/ in user-emacs-directory, where Emacs's is elpa/.
        *
        * Defined in packages/package-vc.ts.
        */

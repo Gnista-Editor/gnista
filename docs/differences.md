@@ -141,7 +141,7 @@ Kept for completeness, as they cannot be seen:
 
 ## Packages and tests
 
-- **Installing packages** (not yet): only from git repositories, as package-vc does, with git on PATH; there are no archives, so no `list-packages` to browse, no `package-install` by name, and no tarball downloads. Upgrading a package takes effect when Gnista next starts, as a module once imported is not imported again. There are no autoloads, so `package-vc.ts` is preloaded for its commands ([ADR 0059](adr/0059-packages-are-git-repositories.md)).
+- **Installing packages** (not yet): only from git repositories, as package-vc does, with git on PATH; there are no archives, so no `list-packages` to browse, no `package-install` by name, and no tarball downloads. Upgrading a package takes effect when Gnista next starts, as a module once imported is not imported again. Packages are installed in `repos/` beside `init.ts`, where Emacs's go in `elpa/` (deliberate: they are neither Emacs Lisp nor from an archive). There are no autoloads, so `package-vc.ts` is preloaded for its commands ([ADR 0059](adr/0059-packages-are-git-repositories.md)).
 - **ERT** (deliberate): `should` is given a value, or a function whose source it shows, not a form, so `shouldEqual` stands for `(should (equal A B))` to show both values; there are no `ert-explain` explanations, no `M-x ert` results buffer commands, and test bodies run without awaiting.
 - **Batch mode** (not yet): `--batch` runs `-l`, `-f` and `--eval`, not Emacs's other options; prompts are not read from standard input, and timers and processes run only while a script waits on them.
 

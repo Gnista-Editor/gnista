@@ -75,16 +75,16 @@ fn use_package_installs_the_newest_tag_activates_and_requires_it() {
     assert_eq!(eval(&mut ed, &s, &use_package("alpha", &alpha, None)).unwrap(), "\"alpha\"");
     // Versions compare as numbers: 0.10.0 is newer than 0.2.0.
     assert_eq!(ed.variable("alpha-version"), Some(Value::Str("0.10.0".into())));
-    assert!(config.join("elpa/alpha/alpha.ts").is_file());
+    assert!(config.join("repos/alpha/alpha.ts").is_file());
     let Some(Value::List(path)) = ed.variable("load-path") else { panic!() };
-    assert_eq!(path[0], Value::Str(format!("{}/elpa/alpha", config.display())));
+    assert_eq!(path[0], Value::Str(format!("{}/repos/alpha", config.display())));
     let lock = lock(&config);
     let entry = &lock["packages"]["alpha"];
     assert_eq!(entry["tag"], "v0.10.0");
     assert_eq!(entry["url"], alpha.display().to_string());
     assert_eq!(entry["commit"], git(&alpha, &["rev-parse", "v0.10.0"]));
     // Nothing is left of the clone but the package.
-    let left: Vec<_> = fs::read_dir(config.join("elpa")).unwrap().map(|e| e.unwrap().file_name()).collect();
+    let left: Vec<_> = fs::read_dir(config.join("repos")).unwrap().map(|e| e.unwrap().file_name()).collect();
     assert_eq!(left, vec!["alpha"]);
 }
 
@@ -99,7 +99,7 @@ fn the_lock_file_reproduces_the_commit_until_an_upgrade() {
     }
     // A newer version appears upstream, and another machine has only init.ts and the lock file.
     tag(&alpha, "alpha", "0.2.0", "{ \"name\": \"alpha\" }");
-    fs::remove_dir_all(config.join("elpa")).unwrap();
+    fs::remove_dir_all(config.join("repos")).unwrap();
     let (mut ed, s) = editor(&config);
     eval(&mut ed, &s, &use_package("alpha", &alpha, None)).unwrap();
     assert_eq!(ed.variable("alpha-version"), Some(Value::Str("0.1.0".into())));
@@ -173,7 +173,7 @@ fn requirements_are_installed_and_their_versions_checked() {
     assert!(e.to_string().contains("Package alpha is a dependency of beta"), "{e}");
     ed.call("package-delete", vec![Arg::Str("beta".into())]).unwrap();
     ed.call("package-delete", vec![Arg::Str("alpha".into())]).unwrap();
-    assert!(!config.join("elpa/alpha").exists());
+    assert!(!config.join("repos/alpha").exists());
     assert_eq!(lock(&config)["packages"], serde_json::json!({}));
 
     // A requirement newer than the version installed is refused.
@@ -193,8 +193,8 @@ fn a_package_for_a_newer_gnista_is_refused_before_it_runs() {
     let e = eval(&mut ed, &s, &use_package("future", &future, None)).unwrap_err();
     assert!(e.to_string().contains("future needs Gnista 99.0.0 or newer; this is 0."), "{e}");
     assert_eq!(ed.variable("future-version"), None);
-    assert!(!config.join("elpa/future").exists());
-    let left = fs::read_dir(config.join("elpa")).unwrap().count();
+    assert!(!config.join("repos/future").exists());
+    let left = fs::read_dir(config.join("repos")).unwrap().count();
     assert_eq!(left, 0);
 }
 
@@ -216,7 +216,7 @@ fn package_vc_install_installs_from_a_url() {
     let (mut ed, _s) = editor(&config);
     ed.call("package-vc-install", vec![Arg::Str(alpha.display().to_string()), Arg::Prefix(None)]).unwrap();
     assert_eq!(ed.echo(), Some("Installed alpha v0.1.0"));
-    assert!(config.join("elpa/alpha/alpha.ts").is_file());
+    assert!(config.join("repos/alpha/alpha.ts").is_file());
 }
 
 #[test]

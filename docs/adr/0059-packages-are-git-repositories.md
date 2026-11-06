@@ -20,7 +20,7 @@ For fetching there were two ways: the `git` program, run with `gnista.callProces
 
 ## Decision
 
-A Gnista package is a git repository, installed by a checkout into `package-user-dir` (`elpa/` beside `init.ts`, as Emacs's, kept apart from the user's own `packages/`) and activated by adding that checkout to `load-path`, as package-vc does. The package manager is TypeScript, `package-vc.ts` and `use-package.ts` after the Emacs files of those names, shipped with Gnista: `package-vc.ts` preloaded for its commands, which Emacs autoloads, and `use-package.ts` in `LIBRARY`, loaded when first used; nothing about it is in `gnista-core`.
+A Gnista package is a git repository, installed by a checkout into `package-user-dir` (`repos/` beside `init.ts`, where Emacs's is `elpa/`: Gnista's packages are neither Emacs Lisp nor from an archive, and `repos/` says what the directory holds beside the user's own `packages/`) and activated by adding that checkout to `load-path`, as package-vc does. The package manager is TypeScript, `package-vc.ts` and `use-package.ts` after the Emacs files of those names, shipped with Gnista: `package-vc.ts` preloaded for its commands, which Emacs autoloads, and `use-package.ts` in `LIBRARY`, loaded when first used; nothing about it is in `gnista-core`.
 
 **A repository** holds, at its root:
 
@@ -41,7 +41,7 @@ A Gnista package is a git repository, installed by a checkout into `package-user
 
 **Versions are tags**, `vMAJOR.MINOR.PATCH`. There is no version in the manifest to drift from them. A package can also be followed at a branch, as elpaca allows, at the user's choice.
 
-**A port's repository is named `gnista-` and the upstream's name**: `Gnista-Editor/gnista-org-roam` is the port of `org-roam/org-roam`, so neither a search nor a person mistakes one for the other, and the name says what the repository is when it is seen outside Gnista. The package inside keeps the upstream's name: its manifest's `name` is `org-roam`, its modules are `org-roam.ts` and the rest, it is checked out as `elpa/org-roam`, and a configuration requires `org-roam`, so code and documentation read as Emacs's do. `gn-` was the other prefix considered, and is too easily read as Google's GN build tool. A package written for Gnista, a port of nothing, takes no prefix.
+**A port's repository is named `gnista-` and the upstream's name**: `Gnista-Editor/gnista-org-roam` is the port of `org-roam/org-roam`, so neither a search nor a person mistakes one for the other, and the name says what the repository is when it is seen outside Gnista. The package inside keeps the upstream's name: its manifest's `name` is `org-roam`, its modules are `org-roam.ts` and the rest, it is checked out as `repos/org-roam`, and a configuration requires `org-roam`, so code and documentation read as Emacs's do. `gn-` was the other prefix considered, and is too easily read as Google's GN build tool. A package written for Gnista, a port of nothing, takes no prefix.
 
 **A configuration** names what it uses:
 

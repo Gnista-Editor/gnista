@@ -15,7 +15,7 @@
 
 gnista.defineVariable({
   name: "package-user-dir",
-  doc: "The directory packages are installed in, each in a directory named after it; nil for elpa/ in user-emacs-directory, as Emacs's.",
+  doc: "The directory packages are installed in, each in a directory named after it; nil for repos/ in user-emacs-directory, where Emacs's is elpa/.",
   value: null,
 });
 
@@ -88,7 +88,7 @@ function userEmacsFile(name: string): string {
 /** The directory packages are installed in, with a slash at its end. */
 export function packageUserDir(): string {
   const dir = gnista.variable("package-user-dir");
-  return gnista.fileNameAsDirectory(typeof dir === "string" && dir !== "" ? gnista.expandFileName(dir) : userEmacsFile("elpa"));
+  return gnista.fileNameAsDirectory(typeof dir === "string" && dir !== "" ? gnista.expandFileName(dir) : userEmacsFile("repos"));
 }
 
 function lockFileName(): string {
