@@ -71,7 +71,7 @@ What works today, in a terminal (`gnista`) or a window (`gnista-gui`). Where it 
 - Splitting the frame's root window (`C-x w 2`, `C-x w 3`).
 - Gnista.app opened from Finder takes its PATH from the login shell, as exec-path-from-shell gives Emacs.app.
 - Language servers (`M-x eglot`, `eglot-ensure`: definitions on `M-.`, references on `M-?`, back with `M-,`, completion on `C-M-i`, diagnostics underlined with `flymake-goto-next-error`, what point is on after a pause, `eglot-rename`, `eglot-format-buffer`, `eglot-code-actions`), and `xref-backend-functions` and `completion-at-point-functions` for other packages.
-- Themes (`load-theme`, `enable-theme`, `disable-theme`, `custom-enabled-themes`): a theme is a package, NAME-theme, along `load-path`; both front ends draw in its colours, the GUI's mode line, header line, tab bar and cursor too, and on macOS its title bar, which takes the theme's background. `examples/packages/nord-theme.ts` is Nord, as a package that does not ship.
+- Themes (`load-theme`, `enable-theme`, `disable-theme`, `custom-enabled-themes`): a theme is a package, NAME-theme, along `load-path`; both front ends draw in its colours, the GUI's mode line, header line, tab bar and cursor too, and on macOS its title bar, which takes the theme's background. `examples/packages/example-theme.ts` is a small one to write from, and Nord is a package of its own, [`gnista-nord-theme`](https://github.com/Gnista-Editor/gnista-nord-theme).
 - Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
 - Fields (C-a and the word commands stop at a prompt's edge).
 - Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`, and `go-ts-mode` and `bash-ts-mode`, which `sh-mode` and Org's `bash`, `sh` and `shell` blocks run, with a grammar library), loading the grammars Emacs builds (`libtree-sitter-LANG.dylib` along `treesit-extra-load-path` or in `~/.config/gnista/tree-sitter`), and modes' `treesit-font-lock-rules` by `treesit-font-lock-level`.
@@ -98,12 +98,12 @@ What works today, in a terminal (`gnista`) or a window (`gnista-gui`). Where it 
 Ports that have moved to repositories of their own in `Gnista-Editor`, each with its own tests and README, installed with `gnista.usePackage`:
 
 - [`gnista-vundo`](https://github.com/Gnista-Editor/gnista-vundo): the undo history as a tree (`M-x vundo`: `f`, `b`, `n`, `p`, `a`, `w`, `e`, `l`, `r`, `m`, `u`, `d` for a diff, `RET`, `q`), after vundo 2.4. `gnista.usePackage("Gnista-Editor/gnista-vundo")`.
+- [`gnista-nord-theme`](https://github.com/Gnista-Editor/gnista-nord-theme): the Nord theme, after nord-theme.el 0.6.0, under its MIT licence. `gnista.usePackage("Gnista-Editor/gnista-nord-theme", { require: false })`, then `gnista.call("load-theme", "nord", true)`.
 
 ## Packages that do not ship
 
 Ports of packages from outside Emacs, in `examples/packages/`, for a config to copy into `~/.config/gnista/packages` and load with `gnista.require`, as a config loads them from ELPA or MELPA in Emacs. They are to move to repositories of their own in `Gnista-Editor`, installed with `gnista.usePackage` ([ADR 0059](adr/0059-packages-are-git-repositories.md)):
 
-- `nord-theme`: the Nord theme (`gnista.call("load-theme", "nord", true)`).
 - `persistent-scratch`: the scratch buffers kept across sessions (`persistent-scratch-save`, `persistent-scratch-restore`, `persistent-scratch-autosave-mode`, `persistent-scratch-setup-default`, backups), in the file format persistent-scratch.el writes.
 - `casual`: Casual's Dired menu (`casual-dired-tmenu`, usually on `?` in Dired), with its menus for sorting, links, changing files, marking by regexp, utilities, searching and settings, after Casual 2.
 - `vertico`: every prompt that completes lists its candidates down the minibuffer (`vertico-mode`: `C-n`, `C-p`, `<down>`, `<up>`, `M-<`, `M->`, `TAB`, `RET`, `M-RET`, groups with `M-{` and `M-}`, `vertico-count`, `vertico-cycle`, `vertico-preselect`, sorting by history, length and name), after vertico 2.5.

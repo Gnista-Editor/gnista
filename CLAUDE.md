@@ -17,7 +17,7 @@ A working editor, in a terminal (`gnista`) or a window (`gnista-gui`), with most
 - `crates/gnista`: the terminal binary. `crates/gnista-gui`: the egui binary; drawing code takes colours from `Tokens`, never literals.
 - `crates/gnista-agent`: the agent ([ADR 0019](docs/adr/0019-agent-buffer.md)); while it acts, `Editor::check_permission` stops writing files, discarding unsaved work, quitting and running code until the user approves. `crates/gnista-mcp`: Gnista as an MCP server ([ADR 0015](docs/adr/0015-mcp-server.md)).
 - `packages/`: TypeScript packages that ship with Gnista, as Emacs ships its preloaded Lisp, each following the Emacs Lisp file of the same name (`simple.ts`, `files.ts`, `org.ts`, ...).
-- `examples/init.ts`: a sample config; `examples/packages/`: packages that do not ship, as a user's `~/.config/gnista/packages` holds them, such as `nord-theme.ts` (type-check with `tsc -p examples/packages`).
+- `examples/init.ts`: a sample config; `examples/packages/`: packages that do not ship, as a user's `~/.config/gnista/packages` holds them, such as `example-theme.ts`, a theme to write from that the theme tests load (type-check with `tsc -p examples/packages`). Ports move to repositories of their own in `Gnista-Editor` ([ADR 0059](docs/adr/0059-packages-are-git-repositories.md)), as `gnista-vundo` and `gnista-nord-theme` have.
 
 ### Writing packages
 
