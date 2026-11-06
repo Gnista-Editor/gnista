@@ -329,6 +329,12 @@ declare global {
        */
       "agent-shell-anthropic-start-claude-code": [];
       /**
+       * Move the agent to its next mode, after the one it is in, back to the first after the last.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-cycle-session-mode": [];
+      /**
        * Stop the agent's turn in this buffer: it is told to cancel, and its questions are answered as cancelled.
        *
        * Defined in packages/agent-shell.ts.
@@ -339,6 +345,8 @@ declare global {
        *
        * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent, its Markdown made Org; each tool call is a line, with its output or diff folded under it once the turn ends (TAB on the line shows it). The agent asks before its tools act. C-c C-k stops the turn. The mode line shows whether the agent is working and how much of its context the conversation fills.
        *
+       * The header line shows the session's model, mode and thought level. C-c TAB, or C-<tab> as in Emacs's agent-shell where tab-bar-mode does not take it, moves to the next mode, C-c C-v picks the model, C-c C-t the thought level, and C-c C-s any setting the agent offers. Picking a mode is M-x agent-shell-set-session-mode, as C-c C-m is C-c RET.
+       *
        * Defined in packages/agent-shell.ts.
        */
       "agent-shell-mode": [];
@@ -348,6 +356,39 @@ declare global {
        * Defined in packages/agent-shell.ts.
        */
       "agent-shell-send": [];
+      /**
+       * Set any of the settings the agent offers for this session, its mode, model and thought level among them: the setting, then its value.
+       *
+       * @param option text
+       * @param value text
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-set-session-config-option": [option: string, value: string];
+      /**
+       * Set the agent's mode for this session, as its agent offers them: Claude Code's Manual, Accept edits, Plan, Auto and Bypass permissions.
+       *
+       * @param mode text
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-set-session-mode": [mode: string];
+      /**
+       * Set the model the agent uses in this session, of those it offers.
+       *
+       * @param model text
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-set-session-model": [model: string];
+      /**
+       * Set how hard the agent thinks in this session, of the levels it offers: Claude Code's effort, low to max.
+       *
+       * @param thought level text
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-set-session-thought-level": [thoughtLevel: string];
       /**
        * Make the next kill join onto the last one on the kill ring, as consecutive kills do.
        *

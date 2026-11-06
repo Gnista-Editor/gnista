@@ -10,6 +10,11 @@
 //               block under it, folded into the line once the turn ends
 //               (TAB shows it), and its plan as a checklist
 //
+// The session starts as the buffer opens, and the header line shows its
+// model, mode and thought level: C-c C-v picks the model, C-c C-t the
+// thought level, C-c TAB the next mode and C-c C-s any setting the agent
+// offers, from ACP's session config options or its older modes and models.
+//
 // The agent asks before its tools act, and E8 asks you, when nothing
 // else is asking. It reads files through the buffers visiting them, so it
 // sees what is not saved yet, and writes them through those buffers, an
@@ -109,12 +114,39 @@ interface Shell {
   asking: boolean;
   askTimer?: number;
   usage?: { used: number; size: number };
-  mode?: string;
+  /** The session's settings, its mode and model among them, as the agent offers them. */
+  options: SessionOption[];
+  /** Whether its agent and session are starting, and what waits for them. */
+  starting: boolean;
+  waiting: { ready: () => void; failed: (error: acp.RpcError) => void }[];
   /** The end of what the agent wrote to standard error, for when it fails. */
   stderrTail: string;
 }
 
 const shells = new Map<string, Shell>();
+
+/** One of a setting's values. */
+interface OptionValue {
+  value: string;
+  name: string;
+  description?: string;
+}
+
+/**
+ * A setting of the session, as ACP's session config options give them:
+ * its mode, model and thought level, and whatever else the agent offers.
+ * An agent that gives only the older modes or models has them here too,
+ * set with session/set_mode or session/set_model.
+ */
+interface SessionOption {
+  id: string;
+  name: string;
+  category?: string;
+  description?: string;
+  current: string;
+  values: OptionValue[];
+  via?: "set_mode" | "set_model";
+}
 
 e8.defineMajorMode({
   name: "agent-shell-mode",
@@ -125,16 +157,41 @@ e8.defineMajorMode({
     "Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under " +
     "* Agent, its Markdown made Org; each tool call is a line, with its output or diff folded under it once the " +
     "turn ends (TAB on the line shows it). The agent asks before its tools act. C-c C-k stops the turn. The mode " +
-    "line shows whether the agent is working and how much of its context the conversation fills.",
-  bindings: { "C-c RET": "agent-shell-send", "C-c C-k": "agent-shell-interrupt" },
+    "line shows whether the agent is working and how much of its context the conversation fills.\n\n" +
+    "The header line shows the session's model, mode and thought level. C-c TAB, or C-<tab> as in Emacs's " +
+    "agent-shell where tab-bar-mode does not take it, moves to the next mode, C-c C-v " +
+    "picks the model, C-c C-t the thought level, and C-c C-s any setting the agent offers. Picking a mode is " +
+    "M-x agent-shell-set-session-mode, as C-c C-m is C-c RET.",
+  bindings: {
+    "C-c RET": "agent-shell-send",
+    "C-c C-k": "agent-shell-interrupt",
+    "C-<tab>": "agent-shell-cycle-session-mode",
+    "C-c TAB": "agent-shell-cycle-session-mode",
+    "C-c C-v": "agent-shell-set-session-model",
+    "C-c C-t": "agent-shell-set-session-thought-level",
+    "C-c C-s": "agent-shell-set-session-config-option",
+  },
   setup: () => {
     e8.call("visual-line-mode");
     // Agents' tools, e8-mcp's included, act in other windows than this one.
     e8.setVariable("agent-buffer", true);
-    e8.setVariable("header-line-format", " C-c RET sends what is under the last * You, C-c C-k stops the agent, TAB on a tool's line shows its output");
+    e8.setVariable("header-line-format", ` ${KEYS}`);
     e8.addHook("org-cycle-tab-first-hook", toggleBlockBelow, { local: true });
   },
 });
+
+/** What the header line says of the keys, after the session's settings. */
+const KEYS = "C-c RET send · C-c C-k stop · C-c TAB mode · C-c C-v model · C-c C-s settings · TAB on → output";
+
+/** The header line: the session's model, mode and thought level, then the keys. */
+function showSettings(shell: Shell): void {
+  const shown = ["model", "mode", "thought_level"]
+    .map((category) => shell.options.find((o) => o.category === category))
+    .filter((o): o is SessionOption => o !== undefined)
+    .map((o) => valueName(o, o.current));
+  const head = shell.starting ? ` Starting ${shell.agent}…` : shown.length > 0 ? ` ${shown.join(" · ")}` : "";
+  inBuffer(shell, () => e8.setVariable("header-line-format", `${head === "" ? " " : `${head}  `}${KEYS}`.replace(/%/g, "%%")));
+}
 
 /** Positions as a line start and its end, and the line's text. */
 function lineAround(pos: number): { start: number; end: number; text: string } {
@@ -553,7 +610,14 @@ function onUpdate(shell: Shell, notification: acp.Json): void {
       }
       break;
     case "current_mode_update":
-      if (update.currentModeId) shell.mode = String(update.currentModeId);
+      if (update.currentModeId) {
+        const mode = shell.options.find((o) => o.category === "mode");
+        if (mode) mode.current = String(update.currentModeId);
+        showSettings(shell);
+      }
+      break;
+    case "config_option_update":
+      takeOptions(shell, update.configOptions);
       break;
     default:
       // user_message_chunk (a session replayed), available_commands_update and the rest.
@@ -836,36 +900,239 @@ const E8_TOOLS_PROMPT =
   "Writing files, discarding unsaved changes, quitting and running code through them wait for the user's approval; " +
   "if a call's result says the user allowed it, make the same call again.";
 
-/** Sends the prompt, starting the agent and its session first if need be. */
-function prompt(shell: Shell, text: string): void {
-  const failed = (error: acp.RpcError) => finish(shell, `Error: ${describe(shell, error)}`);
-  const send = () => {
-    if (shell.cancelled) return finish(shell, "Stopped.");
-    acp.sendRequest({
-      client: shell.client,
-      request: acp.makeSessionPromptRequest({ sessionId: shell.sessionId!, prompt: [{ type: "text", text }] }),
-      onSuccess: (result: any) => {
-        const reason = String(result?.stopReason ?? "end_turn");
-        const notes: { [reason: string]: string } = {
-          cancelled: "Stopped.",
-          max_tokens: "The agent reached its most tokens for a reply.",
-          max_turn_requests: "The agent reached its most requests for a turn.",
-          refusal: "The agent declined.",
-        };
-        finish(shell, notes[reason]);
-      },
-      onFailure: failed,
+// --- The session's settings -----------------------------------------------------------
+
+/** A setting's values, those in groups taken out of them. */
+function optionValues(options: unknown): OptionValue[] {
+  if (!Array.isArray(options)) return [];
+  return options.flatMap((o: any): OptionValue[] =>
+    Array.isArray(o?.options)
+      ? optionValues(o.options)
+      : o?.value === undefined
+        ? []
+        : [{ value: String(o.value), name: String(o.name ?? o.value), description: o.description ? String(o.description) : undefined }],
+  );
+}
+
+/** The settings ACP's configOptions give, those with values to pick from. */
+function configOptions(list: unknown): SessionOption[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((o: any) => o?.id !== undefined && (o.type === undefined || o.type === "select"))
+    .map((o: any) => ({
+      id: String(o.id),
+      name: String(o.name ?? o.id),
+      category: o.category ? String(o.category) : undefined,
+      description: o.description ? String(o.description) : undefined,
+      current: String(o.currentValue ?? ""),
+      values: optionValues(o.options),
+    }));
+}
+
+/** Takes the settings a session/new answer gives: its configOptions, else its modes and models. */
+function sessionOptions(result: any): SessionOption[] {
+  const options = configOptions(result?.configOptions);
+  const modes = result?.modes;
+  if (!options.some((o) => o.category === "mode") && Array.isArray(modes?.availableModes)) {
+    options.push({
+      id: "mode",
+      name: "Mode",
+      category: "mode",
+      current: String(modes.currentModeId ?? ""),
+      values: modes.availableModes.map((m: any) => ({ value: String(m.id), name: String(m.name ?? m.id), description: m.description ? String(m.description) : undefined })),
+      via: "set_mode",
     });
-  };
-  if (shell.sessionId !== undefined && acp.clientStartedP(shell.client)) return send();
-  // A new agent, or one that stopped: start it, and a session in the project.
+  }
+  const models = result?.models;
+  if (!options.some((o) => o.category === "model") && Array.isArray(models?.availableModels)) {
+    options.push({
+      id: "model",
+      name: "Model",
+      category: "model",
+      current: String(models.currentModelId ?? ""),
+      values: models.availableModels.map((m: any) => ({ value: String(m.modelId), name: String(m.name ?? m.modelId), description: m.description ? String(m.description) : undefined })),
+      via: "set_model",
+    });
+  }
+  return options;
+}
+
+/** Replaces the settings with those the agent reports, keeping the older modes and models where nothing new stands for them. */
+function takeOptions(shell: Shell, list: unknown): void {
+  if (!Array.isArray(list)) return;
+  const fresh = configOptions(list);
+  const older = shell.options.filter((o) => o.via !== undefined && !fresh.some((f) => f.category === o.category));
+  shell.options = [...fresh, ...older];
+  showSettings(shell);
+}
+
+/** A value's name, or the value when the setting does not list it. */
+function valueName(option: SessionOption, value: string): string {
+  return option.values.find((v) => v.value === value)?.name ?? value;
+}
+
+/** The value a name or a value means, as a user picks it by name and code by either. */
+function valueNamed(option: SessionOption, answer: string): string | undefined {
+  const a = answer.trim();
+  return (option.values.find((v) => v.name === a) ?? option.values.find((v) => v.value === a) ?? option.values.find((v) => v.name.toLowerCase() === a.toLowerCase()))?.value;
+}
+
+/** The setting named, by its name, id or category. */
+function optionNamed(shell: Shell, answer: string): SessionOption | undefined {
+  const a = answer.trim().toLowerCase();
+  return shell.options.find((o) => o.name.toLowerCase() === a || o.id.toLowerCase() === a || o.category === a);
+}
+
+/** Sets a setting of the session, saying what it became. */
+function setOption(shell: Shell, option: SessionOption, value: string): void {
+  if (shell.sessionId === undefined || !acp.clientStartedP(shell.client)) e8.userError(`${shell.agent} has no session yet`);
+  const sessionId = shell.sessionId!;
+  const request =
+    option.via === "set_mode"
+      ? acp.makeSessionSetModeRequest({ sessionId, modeId: value })
+      : option.via === "set_model"
+        ? acp.makeSessionSetModelRequest({ sessionId, modelId: value })
+        : acp.makeSessionSetConfigOptionRequest({ sessionId, configId: option.id, value });
+  acp.sendRequest({
+    client: shell.client,
+    request,
+    onSuccess: (result: any) => {
+      if (Array.isArray(result?.configOptions)) takeOptions(shell, result.configOptions);
+      else {
+        option.current = value;
+        showSettings(shell);
+      }
+      e8.message(`${option.name}: ${valueName(option, value)}`);
+    },
+    onFailure: (error: acp.RpcError) => e8.message(`Could not set ${option.name.toLowerCase()}: ${String(error?.message ?? "failed")}`),
+  });
+}
+
+/** The shell of the current buffer, if it is one, for the settings' completions. */
+function shellHere(): Shell | undefined {
+  return shells.get(e8.bufferName() ?? "");
+}
+
+/** The setting of a category in the current shell, or an error saying the agent has none. */
+function optionOf(category: string, what: string): [Shell, SessionOption] {
+  const shell = currentShell();
+  const option = shell.options.find((o) => o.category === category);
+  if (option === undefined) e8.userError(shell.starting ? `${shell.agent} is still starting` : `${shell.agent} offers no ${what} to pick`);
+  return [shell, option!];
+}
+
+/** A command that picks the value of the current shell's setting of a category. */
+function defineSetter(name: string, category: string, what: string, doc: string): void {
+  const label = what[0].toUpperCase() + what.slice(1);
+  e8.defineCommand({
+    name,
+    doc,
+    params: [
+      {
+        name: what,
+        // Worked out before it asks, so an agent with nothing to pick says so first.
+        prompt: () => {
+          const [, option] = optionOf(category, what);
+          return `${label} (${valueName(option, option.current)}): `;
+        },
+        collection: () => shellHere()?.options.find((o) => o.category === category)?.values.map((v) => v.name) ?? [],
+        requireMatch: true,
+      },
+    ],
+    run: (answer: string) => {
+      const [shell, option] = optionOf(category, what);
+      const value = valueNamed(option, answer);
+      if (value === undefined) e8.userError(`${shell.agent} has no ${what} ${answer}`);
+      setOption(shell, option, value!);
+    },
+  });
+}
+
+defineSetter(
+  "agent-shell-set-session-mode",
+  "mode",
+  "mode",
+  "Set the agent's mode for this session, as its agent offers them: Claude Code's Manual, Accept edits, Plan, Auto and Bypass permissions.",
+);
+defineSetter("agent-shell-set-session-model", "model", "model", "Set the model the agent uses in this session, of those it offers.");
+defineSetter(
+  "agent-shell-set-session-thought-level",
+  "thought_level",
+  "thought level",
+  "Set how hard the agent thinks in this session, of the levels it offers: Claude Code's effort, low to max.",
+);
+
+e8.defineCommand({
+  name: "agent-shell-cycle-session-mode",
+  doc: "Move the agent to its next mode, after the one it is in, back to the first after the last.",
+  run: () => {
+    const [shell, option] = optionOf("mode", "mode");
+    const at = option.values.findIndex((v) => v.value === option.current);
+    const next = option.values[(at + 1) % option.values.length];
+    if (next === undefined) e8.userError(`${shell.agent} offers no mode to pick`);
+    setOption(shell, option, next.value);
+  },
+});
+
+e8.defineCommand({
+  name: "agent-shell-set-session-config-option",
+  doc: "Set any of the settings the agent offers for this session, its mode, model and thought level among them: the setting, then its value.",
+  params: [
+    { name: "option", prompt: "Setting: ", collection: () => shellHere()?.options.map((o) => o.name) ?? [], requireMatch: true },
+    {
+      name: "value",
+      prompt: (option: string) => {
+        const o = shellHere() && optionNamed(shellHere()!, option);
+        return o ? `${o.name} (${valueName(o, o.current)}): ` : `${option}: `;
+      },
+      collection: (option: string) => {
+        const shell = shellHere();
+        return (shell && optionNamed(shell, option)?.values.map((v) => v.name)) ?? [];
+      },
+      requireMatch: true,
+    },
+  ],
+  run: (name: string, answer: string) => {
+    const shell = currentShell();
+    const option = optionNamed(shell, name);
+    if (option === undefined) e8.userError(`${shell.agent} has no setting ${name}`);
+    const value = valueNamed(option!, answer);
+    if (value === undefined) e8.userError(`${option!.name} has no value ${answer}`);
+    setOption(shell, option!, value!);
+  },
+});
+
+// --- Sessions and turns, continued -------------------------------------------------------
+
+/**
+ * Starts the agent and a session in the project, if it has none running,
+ * then calls `ready`; `failed` if either fails. A shell starts its session
+ * when it opens, so its settings can be picked before the first request,
+ * and again when a request finds its agent stopped.
+ */
+function startSession(shell: Shell, ready: () => void, failed: (error: acp.RpcError) => void): void {
+  if (shell.sessionId !== undefined && acp.clientStartedP(shell.client)) return ready();
+  shell.waiting.push({ ready, failed });
+  if (shell.starting) return;
+  // An agent that stopped: start it again, in a new session.
   if (shell.sessionId !== undefined) {
     acp.shutdown({ client: shell.client });
     shell.client = makeShellClient(shell);
     shell.sessionId = undefined;
+    shell.options = [];
     note(shell, `Starting ${shell.agent} again, in a new session.`);
   }
+  shell.starting = true;
   shell.stderrTail = "";
+  showSettings(shell);
+  const done = (error?: acp.RpcError) => {
+    shell.starting = false;
+    showSettings(shell);
+    for (const w of shell.waiting.splice(0)) {
+      if (error === undefined) w.ready();
+      else w.failed(error);
+    }
+  };
   try {
     acp.sendRequest({
       client: shell.client,
@@ -876,30 +1143,55 @@ function prompt(shell: Shell, text: string): void {
         writeTextFileCapability: true,
       }),
       onSuccess: () => {
-        if (shell.cancelled) return finish(shell, "Stopped.");
+        const server = e8McpServer();
         acp.sendRequest({
           client: shell.client,
-          request: (() => {
-            const server = e8McpServer();
-            return server
-              ? acp.makeSessionNewRequest({ cwd: shell.directory, mcpServers: [server], meta: { systemPrompt: { append: E8_TOOLS_PROMPT } } })
-              : acp.makeSessionNewRequest({ cwd: shell.directory });
-          })(),
+          request: server
+            ? acp.makeSessionNewRequest({ cwd: shell.directory, mcpServers: [server], meta: { systemPrompt: { append: E8_TOOLS_PROMPT } } })
+            : acp.makeSessionNewRequest({ cwd: shell.directory }),
           onSuccess: (result: any) => {
             shell.sessionId = String(result?.sessionId ?? "");
-            if (result?.modes?.currentModeId) shell.mode = String(result.modes.currentModeId);
-            send();
+            shell.options = sessionOptions(result);
+            done();
           },
-          onFailure: failed,
+          onFailure: done,
         });
       },
-      onFailure: failed,
+      onFailure: done,
     });
   } catch (e) {
     // Its program is not installed, most likely.
     const message = e instanceof Error ? e.message : String((e as any)?.message ?? e);
-    finish(shell, `Error: ${message}${shell.command.some((p) => p.includes("claude-agent-acp")) ? "; npm install -g @agentclientprotocol/claude-agent-acp installs it" : ""}`);
+    const hint = shell.command.some((p) => p.includes("claude-agent-acp")) ? "; npm install -g @agentclientprotocol/claude-agent-acp installs it" : "";
+    done({ code: -32603, message: `${message}${hint}` } as acp.RpcError);
   }
+}
+
+/** Sends the prompt, starting the agent and its session first if need be. */
+function prompt(shell: Shell, text: string): void {
+  const failed = (error: acp.RpcError) => finish(shell, `Error: ${describe(shell, error)}`);
+  startSession(
+    shell,
+    () => {
+      if (shell.cancelled) return finish(shell, "Stopped.");
+      acp.sendRequest({
+        client: shell.client,
+        request: acp.makeSessionPromptRequest({ sessionId: shell.sessionId!, prompt: [{ type: "text", text }] }),
+        onSuccess: (result: any) => {
+          const reason = String(result?.stopReason ?? "end_turn");
+          const notes: { [reason: string]: string } = {
+            cancelled: "Stopped.",
+            max_tokens: "The agent reached its most tokens for a reply.",
+            max_turn_requests: "The agent reached its most requests for a turn.",
+            refusal: "The agent declined.",
+          };
+          finish(shell, notes[reason]);
+        },
+        onFailure: failed,
+      });
+    },
+    failed,
+  );
 }
 
 /** The agents agent-shell-agents names, as [name, command, environment]. */
@@ -943,9 +1235,15 @@ export function start(name: string): string {
       permissions: [],
       asking: false,
       stderrTail: "",
+      options: [],
+      starting: false,
+      waiting: [],
     };
     shell.client = makeShellClient(shell);
     shells.set(buffer, shell);
+    // Started now, so its settings can be picked before the first request;
+    // if it fails, the first request says why, starting it again.
+    startSession(shell, () => {}, (error) => e8.message(`${name}: ${describe(shell, error)}`));
   }
   return buffer;
 }
