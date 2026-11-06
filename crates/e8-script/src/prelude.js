@@ -466,6 +466,7 @@
     keymapParent: (keymap) => native.keymapParent(keymapArg(keymap)),
     setKeymapParent: (keymap, parent) => native.setKeymapParent(keymapArg(keymap), parent === undefined || parent === null ? null : keymapArg(parent)),
     lookupKey: (keymap, keys) => native.lookupKey(keymapArg(keymap), String(keys)),
+    keymapBindings: (keymap) => native.keymapBindings(keymapArg(keymap)),
     message: (text, { log = true } = {}) => native.message(String(text), Boolean(log)),
     insert: (text) => (text instanceof PropertizedString ? native.insertText(text) : native.insert(String(text))),
     PropertizedString,

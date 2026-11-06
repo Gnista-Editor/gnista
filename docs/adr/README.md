@@ -65,3 +65,4 @@ One record per decision, in the order they were made; a later one can change an 
 - [0061](0061-agents-over-acp.md) Agents over ACP
 - [0062](0062-agents-through-e8-mcp-ask-first.md) Agents through e8-mcp ask first
 - [0063](0063-the-name-e8.md) The name E8
+- [0064](0064-the-help-system.md) The help system

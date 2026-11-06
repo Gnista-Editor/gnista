@@ -1584,6 +1584,15 @@ impl Editor {
                 if keys.len() == 1 && key.printable().is_some() {
                     self.last_key = Some(key);
                     self.command_loop_run("self-insert-command");
+                } else if keys.len() > 1
+                    && (key.code == KeyCode::Char('h') && key.ctrl && !key.meta || key.code == KeyCode::F(1))
+                    && self.command("describe-prefix-bindings").is_some()
+                {
+                    // As Emacs's help-char after a prefix key runs
+                    // prefix-help-command: the keys under the prefix are
+                    // listed, the command reading them as this-command-keys.
+                    self.last_key = Some(key);
+                    self.command_loop_run("describe-prefix-bindings");
                 } else {
                     self.message(format!("{} is undefined", format_keys(&keys)));
                     // Emacs runs the command `undefined` for the keys, so the

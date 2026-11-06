@@ -638,6 +638,22 @@ impl Editor {
         found.into_iter().find(|keys| self.lookup_keys_in_window_buffer(keys) == command)
     }
 
+    /// Every key sequence that runs a command in the window's buffer, as
+    /// `where-is-internal` without FIRSTONLY: the modes' keymaps' first,
+    /// then the global map's, each once, and none that another shadows.
+    pub fn where_is_all(&self, command: &str) -> Vec<Vec<crate::key::Key>> {
+        let b = self.window_buffer();
+        let mut maps = self.mode_keymaps_in(b, false);
+        maps.push(self.global_map());
+        let mut out: Vec<Vec<crate::key::Key>> = Vec::new();
+        for keys in maps.iter().flat_map(|&m| self.keymaps().keys_for(m, command)) {
+            if !out.contains(&keys) && self.lookup_keys_in_window_buffer(&keys) == command {
+                out.push(keys);
+            }
+        }
+        out
+    }
+
     /// What a key sequence runs in the window's buffer, ignoring any prompt.
     fn lookup_keys_in_window_buffer(&self, keys: &[crate::key::Key]) -> String {
         let b = self.window_buffer();

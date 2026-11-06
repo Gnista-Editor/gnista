@@ -144,6 +144,13 @@ const API: &str = r##"
    */
   function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | string[] | undefined;
   /**
+   * Every binding of a keymap and its parents as [keys, command], in key
+   * order through its prefix maps, a parent's that the keymap's own shadow
+   * left out; a string or vector binding is "Keyboard Macro", as
+   * describe-bindings lists it.
+   */
+  function keymapBindings(keymap: string | Keymap): [string, string][];
+  /**
    * Show a message in the echo area, and log it in *Messages*, unless `log`
    * is false, as for a prefix argument typed so far.
    */

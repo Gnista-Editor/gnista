@@ -41,6 +41,8 @@ Probably fine, but check:
 
 From now on: ask before reading or porting the source of any GPL or similar project. Running Emacs to compare behaviour is fine.
 
+Help text ([ADR 0064](adr/0064-the-help-system.md)): a doc string is written from the command's behaviour, parameters and tests, never copied or paraphrased from Emacs's, and what help shows is generated from the definitions and keymaps. The Emacs manuals are under the GFDL with invariant sections, which does not combine with GPL code, so they are never copied or shipped; `C-h i` and `C-h r` will read installed Info files or open the online manual. Not done: comparing the doc strings written before the ADR with Emacs's for the same names, and rewriting any that match.
+
 ## The structure we have in mind
 
 1. **A permissive core.** The Rust crates and the basic packages a usable editor needs would be MIT and/or Apache-2.0. Anyone could reuse them on any platform, App Store included.

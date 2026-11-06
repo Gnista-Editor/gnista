@@ -103,6 +103,55 @@ natives! {
         Ok(())
     }
 
+    /// What describe-command shows of a command besides its documentation: its
+    /// parameters, each with its kind, a description of the kind and its
+    /// prompt, the file that defined it, whether Shift selects as it moves,
+    /// and the command it is an alias of; undefined if there is no such command.
+    #[ts = "(name: CommandName | DefinedCommand | (string & {})): { doc: string; params: { name: string; kind: ParamKind; description: string; prompt: string }[]; source?: string; shiftSelect: boolean; aliasOf?: string } | undefined"]
+    pub fn commandInfo(ed, name: String) -> Option<Record> {
+        Ok(ed.command(&name).map(|c| {
+            let params: Vec<Record> = c
+                .params
+                .iter()
+                .map(|p| {
+                    Record::new()
+                        .with("name", p.name.clone())
+                        .with("kind", p.kind.name())
+                        .with("description", p.kind.describe())
+                        .with("prompt", p.prompt.clone())
+                })
+                .collect();
+            Record::new()
+                .with("doc", c.doc.clone())
+                .with("params", params)
+                .with("source", c.source.clone())
+                .with("shiftSelect", c.shift_select)
+                .with("aliasOf", c.alias_of.clone())
+        }))
+    }
+
+    /// Every binding of a keymap and its parents as [keys, command], in key
+    /// order through its prefix maps, a parent's that the keymap's own shadow
+    /// left out; a string or vector binding is "Keyboard Macro", as
+    /// describe-bindings lists it.
+    fn keymapBindings(ed, keymap: EditorValue) -> Vec<Vec<String>> {
+        let map = ed.keymap_of(&keymap)?;
+        let mut out: Vec<(Vec<Key>, String)> = Vec::new();
+        for m in std::iter::successors(Some(map), |&m| ed.keymaps().parent(m)).take(32) {
+            for (keys, command) in ed.keymaps().bindings(m) {
+                if !out.iter().any(|(k, _)| *k == keys) {
+                    out.push((keys, command));
+                }
+            }
+        }
+        Ok(out.into_iter().map(|(k, c)| vec![e8_core::format_keys(&k), c]).collect())
+    }
+
+    /// The names of all variables, as all-completions over obarray with boundp.
+    pub fn variableNames(ed) -> Vec<String> {
+        Ok(ed.variables().map(|v| v.name.clone()).collect())
+    }
+
     /// The file the current buffer visits, if any.
     pub fn bufferFileName(ed) -> Option<String> {
         Ok(ed.buffer().path.as_ref().map(|p| p.display().to_string()))
@@ -155,6 +204,13 @@ natives! {
     /// buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
     pub fn whereIs(ed, command: String) -> Option<String> {
         Ok(ed.where_is(&command).map(|keys| e8_core::format_keys(&keys)))
+    }
+
+    /// Every key sequence that runs a command in the selected window's
+    /// buffer, as where-is-internal: those in its modes' keymaps first, then
+    /// the global map's, and none that another binding shadows.
+    pub fn whereIsInternal(ed, command: String) -> Vec<String> {
+        Ok(ed.where_is_all(&command).iter().map(|keys| e8_core::format_keys(keys)).collect())
     }
 
     fn frameSize(ed) -> Vec<f64> {

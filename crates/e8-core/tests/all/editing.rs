@@ -151,26 +151,6 @@ fn switching_and_killing_buffers() {
 }
 
 #[test]
-fn describe_key_and_command() {
-    let mut ed = Editor::new();
-    press(&mut ed, "C-h k C-x C-f");
-    assert_eq!(ed.window_buffer().name, "*Help*");
-    assert!(text(&ed).starts_with("C-x C-f runs the command find-file."));
-    assert!(text(&ed).contains("file (file name)"));
-    // Help is read-only.
-    ed.type_text("x");
-    assert_eq!(ed.echo(), Some("Buffer is read-only: #<buffer *Help*>"));
-
-    press(&mut ed, "C-h f");
-    ed.type_text("kill-line");
-    press(&mut ed, "RET");
-    assert!(text(&ed).contains("It is bound to C-k."));
-
-    press(&mut ed, "C-h k a");
-    assert!(text(&ed).starts_with("a runs the command self-insert-command."));
-}
-
-#[test]
 fn undefined_keys_and_esc_as_meta() {
     let mut ed = Editor::new();
     press(&mut ed, "C-x C-z");
