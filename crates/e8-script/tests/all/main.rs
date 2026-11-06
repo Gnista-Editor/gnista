@@ -35,6 +35,7 @@ mod file_primitives;
 mod files;
 mod flyspell;
 mod fonts;
+mod help;
 mod hi_lock;
 mod images;
 mod indirect;

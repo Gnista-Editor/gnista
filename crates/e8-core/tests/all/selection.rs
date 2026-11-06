@@ -127,14 +127,6 @@ fn shifted_keys_with_their_own_binding_run_it() {
 }
 
 #[test]
-fn describe_key_follows_shift_translation() {
-    let mut ed = editor("abc");
-    press(&mut ed, "C-h k S-<right>");
-    assert!(text(&ed).starts_with("S-<right> runs the command forward-char."), "{}", text(&ed));
-    assert!(text(&ed).contains("shift selection"));
-}
-
-#[test]
 fn quitting_a_prompt_keeps_the_region() {
     let mut ed = editor("hello world");
     press(&mut ed, "C-SPC C-f C-f");

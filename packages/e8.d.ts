@@ -426,6 +426,36 @@ declare global {
        */
       "append-to-register": [start: number, end: number, del?: PrefixArg | boolean];
       /**
+       * List the commands, variables and faces whose names match a pattern: words separated by spaces, any of which a name contains, or an Emacs regexp.
+       *
+       * @param pattern text
+       *
+       * Defined in packages/help.ts.
+       */
+      "apropos": [pattern: string];
+      /**
+       * List the commands whose names match a pattern, with their keys and what they do: words separated by spaces, any of which a name contains, or an Emacs regexp.
+       *
+       * @param pattern text
+       *
+       * Defined in packages/help.ts.
+       */
+      "apropos-command": [pattern: string];
+      /**
+       * The major mode of the *Apropos* buffer: RET on a name describes it, TAB and S-TAB move between the names, and q goes back.
+       *
+       * Defined in packages/help.ts.
+       */
+      "apropos-mode": [];
+      /**
+       * List the variables whose names match a pattern, with what they hold: words separated by spaces, any of which a name contains, or an Emacs regexp.
+       *
+       * @param pattern text
+       *
+       * Defined in packages/help.ts.
+       */
+      "apropos-variable": [pattern: string];
+      /**
        * Run a shell command in the background, its output going into *Async Shell Command* as it comes.
        *
        * When it ends, a message says how.
@@ -465,6 +495,14 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "back-to-indentation": [];
+      /**
+       * Move to the previous button, going round to the last before the first; with a count, that many back.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/help.ts.
+       */
+      "backward-button": [n?: number];
       /**
        * Move point backward a character, or as many as the prefix argument says.
        *
@@ -1385,7 +1423,9 @@ declare global {
        */
       "delete-window": [];
       /**
-       * List all key bindings.
+       * List the keys and the commands they run in the current buffer: the major mode's, each minor mode's that is on, and the global ones.
+       *
+       * Defined in packages/help.ts.
        */
       "describe-bindings": [];
       /**
@@ -1397,9 +1437,11 @@ declare global {
        */
       "describe-coding-system": [];
       /**
-       * Show the documentation of a command.
+       * Show what a command does: the keys that run it, its parameters and its documentation.
        *
        * @param command command name
+       *
+       * Defined in packages/help.ts.
        */
       "describe-command": [command: string];
       /**
@@ -1417,17 +1459,51 @@ declare global {
        */
       "describe-face": [face: string];
       /**
-       * Show which command a key sequence runs.
+       * Show what a function does: a command as describe-command does, or that a name is a function scripts defined with e8.defun.
+       *
+       * @param function text
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-function": [function: string];
+      /**
+       * Show which command a key sequence runs, and what the command does.
        *
        * @param key key sequence
+       *
+       * Defined in packages/help.ts.
        */
       "describe-key": [key: string];
       /**
-       * Show the documentation of the current buffer's major mode and of the minor modes that are on.
+       * Say in the echo area which command a key sequence runs.
+       *
+       * @param key key sequence
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-key-briefly": [key: string];
+      /**
+       * Show the documentation of the current buffer's major mode and of the minor modes that are on, with their keys.
        *
        * Defined in packages/help.ts.
        */
       "describe-mode": [];
+      /**
+       * List the keys that start with the prefix typed before C-h, and the commands they run.
+       *
+       * The command loop runs this when C-h or <f1> follows a prefix key that does not bind it, as Emacs's prefix-help-command.
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-prefix-bindings": [];
+      /**
+       * Show everything a name is: a command, a variable or a face, each described in turn. Empty input takes the name at point.
+       *
+       * @param symbol text
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-symbol": [symbol: string];
       /**
        * Show a variable's documentation, its value in the current buffer, and its global value.
        *
@@ -2546,6 +2622,14 @@ declare global {
        */
       "font-lock-flush": [];
       /**
+       * Move to the next button, going round to the first after the last; with a count, that many on.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/help.ts.
+       */
+      "forward-button": [n?: number];
+      /**
        * Move point forward a character, or as many as the prefix argument says.
        *
        * A negative argument moves backward.
@@ -2706,7 +2790,37 @@ declare global {
        */
       "header-line-indent-mode": [];
       /**
-       * The major mode of the *Help* buffer. q goes back to the buffer before it.
+       * Follow the link at point: the button there, or else the name point is on.
+       *
+       * Defined in packages/help.ts.
+       */
+      "help-follow": [];
+      /**
+       * Describe the name at point: a command, a variable or a face.
+       *
+       * Defined in packages/help.ts.
+       */
+      "help-follow-symbol": [];
+      /**
+       * List the help commands: each key after C-h, its command and what it does.
+       *
+       * Defined in packages/help.ts.
+       */
+      "help-for-help": [];
+      /**
+       * Show what *Help* showed before this.
+       *
+       * Defined in packages/help.ts.
+       */
+      "help-go-back": [];
+      /**
+       * Show what *Help* showed after this, having gone back.
+       *
+       * Defined in packages/help.ts.
+       */
+      "help-go-forward": [];
+      /**
+       * The major mode of the *Help* buffer. RET follows the name at point to its description, TAB and S-TAB move between the names, l and r go back and forward through what was shown, and q goes back to the buffer before it.
        *
        * Defined in packages/help.ts.
        */
@@ -6804,6 +6918,14 @@ declare global {
        */
       "what-page": [];
       /**
+       * Say which keys run a command, in the current buffer.
+       *
+       * @param command command name
+       *
+       * Defined in packages/help.ts.
+       */
+      "where-is": [command: string];
+      /**
        * After a prefix key such as C-x and a pause of which-key-idle-delay seconds, show in a window along the bottom of the frame each key that can follow it, with the command it runs.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -7122,6 +7244,10 @@ declare global {
        * Defined in packages/ansi-color.ts.
        */
       "ansi-color-for-comint-mode": Value;
+      /**
+       * Keymap apropos-mode-map.
+       */
+      "apropos-mode-map": Value;
       /**
        * The command typing a space or newline runs to break the line, when Auto Fill mode is on; nil when it is off. Each buffer has its own.
        */
@@ -11270,6 +11396,12 @@ declare global {
        */
       "buffer-menu-buffer": FaceAttributes;
       /**
+       * A button, such as a name in *Help* that RET follows.
+       *
+       * Defined in packages/help.ts.
+       */
+      "button": FaceAttributes;
+      /**
        * Input sent in a comint buffer.
        *
        * Defined in packages/comint.ts.
@@ -12225,6 +12357,10 @@ declare global {
        * Run after entering Agent Shell mode, after the hooks of the modes it is built on.
        */
       "agent-shell-mode-hook": Value;
+      /**
+       * Run after entering Apropos mode, after the hooks of the modes it is built on.
+       */
+      "apropos-mode-hook": Value;
       /**
        * Run after Auto-Fill mode is turned on or off.
        */
@@ -13194,6 +13330,15 @@ declare global {
     function commandSource(name: CommandName | DefinedCommand | (string & {})): string | undefined;
     /** Show text in the read-only *Help* buffer. */
     function showHelp(text: string): void;
+    /**
+     * What describe-command shows of a command besides its documentation: its
+     * parameters, each with its kind, a description of the kind and its
+     * prompt, the file that defined it, whether Shift selects as it moves,
+     * and the command it is an alias of; undefined if there is no such command.
+     */
+    function commandInfo(name: CommandName | DefinedCommand | (string & {})): { doc: string; params: { name: string; kind: ParamKind; description: string; prompt: string }[]; source?: string; shiftSelect: boolean; aliasOf?: string } | undefined;
+    /** The names of all variables, as all-completions over obarray with boundp. */
+    function variableNames(): string[];
     /** The file the current buffer visits, if any. */
     function bufferFileName(): string | undefined;
     /** How deep in recursive edits and minibuffers the editor is, as recursion-depth. */
@@ -13213,6 +13358,12 @@ declare global {
      * buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
      */
     function whereIs(command: string): string | undefined;
+    /**
+     * Every key sequence that runs a command in the selected window's
+     * buffer, as where-is-internal: those in its modes' keymaps first, then
+     * the global map's, and none that another binding shadows.
+     */
+    function whereIsInternal(command: string): string[];
     /** The processes running, as process-list. */
     function processList(): string[];
     /** Write to a process's input, encoded in its coding, as process-send-string. */
@@ -13832,6 +13983,13 @@ declare global {
      * command's name, a prefix map, or undefined.
      */
     function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | string[] | undefined;
+    /**
+     * Every binding of a keymap and its parents as [keys, command], in key
+     * order through its prefix maps, a parent's that the keymap's own shadow
+     * left out; a string or vector binding is "Keyboard Macro", as
+     * describe-bindings lists it.
+     */
+    function keymapBindings(keymap: string | Keymap): [string, string][];
     /**
      * Show a message in the echo area, and log it in *Messages*, unless `log`
      * is false, as for a prefix argument typed so far.

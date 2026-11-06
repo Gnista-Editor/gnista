@@ -82,10 +82,6 @@ fn the_wheel_is_a_key() {
     ed.press("<wheel-up>").unwrap();
     assert_eq!(top(&ed), 1);
 
-    ed.press("C-h k <wheel-down>").unwrap();
-    let help = ed.window_buffer().slice(0..ed.window_buffer().len());
-    assert!(help.starts_with("<wheel-down> runs the command mwheel-scroll."), "{help}");
-
     // Rebinding the wheel changes what it does, as in Emacs.
     let mut ed = editor();
     let map = ed.global_map();
