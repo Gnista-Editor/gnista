@@ -90,7 +90,9 @@ fn killing_ends_it_and_what_it_started() {
     assert_eq!(ed.process_list(), ["sleeper"]);
     assert!(ed.next_timer_in().is_some_and(|d| d <= Duration::from_millis(30)), "front ends wake to take output in");
     eval(&mut ed, &s, r#"gnista.message(gnista.processStatus("sleeper") ?? "none"); gnista.interruptProcess("sleeper");"#);
-    ed.accept_process_output(Duration::from_secs(5));
+    // It returns as soon as the process has ended; the time is for a
+    // runner busy with the whole suite, where 5 s was sometimes too little.
+    ed.accept_process_output(Duration::from_secs(20));
     assert!(ed.messages().iter().any(|m| m == "run"));
     // What was still running, if it never ended, for a failure on CI.
     let left = || {
