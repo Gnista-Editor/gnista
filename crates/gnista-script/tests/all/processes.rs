@@ -109,6 +109,22 @@ fn a_new_process_of_the_same_name_gets_none_of_the_old_ones_output() {
 }
 
 #[test]
+fn output_a_slow_reader_has_not_read_yet_comes_before_the_end() {
+    // On a loaded machine the thread reading a program's output can run
+    // late; the program has exited by then, and its output must still come
+    // before "Process finished", as Emacs reads what is waiting first.
+    let (mut ed, s) = setup();
+    ed.delay_process_reads_for_tests(Duration::from_millis(600));
+    eval(&mut ed, &s, r#"gnista.makeProcess({ name: "slow", buffer: "*slow*", command: ["echo", "late"] });"#);
+    ed.accept_process_output(Duration::from_secs(5));
+    assert_eq!(buffer_text(&ed, "*slow*"), "late\n\nProcess slow finished\n");
+    // The same through a pipe rather than a terminal.
+    eval(&mut ed, &s, r#"gnista.makeProcess({ name: "piped", buffer: "*piped*", connectionType: "pipe", command: ["echo", "late"] });"#);
+    ed.accept_process_output(Duration::from_secs(5));
+    assert_eq!(buffer_text(&ed, "*piped*"), "late\n\nProcess piped finished\n");
+}
+
+#[test]
 fn a_process_whose_child_keeps_its_output_open_still_ends() {
     let (mut ed, s) = setup();
     eval(&mut ed, &s, r#"gnista.makeProcess({ name: "bg", buffer: "*bg*", command: ["sh", "-c", "sleep 5 & echo hi"] });"#);

@@ -97,6 +97,11 @@ pub(crate) enum Kind {
     Pty {
         master: std::fs::File,
         tty: String,
+        /// The program's side, kept open while the process is: macOS throws
+        /// away what a program wrote to a terminal and nobody read once the
+        /// last holder of this side closes it, as the program does when it
+        /// exits, so a reader that ran late would lose its last output.
+        _slave: std::os::fd::OwnedFd,
     },
     /// A network connection, and where it goes, as process-contact gives it.
     Network(Contact),
@@ -145,6 +150,44 @@ pub(crate) struct Process {
     /// Bytes of output not decoded yet, the start of a character split
     /// between reads.
     pending: Vec<u8>,
+    /// How to tell that all a local program's output has been read.
+    gate: Option<OutputGate>,
+}
+
+/// What tells the editor that a program's output has all been read, so its
+/// end is reported after the last of it, as Emacs reads what is waiting
+/// before it reports a process's end: the lock its reader holds while it
+/// reads a chunk and sends it on, and the descriptor, which says whether
+/// the reader has anything left to read.
+struct OutputGate {
+    lock: Arc<Mutex<()>>,
+    #[cfg(unix)]
+    fd: std::os::fd::OwnedFd,
+}
+
+impl OutputGate {
+    /// Whether all the output has come: the reader is not reading, and has
+    /// nothing waiting to read, neither bytes nor the output's end. If so,
+    /// `then` runs holding the lock, so nothing more is read meanwhile.
+    fn when_quiet(&self, then: impl FnOnce()) -> bool {
+        let Ok(_reading) = self.lock.try_lock() else { return false };
+        // The reader has something to do if bytes are waiting, or the output
+        // has ended, which it reports once it has read the rest: either way
+        // the process is not done. Quiet is the output still open, with
+        // nothing in it, as when a child the program started holds it.
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+            let mut ready = libc::pollfd { fd: self.fd.as_raw_fd(), events: libc::POLLIN, revents: 0 };
+            // SAFETY: poll reads and writes the one pollfd given it, and waits for nothing.
+            let r = unsafe { libc::poll(&mut ready, 1, 0) };
+            if r != 0 {
+                return false;
+            }
+        }
+        then();
+        true
+    }
 }
 
 enum Event {
@@ -264,13 +307,15 @@ pub(crate) struct Processes {
     /// for that of `watching`, or of any process.
     outputs_seen: u64,
     watching: Option<u64>,
+    /// How long each read of a program's output is held back, for tests.
+    read_delay: Duration,
 }
 
 impl Default for Processes {
     fn default() -> Processes {
         let (tx, rx) = sync_channel(QUEUED_CHUNKS);
         let tx = EventSender { tx, wake: Arc::new(Mutex::new(None)) };
-        Processes { list: Vec::new(), tx, rx, next_id: 1, held: Default::default(), outputs_seen: 0, watching: None }
+        Processes { list: Vec::new(), tx, rx, next_id: 1, held: Default::default(), outputs_seen: 0, watching: None, read_delay: Duration::ZERO }
     }
 }
 
@@ -374,11 +419,27 @@ pub struct NetworkSpec {
     pub coding: Option<(Coding, Coding)>,
 }
 
-/// Reads a stream in chunks, sending the bytes on to be decoded.
-fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: EventSender) {
+/// Reads a stream in chunks, sending the bytes on to be decoded. With a
+/// gate, it waits until there is something to read, then reads it and sends
+/// it on holding the gate's lock, so the editor, holding the lock, knows
+/// whatever has been read has been sent ([`OutputGate`]); `delay` holds each
+/// read back, for tests of a reader that is slow to run.
+fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: EventSender, gate: Option<(Arc<Mutex<()>>, i32)>, delay: Duration) {
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
         loop {
+            #[cfg(unix)]
+            if let Some((_, fd)) = &gate {
+                let mut ready = libc::pollfd { fd: *fd, events: libc::POLLIN, revents: 0 };
+                // SAFETY: poll reads and writes the one pollfd given it.
+                if unsafe { libc::poll(&mut ready, 1, -1) } < 0 && std::io::Error::last_os_error().kind() != std::io::ErrorKind::Interrupted {
+                    break;
+                }
+            }
+            if !delay.is_zero() {
+                std::thread::sleep(delay);
+            }
+            let _reading = gate.as_ref().map(|(lock, _)| lock.lock().unwrap_or_else(|e| e.into_inner()));
             match stream.read(&mut buf) {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
@@ -483,6 +544,8 @@ impl Editor {
         let pty = if spec.pty { Some(open_pty().map_err(|e| Error::new(format!("Opening a pseudo-terminal: {e}")))?) } else { None };
         #[cfg(not(unix))]
         let pty: Option<((), (), String)> = None;
+        #[cfg(unix)]
+        let gate_fd: std::os::fd::OwnedFd;
         let mut output: Box<dyn Read + Send> = match &pty {
             #[cfg(unix)]
             Some((master, slave, _)) => {
@@ -500,6 +563,7 @@ impl Editor {
                         Ok(())
                     });
                 }
+                gate_fd = master.try_clone()?;
                 Box::new(std::fs::File::from(master.try_clone()?))
             }
             #[cfg(not(unix))]
@@ -508,6 +572,10 @@ impl Editor {
                 // Standard output and error share one pipe, as Emacs gives a
                 // process, so what it writes comes in the order it wrote it.
                 let (output, writer) = std::io::pipe().map_err(|e| Error::new(format!("Making a pipe: {e}")))?;
+                #[cfg(unix)]
+                {
+                    gate_fd = std::os::fd::OwnedFd::from(output.try_clone()?);
+                }
                 let stderr = if spec.merge_stderr { Stdio::from(writer.try_clone()?) } else { Stdio::null() };
                 command.stdin(Stdio::piped()).stdout(writer).stderr(stderr);
                 // Its own process group, so signals reach what it starts too.
@@ -529,15 +597,26 @@ impl Editor {
         let (stdin, kind) = match pty {
             #[cfg(unix)]
             Some((master, slave, tty)) => {
-                drop(slave);
                 let input = std::fs::File::from(master.try_clone()?);
-                (Some(writer(input, || {})), Kind::Pty { master: std::fs::File::from(master), tty })
+                (Some(writer(input, || {})), Kind::Pty { master: std::fs::File::from(master), tty, _slave: slave })
             }
             #[cfg(not(unix))]
             Some(_) => unreachable!(),
             None => (child.stdin.take().map(|input| writer(input, || {})), Kind::Pipe),
         };
-        read_stream(id, std::mem::replace(&mut output, Box::new(std::io::empty())), self.processes.tx.clone());
+        let gate = OutputGate {
+            lock: Arc::new(Mutex::new(())),
+            #[cfg(unix)]
+            fd: gate_fd,
+        };
+        #[cfg(unix)]
+        let raw = {
+            use std::os::fd::AsRawFd;
+            gate.fd.as_raw_fd()
+        };
+        #[cfg(not(unix))]
+        let raw = -1;
+        read_stream(id, std::mem::replace(&mut output, Box::new(std::io::empty())), self.processes.tx.clone(), Some((gate.lock.clone(), raw)), self.processes.read_delay);
         let open_streams = 1;
         let coding = spec.coding.unwrap_or_else(|| self.default_process_coding());
         let (buffer_id, mark) = match buffer {
@@ -566,6 +645,7 @@ impl Editor {
             kind,
             coding,
             pending: Vec::new(),
+            gate: Some(gate),
         });
         Ok(name)
     }
@@ -686,6 +766,7 @@ impl Editor {
             kind,
             coding,
             pending: Vec::new(),
+            gate: None,
         });
         Ok(name)
     }
@@ -694,7 +775,7 @@ impl Editor {
     fn connect(&mut self, id: u64, conn: Conn) -> Result<Sender<Option<Vec<u8>>>> {
         let reader = conn.try_clone()?;
         let closer = conn.try_clone()?;
-        read_stream(id, reader, self.processes.tx.clone());
+        read_stream(id, reader, self.processes.tx.clone(), None, Duration::ZERO);
         Ok(writer(conn, move || closer.shutdown(std::net::Shutdown::Write)))
     }
 
@@ -744,6 +825,7 @@ impl Editor {
             kind: Kind::Network(contact),
             coding,
             pending: Vec::new(),
+            gate: None,
         });
         if let Some(f) = sentinel
             && let Err(e) = f(self, &[Value::Str(name), Value::Str(format!("open from {host}\n"))])
@@ -978,6 +1060,14 @@ impl Editor {
         Ok(())
     }
 
+    /// Holds back each read of a program's output started after this, as a
+    /// reader thread slow to be run on a loaded machine is, for tests that
+    /// its output still comes before its end.
+    #[doc(hidden)]
+    pub fn delay_process_reads_for_tests(&mut self, delay: Duration) {
+        self.processes.read_delay = delay;
+    }
+
     /// Whether a process is running, so front ends should wake to take its output in.
     pub(crate) fn processes_running(&self) -> bool {
         self.processes.list.iter().any(|p| p.status == Status::Run)
@@ -1014,6 +1104,7 @@ impl Editor {
         // something they started keeps their output open, a moment after
         // they exited with nothing more arriving, as Emacs notices them.
         let mut ended = Vec::new();
+        let mut quiet = Vec::new();
         let now = Instant::now();
         for p in &mut self.processes.list {
             if p.status != Status::Run {
@@ -1039,7 +1130,55 @@ impl Editor {
                 },
             };
             let Some((when, status)) = exited else { continue };
-            if p.open_streams == 0 || (drained && now.duration_since(when) >= Duration::from_millis(200)) {
+            if p.open_streams == 0 {
+                p.status = status;
+                p.stdin = None;
+                ended.push(p.name.clone());
+            } else if drained && (p.gate.is_some() || now.duration_since(when) >= Duration::from_millis(200)) {
+                quiet.push((p.id, status));
+            }
+        }
+        // Exited, with their output still open, as a terminal's always is,
+        // Gnista keeping its program's side, and a pipe is when a program's
+        // children keep it: they end once what they wrote has all been read,
+        // the last of it given them first, as Emacs reads what is waiting
+        // before it reports the end. A reader slow to run, or bytes waiting,
+        // leave them running until the next poll.
+        for (id, status) in quiet {
+            let Some(i) = self.processes.list.iter().position(|p| p.id == id) else { continue };
+            let mut taken = Vec::new();
+            let quiet = match &self.processes.list[i].gate {
+                Some(gate) => {
+                    let (rx, held) = (&self.processes.rx, &mut self.processes.held);
+                    gate.when_quiet(|| {
+                        held.extend(rx.try_iter());
+                        let (mine, others): (Vec<Event>, Vec<Event>) =
+                            held.drain(..).partition(|e| matches!(e, Event::Output(i, _) | Event::Closed(i) if *i == id));
+                        held.extend(others);
+                        taken = mine;
+                    })
+                }
+                None => true,
+            };
+            if !quiet {
+                continue;
+            }
+            for event in taken {
+                match event {
+                    Event::Output(_, bytes) => {
+                        let name = self.processes.list[i].name.clone();
+                        let text = self.decode_output(id, &bytes);
+                        if !text.is_empty() {
+                            self.process_output(&name, &text);
+                        }
+                    }
+                    Event::Closed(_) => {}
+                    Event::Accepted(..) => unreachable!("only this process's output is taken"),
+                }
+            }
+            // The output may have run a filter that deleted it.
+            let Some(p) = self.processes.list.iter_mut().find(|p| p.id == id) else { continue };
+            if p.status == Status::Run {
                 p.status = status;
                 p.stdin = None;
                 ended.push(p.name.clone());
