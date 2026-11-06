@@ -42,6 +42,7 @@ app:
 	cp target/release/e8-gui $(APP)/Contents/MacOS/
 	# Beside it, so agent-shell's agents can use this editor (ADR 0061).
 	cp target/release/e8-mcp $(APP)/Contents/MacOS/
+	cp crates/e8-gui/macos/E8.icns $(APP)/Contents/Resources/
 	sed 's/@VERSION@/$(VERSION)/g' crates/e8-gui/macos/Info.plist > $(APP)/Contents/Info.plist
 	codesign --force --deep --sign - $(APP)
 	@echo "Built $(APP) ($(ENGINE), version $(VERSION))"
