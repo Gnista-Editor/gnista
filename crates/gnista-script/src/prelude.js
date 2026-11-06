@@ -1075,7 +1075,14 @@
         String(name),
         buffer === undefined || buffer === null ? undefined : nameOf(buffer),
         command.map(String),
-        { directory: directory ?? undefined, env: pairs, stderr: stderr !== false, pty: type === "pty", coding: coding ?? undefined },
+        {
+          directory: directory ?? undefined,
+          env: pairs,
+          // A buffer for standard error, as make-process's :stderr, or whether it comes in as output.
+          stderr: typeof stderr === "boolean" || stderr === undefined || stderr === null ? stderr !== false : nameOf(stderr),
+          pty: type === "pty",
+          coding: coding ?? undefined,
+        },
         filter ?? undefined,
         sentinel ?? undefined,
       );

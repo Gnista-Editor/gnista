@@ -6982,6 +6982,24 @@ declare global {
        */
       "abbrev-mode-map": Value;
       /**
+       * Seconds acp shutdown waits for the agent to exit before killing it. Shutdown first sends the agent's process group SIGTERM, so the agent can stop the processes it started itself.
+       *
+       * Defined in packages/acp.ts.
+       */
+      "acp--shutdown-grace-period": Value;
+      /**
+       * Seconds one drain of a client's message queue may spend routing messages. Routing runs the client's handlers, which usually draw; once the budget is spent, the drain goes on at the next timer, so the editor can redisplay and read keys meanwhile. Order is kept and nothing is dropped. At least one message is routed each time, so a budget smaller than one handler still makes progress. Null drains the whole queue at once.
+       *
+       * Defined in packages/acp.ts.
+       */
+      "acp-drain-time-budget": Value;
+      /**
+       * Whether ACP traffic and messages are logged, to each client's log and traffic buffers (acp-logs-buffer).
+       *
+       * Defined in packages/acp.ts.
+       */
+      "acp-logging-enabled": Value;
+      /**
        * What the prefix of a paragraph's only line must look like for the lines filling makes to take it too; otherwise they take as many spaces.
        *
        * Defined in packages/fill.ts.
@@ -14652,8 +14670,12 @@ declare global {
       filter?: (process: string, output: string) => void;
       /** Called with the process and what happened, "finished\n" or "exited abnormally with code 2\n", when it ends. */
       sentinel?: (process: string, event: string) => void;
-      /** Whether standard error comes in as output too: true by default; on a pseudo-terminal it always does. */
-      stderr?: boolean;
+      /**
+       * Whether standard error comes in as output too: true by default; on a
+       * pseudo-terminal it always does. A buffer instead takes it on its own,
+       * made if there is none, as make-process's :stderr; on pipes only.
+       */
+      stderr?: boolean | BufferLike;
       /**
        * A pseudo-terminal, "pty", as a shell or a program that asks questions
        * wants, or pipes, "pipe"; as process-connection-type says by default.

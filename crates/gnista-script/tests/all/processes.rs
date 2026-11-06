@@ -36,6 +36,28 @@ fn output_goes_into_the_buffer_and_the_end_is_noted() {
 }
 
 #[test]
+fn standard_error_can_have_a_buffer_of_its_own() {
+    let (mut ed, s) = setup();
+    // As make-process's :stderr: what goes to standard error is kept apart,
+    // the filter seeing only the output, and the end noted only once both
+    // have closed, the last of each first.
+    eval(
+        &mut ed,
+        &s,
+        r#"globalThis.seen = "";
+        gnista.makeProcess({
+          name: "both", connectionType: "pipe", stderr: "*errors*",
+          command: ["sh", "-c", "echo out; echo err >&2; echo é >&2; sleep 0.1; echo late >&2"],
+          filter: (_p, text) => { seen += text; },
+          sentinel: (_p, event) => { seen += "|" + event; },
+        });"#,
+    );
+    until(&mut ed, &s, r#"seen.includes("|")"#);
+    assert_eq!(s.eval_expression(&mut ed, "seen").unwrap(), r#""out\n|finished\n""#);
+    assert_eq!(buffer_text(&ed, "*errors*"), "err\né\nlate\n");
+}
+
+#[test]
 fn filters_and_sentinels_see_output_and_the_end() {
     let (mut ed, s) = setup();
     eval(
