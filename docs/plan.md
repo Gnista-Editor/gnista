@@ -105,7 +105,7 @@ Started: `gnista-mcp` serves the command registry over MCP, so an agent such as 
 3. Done: batch mode, `gnista --batch -l FILE -f FUNCTION --eval EXPRESSION`, and `ert.ts`.
 4. Done: releases of Gnista ([ADR 0060](adr/0060-releases.md)): the terminal editor and `gnista-mcp` for Apple silicon and Linux, and `Gnista.app` since 0.2.1, built by `.github/workflows/release.yml` on a version tag. Other platforms, signing, a Homebrew tap and the update check come later.
 5. Done but for `list-packages`, which waits for the organisation's list: `package-vc.ts` and `use-package.ts`, with `gnista.usePackage`, installing with git, `gnista-lock.json`, `package-vc-install`, `package-vc-upgrade`, `package-vc-upgrade-all` and `package-delete`.
-6. The ports in `examples/packages/` moved to `Gnista-Editor` repositories one at a time, smallest first, with their tests rewritten as ERT (`gnista.executeKbdMacro` types their keys), from `gnista-package-template`; `gnista-vundo` first, and a job in Gnista's CI running the curated set's tests against `main`.
+6. The ports in `examples/packages/` moved to `Gnista-Editor` repositories one at a time, smallest first, with their tests rewritten as ERT (`gnista.executeKbdMacro` types their keys), from `gnista-package-template`; `gnista-vundo` first, then `gnista-nord-theme`, the first under a permissive licence, and a job in Gnista's CI running the curated set's tests against `main`.
 
 Later, fetching tarballs over HTTPS with `urlRetrieve` for machines without git.
 

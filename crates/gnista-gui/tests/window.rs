@@ -126,22 +126,22 @@ fn tab_bar() {
     harness(ed, Theme::Dark).snapshot("tab_bar_dark");
 }
 
-/// examples/packages/nord-theme.ts loaded as a user's config loads it: the
-/// page, text, mode line and cursor in Nord's colours, from its faces.
+/// examples/packages/example-theme.ts loaded as a user's config loads it: the
+/// page, text, mode line and cursor in its colours, from its faces.
 #[test]
-fn nord_theme() {
+fn example_theme() {
     let mut ed = sample();
     let scripting = gnista_script::Scripting::new(&mut ed).unwrap();
     let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
     ed.set_variable("load-path", gnista_core::Value::List(vec![gnista_core::Value::Str(examples.into())]));
-    scripting.eval_expression(&mut ed, r#"gnista.call("load-theme", "nord", true)"#).unwrap();
+    scripting.eval_expression(&mut ed, r#"gnista.call("load-theme", "example", true)"#).unwrap();
     ed.call("org-mode", vec![]).unwrap();
     ed.press("C-x 2").unwrap();
-    harness(ed, Theme::Dark).snapshot("nord_theme");
+    harness(ed, Theme::Dark).snapshot("example_theme");
 }
 
 /// A macOS window with its title bar made transparent: the frame drawn
-/// below it, and the bar in Nord's background, as Emacs's frames with
+/// below it, and the bar in the theme's background, as Emacs's frames with
 /// `ns-transparent-titlebar` show it.
 #[test]
 fn transparent_title_bar_takes_the_theme_background() {
@@ -149,7 +149,7 @@ fn transparent_title_bar_takes_the_theme_background() {
     let scripting = gnista_script::Scripting::new(&mut ed).unwrap();
     let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
     ed.set_variable("load-path", gnista_core::Value::List(vec![gnista_core::Value::Str(examples.into())]));
-    scripting.eval_expression(&mut ed, r#"gnista.call("load-theme", "nord", true)"#).unwrap();
+    scripting.eval_expression(&mut ed, r#"gnista.call("load-theme", "example", true)"#).unwrap();
     let mut harness = Harness::builder().with_size(vec2(640.0, 360.0)).with_theme(Theme::Light).with_step_dt(0.25).build_eframe(move |cc| {
         gnista_gui::theme::install_fonts(&cc.egui_ctx, false);
         GnistaApp::new(ed).silent().with_title_bar(&cc.egui_ctx)
