@@ -1,7 +1,7 @@
 //! The Gnista terminal editor.
 //!
 //! Usage: `gnista [-q] [--print-types [DIR]] [FILE...]`, or
-//! `gnista --batch [-l FILE | -f FUNCTION | --eval EXPRESSION]...`
+//! `gnista --batch [-L DIR | -l FILE | -f FUNCTION | --eval EXPRESSION]...`
 //!
 //! - `-q`, `--no-init`: do not load `init.ts`.
 //! - `--print-types`: print the TypeScript declarations for the `gnista` API

@@ -163,6 +163,14 @@ natives! {
         ed.end_kbd_macro()
     }
 
+    /// Run KEYS, a key sequence in Emacs notation such as "C-x u", as a
+    /// keyboard macro, COUNT times (once if left out, until an error if 0),
+    /// as Emacs's execute-kbd-macro: each command runs as if typed, with its
+    /// undo boundary, so a package's tests drive the editor with it.
+    pub fn executeKbdMacro(ed, keys: String, count: Opt<i64>) {
+        ed.execute_kbd_macro(&keys, count.0.unwrap_or(1))
+    }
+
     fn callLastKbdMacro(ed, count: i64) {
         ed.call_last_kbd_macro(count)
     }

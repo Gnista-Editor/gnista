@@ -11,8 +11,8 @@ quickjs = ["gnista-script/quickjs", "gnista-agent/quickjs", "gnista-mcp/quickjs"
 v8 = ["gnista-script/v8", "gnista-agent/v8", "gnista-mcp/v8"]
 
 [dependencies]
-gnista-agent = { version = "0.1.0", path = "../gnista-agent", default-features = false }
-gnista-core = { version = "0.1.0", path = "../gnista-core" }
-gnista-mcp = { version = "0.1.0", path = "../gnista-mcp", default-features = false }
-gnista-script = { version = "0.1.0", path = "../gnista-script", default-features = false }
+gnista-agent = { version = "0.2.0", path = "../gnista-agent", default-features = false }
+gnista-core = { version = "0.2.0", path = "../gnista-core" }
+gnista-mcp = { version = "0.2.0", path = "../gnista-mcp", default-features = false }
+gnista-script = { version = "0.2.0", path = "../gnista-script", default-features = false }
 ratatui = "0.30"

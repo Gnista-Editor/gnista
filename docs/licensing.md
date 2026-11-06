@@ -1,14 +1,14 @@
 # Licensing notes
 
-Status: GPL for now, as [ADR 0014](adr/0014-gpl.md) records · 2026-10-28
+Status: GPL, as [ADR 0014](adr/0014-gpl.md) records, and public since 2026-11-06
 
-Nothing here is legal advice. These notes record what we know, what we have done, and what we may have to undo before Gnista is released. Talk to a lawyer before going public.
+Nothing here is legal advice. These notes record what we know and what we have done, and what a permissive core or an App Store build would mean later.
 
 ## Where we stand
 
 - Gnista is GPL-3.0-or-later as a whole for now ([ADR 0014](adr/0014-gpl.md)): `LICENSE` holds the licence and `Cargo.toml` says so. Porting from Emacs and Org can go on.
-- Nothing has been distributed: the repository is private.
-- Ports of packages Emacs does not ship are to move to repositories of their own in `Gnista-Editor`, one per package, each under its upstream's licence, with its authors' copyright, a notice that it is a port, the full licence text and a README saying it is unofficial ([ADR 0059](adr/0059-packages-are-git-repositories.md)). Making those repositories public distributes their source, which the GPL and the permissive licences allow with those notices. Only licences that combine with GPL-3.0-or-later are taken, so not GPL-2.0-only.
+- Gnista is distributed: `Gnista-Editor/gnista` has been public since 2026-11-06, and its releases are binaries built from the tagged source in the same repository, which is how the GPL's offer of source is met ([ADR 0060](adr/0060-releases.md)). What has been published under the GPL stays available under it; a permissive core later would be built from code we wrote ourselves, as it always would have been.
+- Ports of packages Emacs does not ship are to move to repositories of their own in `Gnista-Editor`, one per package, each under its upstream's licence, with its authors' copyright, a notice that it is a port, the full licence text and a README saying it is unofficial ([ADR 0059](adr/0059-packages-are-git-repositories.md)). Making those repositories public distributes their source, which the GPL and the permissive licences allow with those notices; `gnista-vundo` is the first. Only licences that combine with GPL-3.0-or-later are taken, so not GPL-2.0-only.
 - The rest of these notes stay for if a permissive core or an App Store build becomes important later.
 
 ## The long-term aim

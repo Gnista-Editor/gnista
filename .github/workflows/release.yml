@@ -114,8 +114,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls -l dist
+          version="${GITHUB_REF_NAME#v}"
+          # How to install it, before the notes GitHub generates from the
+          # pull requests. The binaries are not signed, so macOS quarantines
+          # them when a browser downloads them, and refuses to open them.
+          notes=$(cat <<NOTES
+          ## Installing
+
+          Download with \`curl\`, not a browser: macOS quarantines unsigned programs a browser downloads, and will not open them.
+
+          \`\`\`bash
+          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/gnista-$version-aarch64-apple-darwin.tar.gz | tar xz
+          \`\`\`
+
+          On Linux, take \`x86_64-unknown-linux-gnu\` in place of \`aarch64-apple-darwin\`. The folder holds \`gnista\`, the terminal editor, and \`gnista-mcp\`. If a browser downloaded it on a Mac, \`xattr -dr com.apple.quarantine gnista-$version-aarch64-apple-darwin\` lets it run.
+          NOTES
+          )
           gh release create "$GITHUB_REF_NAME" dist/* \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Gnista ${GITHUB_REF_NAME#v}" \
+            --title "Gnista $version" \
+            --notes "$notes" \
             --generate-notes \
             --verify-tag

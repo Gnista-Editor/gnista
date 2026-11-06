@@ -1074,6 +1074,22 @@ impl Editor {
         Ok(())
     }
 
+    /// Runs a key sequence in Emacs notation as a keyboard macro, `count`
+    /// times or until an error if `count` is 0, as Emacs's
+    /// `execute-kbd-macro`: each command it runs goes through the command
+    /// loop, with its undo boundary and hooks, as if typed. Scripts drive
+    /// the editor with it, as packages' tests do in batch mode.
+    pub fn execute_kbd_macro(&mut self, seq: &str, count: i64) -> Result<()> {
+        let keys = Key::parse_seq(seq).ok_or_else(|| Error::new(format!("Invalid key sequence: {seq}")))?;
+        if count < 0 {
+            return Err(Error::new("Negative repetition argument"));
+        }
+        self.executing_macro += 1;
+        let result = self.type_keys(&keys, count);
+        self.executing_macro -= 1;
+        result
+    }
+
     /// Types the last keyboard macro `count` times, or until an error if
     /// `count` is 0. The first error stops it, as it would stop the macro in
     /// Emacs, and becomes this call's error.

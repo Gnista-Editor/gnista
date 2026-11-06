@@ -11,9 +11,9 @@ quickjs = ["gnista-script/quickjs", "gnista-mcp/quickjs"]
 v8 = ["gnista-script/v8", "gnista-mcp/v8"]
 
 [dependencies]
-gnista-core = { version = "0.1.0", path = "../gnista-core" }
-gnista-script = { version = "0.1.0", path = "../gnista-script", default-features = false }
-gnista-mcp = { version = "0.1.0", path = "../gnista-mcp", default-features = false }
+gnista-core = { version = "0.2.0", path = "../gnista-core" }
+gnista-script = { version = "0.2.0", path = "../gnista-script", default-features = false }
+gnista-mcp = { version = "0.2.0", path = "../gnista-mcp", default-features = false }
 serde_json = "1"
 ureq = { version = "3", features = ["json"] }
 
