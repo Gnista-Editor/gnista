@@ -7,7 +7,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use gnista_core::Editor;
-use crate::{Scripting, type_definitions};
+use crate::{Scripting, shipped_packages, type_definitions};
 
 /// `$GNISTA_CONFIG_DIR`, else `$XDG_CONFIG_HOME/gnista`, else `~/.config/gnista`.
 pub fn config_dir() -> PathBuf {
@@ -43,6 +43,26 @@ pub fn setup_in(
     load_init: bool,
     extensions: impl FnOnce(&mut Editor, &Scripting) -> gnista_core::Result<()>,
 ) -> Option<Scripting> {
+    let scripting = start_in(ed, dir, load_init, extensions)?;
+    if let Err(e) = write_type_files(ed, dir) {
+        ed.message(format!("Could not write gnista.d.ts: {e}"));
+    }
+    Some(scripting)
+}
+
+/// Starts scripting for batch mode, as `emacs --batch` starts: the
+/// configuration directory known, so packages can be installed and
+/// found there, but `init.ts` not loaded and nothing written.
+pub fn setup_batch(ed: &mut Editor) -> Option<Scripting> {
+    start_in(ed, &config_dir(), false, |_, _| Ok(()))
+}
+
+fn start_in(
+    ed: &mut Editor,
+    dir: &Path,
+    load_init: bool,
+    extensions: impl FnOnce(&mut Editor, &Scripting) -> gnista_core::Result<()>,
+) -> Option<Scripting> {
     let dir = dir.to_path_buf();
     let scripting = match Scripting::start(ed) {
         Ok((scripting, failures)) => {
@@ -70,9 +90,6 @@ pub fn setup_in(
             ed.message(format!("Error in {hook}: {e}"));
         }
     }
-    if let Err(e) = write_type_files(ed, &dir) {
-        ed.message(format!("Could not write gnista.d.ts: {e}"));
-    }
     Some(scripting)
 }
 
@@ -98,27 +115,49 @@ const TSCONFIG: &str = r#"{
     "types": [],
     // Each .ts file is its own module, as Gnista runs each file in its own scope.
     "moduleDetection": "force",
+    // Packages import each other by feature name, as Lisp files require each
+    // other: your own in packages/, Gnista's in shipped/, which Gnista writes.
+    "module": "preserve",
+    "paths": { "*": ["./packages/*", "./shipped/*"] },
     // Gnista erases types rather than compiling them, so enums and the like are not allowed.
     "erasableSyntaxOnly": true
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "packages/*.ts"]
 }
 "#;
 
-/// Writes `gnista.d.ts` when it has changed, and `tsconfig.json` if there is
-/// none. Does nothing if the configuration directory does not exist.
+/// Writes the declarations and `tsconfig.json` if there is none. Does
+/// nothing if the configuration directory does not exist.
 pub fn write_type_files(ed: &Editor, dir: &Path) -> io::Result<()> {
     if !dir.is_dir() {
         return Ok(());
     }
-    let dts_path = dir.join("gnista.d.ts");
-    let dts = type_definitions(ed);
-    if fs::read_to_string(&dts_path).ok().as_deref() != Some(dts.as_str()) {
-        fs::write(&dts_path, dts)?;
-    }
+    write_declarations(ed, dir)?;
     let tsconfig = dir.join("tsconfig.json");
     if !tsconfig.exists() {
         fs::write(tsconfig, TSCONFIG)?;
+    }
+    Ok(())
+}
+
+/// Writes, into `dir`, what a package or a configuration is checked
+/// against: `gnista.d.ts`, and in `shipped/` the packages that ship with
+/// Gnista, which other packages import by name. Each file is written only
+/// when it has changed, and `dir` is made if it is missing, as `gnista
+/// --print-types DIR` does for a package's repository.
+pub fn write_declarations(ed: &Editor, dir: &Path) -> io::Result<()> {
+    let shipped = dir.join("shipped");
+    fs::create_dir_all(&shipped)?;
+    write_if_changed(&dir.join("gnista.d.ts"), &type_definitions(ed))?;
+    for (file, source) in shipped_packages() {
+        write_if_changed(&shipped.join(file), source)?;
+    }
+    Ok(())
+}
+
+fn write_if_changed(path: &Path, text: &str) -> io::Result<()> {
+    if fs::read_to_string(path).ok().as_deref() != Some(text) {
+        fs::write(path, text)?;
     }
     Ok(())
 }

@@ -139,6 +139,12 @@ Kept for completeness, as they cannot be seen:
 - **Quitting** (not yet): `C-g` stops a running command at its next safe point, as in Emacs, and the window goes on drawing meanwhile ([ADR 0051](adr/0051-the-editor-thread.md)). Reading and writing files, decoding, `parse-partial-sexp` and sorting do not check for a quit yet. A script's columns after a loop's opening brace are off by the length of the check put there ([ADR 0049](adr/0049-quitting.md)).
 - **Wrapping** (not yet): a display string standing for text is never split by wrapping, where Emacs continues it on the next line; a long message in the echo area wraps without the `\` a terminal shows at each break ([ADR 0029](adr/0029-redisplay-beyond-rows.md)).
 
+## Packages and tests
+
+- **Installing packages** (not yet): only from git repositories, as package-vc does, with git on PATH; there are no archives, so no `list-packages` to browse, no `package-install` by name, and no tarball downloads. Upgrading a package takes effect when Gnista next starts, as a module once imported is not imported again. Packages are installed in `repos/` beside `init.ts`, where Emacs's go in `elpa/` (deliberate: they are neither Emacs Lisp nor from an archive). There are no autoloads, so `package-vc.ts` is preloaded for its commands ([ADR 0059](adr/0059-packages-are-git-repositories.md)).
+- **ERT** (deliberate): `should` is given a value, or a function whose source it shows, not a form, so `shouldEqual` stands for `(should (equal A B))` to show both values; there are no `ert-explain` explanations, no `M-x ert` results buffer commands, and test bodies run without awaiting.
+- **Batch mode** (not yet): `--batch` runs `-l`, `-f` and `--eval`, not Emacs's other options; prompts are not read from standard input, and timers and processes run only while a script waits on them.
+
 ## Packages that do not ship
 
 - **vundo** (not yet): `l` and `r` say a node was saved but not when, as Gnista counts saves rather than keeping their times; there is no `vundo-popup-mode`. Gnista's undo history is steps, which vundo reads with `gnista.undoHistory` rather than from `buffer-undo-list` and `undo-equiv-table`.

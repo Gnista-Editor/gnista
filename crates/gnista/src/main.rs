@@ -1,10 +1,15 @@
 //! The Gnista terminal editor.
 //!
-//! Usage: `gnista [-q] [--print-types] [FILE...]`
+//! Usage: `gnista [-q] [--print-types [DIR]] [FILE...]`, or
+//! `gnista --batch [-l FILE | -f FUNCTION | --eval EXPRESSION]...`
 //!
 //! - `-q`, `--no-init`: do not load `init.ts`.
 //! - `--print-types`: print the TypeScript declarations for the `gnista` API
-//!   (after loading `init.ts`, so its commands are included) and exit.
+//!   (after loading `init.ts`, so its commands are included) and exit. With
+//!   a directory, write them there instead, with the packages that ship with
+//!   Gnista in its `shipped/`, for a package's repository to check against.
+//! - `--batch`: run without a terminal, as `emacs --batch`, doing what the
+//!   arguments after it say in order ([`gnista_script::batch`]).
 
 mod ui;
 
@@ -26,11 +31,20 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 
 fn main() -> io::Result<()> {
-    let (mut no_init, mut print_types, mut files) = (false, false, Vec::new());
-    for arg in env::args().skip(1) {
+    let args: Vec<String> = env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("--batch") {
+        let mut editor = Editor::new();
+        std::process::exit(gnista_script::batch::run(&mut editor, &args[1..]));
+    }
+    let (mut no_init, mut print_types, mut types_dir, mut files) = (false, false, None, Vec::new());
+    let mut args = args.into_iter();
+    while let Some(arg) = args.next() {
         match arg.as_str() {
             "-q" | "--no-init" => no_init = true,
-            "--print-types" => print_types = true,
+            "--print-types" => {
+                print_types = true;
+                types_dir = args.next();
+            }
             _ => files.push(arg),
         }
     }
@@ -38,7 +52,10 @@ fn main() -> io::Result<()> {
     if print_types {
         let mut editor = Editor::new();
         let _scripting = config::setup_with(&mut editor, !no_init, gnista_agent::install);
-        print!("{}", type_definitions(&editor));
+        match types_dir {
+            Some(dir) => config::write_declarations(&editor, std::path::Path::new(&dir))?,
+            None => print!("{}", type_definitions(&editor)),
+        }
         return Ok(());
     }
 

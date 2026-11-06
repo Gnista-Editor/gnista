@@ -448,7 +448,14 @@ impl Editor {
 
     /// Asks the front end to exit, as Emacs's `kill-emacs`.
     pub fn kill_emacs(&mut self) -> Result<()> {
+        self.kill_emacs_with_status(0)
+    }
+
+    /// As [`Editor::kill_emacs`], the program exiting with `status`, as
+    /// `(kill-emacs 1)` does: batch mode's runs report failure this way.
+    pub fn kill_emacs_with_status(&mut self, status: i32) -> Result<()> {
         self.check_permission("quit Gnista")?;
+        self.exit_status = status;
         if let Err(e) = self.run_hooks("kill-emacs-hook") {
             self.message(format!("Error in kill-emacs-hook: {e}"));
         }

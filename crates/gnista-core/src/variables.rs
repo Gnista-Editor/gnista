@@ -784,6 +784,16 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         ),
         Variable::new(
+            "gnista-version",
+            "The version of Gnista that is running, as Emacs's emacs-version: a package's manifest names the oldest it runs on.",
+            Value::Str(env!("CARGO_PKG_VERSION").to_string()),
+        ),
+        Variable::new(
+            "noninteractive",
+            "Whether Gnista runs without a frame, as `gnista --batch` does, with messages printed to standard error, as Emacs's noninteractive.",
+            false,
+        ),
+        Variable::new(
             "load-path",
             "The directories `gnista.require` looks in for a package that does not ship with Gnista, NAME.ts for the feature NAME, as Emacs's require looks along load-path: the packages directory of user-emacs-directory.",
             Value::List(Vec::new()),

@@ -922,6 +922,10 @@
       }
       return String(feature);
     },
+    usePackage(source, options = {}) {
+      gnista.require("use-package");
+      return gnista.funcall("use-package", String(source), options);
+    },
     defineError: (symbol, parent = "error") => native.defineError(String(symbol), String(parent)),
     errorConditions: (e) =>
       e instanceof Error && Array.isArray(e.conditions) ? e.conditions : e instanceof Error && typeof e.symbol === "string" ? native.errorConditions(e.symbol) : ["error"],
