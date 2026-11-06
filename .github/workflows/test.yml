@@ -3,8 +3,8 @@
 # repositories against this Gnista, so a change here that breaks one shows
 # here (docs/adr/0059-packages-are-git-repositories.md).
 #
-# macOS is where Gnista is made and used, so its jobs must pass. Linux runs
-# too, as an experiment, until its failures are known and fixed.
+# Both engines on macOS, where Gnista is made and used, and V8 on Linux,
+# which the releases are built for too.
 
 name: Test
 
@@ -30,15 +30,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: [v8, quickjs]
-        os: [macos-15]
-        experimental: [false]
         include:
-          - engine: v8
-            os: ubuntu-24.04
-            experimental: true
+          - { engine: v8, os: macos-15 }
+          - { engine: quickjs, os: macos-15 }
+          - { engine: v8, os: ubuntu-24.04 }
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
     env:
       FEATURES: ${{ matrix.engine == 'quickjs' && '--no-default-features --features quickjs' || '' }}
     steps:
