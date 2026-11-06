@@ -1,28 +1,23 @@
-# Builds E8's terminal editor and e8-mcp for each platform, and
-# E8.app on macOS, and on a version tag makes a GitHub Release of them
-# (docs/adr/0060-releases.md).
+# Builds E8's terminal editor and e8-mcp for each platform, and E8.app on
+# macOS, after each merge to main, and releases them when the version in
+# Cargo.toml has not been released yet (docs/adr/0060-releases.md).
 #
-# To release: bump `version` in the workspace Cargo.toml in a pull request,
-# merge it, then tag the merge and push the tag:
+# To release: bump `version` in the workspace Cargo.toml in a pull request
+# and merge it. The build on main then waits for the tests on the same
+# commit, tags it vX.Y.Z and makes the GitHub Release. Building on main also
+# keeps the build cache warm, and shows a broken release build before any
+# release is wanted.
 #
-#   git tag v0.2.0 origin/main && git push origin v0.2.0
-#
-# A pull request that changes this file or the dependencies builds without
-# releasing, so a broken release build shows before a tag.
+# Pushing a tag by hand still releases, building that tag. Run it by hand
+# (workflow_dispatch) to build any branch without releasing.
 
 name: Release
 
 on:
   push:
+    branches: [main]
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
-  pull_request:
-    paths:
-      - .github/workflows/release.yml
-      - Cargo.toml
-      - Cargo.lock
-      - crates/*/Cargo.toml
-      - crates/e8-gui/macos/**
-      - Makefile
+    paths-ignore: ["docs/**", "**.md"]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +25,7 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -117,22 +112,65 @@ jobs:
   release:
     name: Release
     needs: build
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v7
+
+      # A tag pushed by hand is released. On main, the version is released
+      # only if it has no tag yet: a merge that bumps it.
+      - name: Is this version released?
+        id: decide
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "E8 $version is released already."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "E8 $version is not released yet."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Tests run on main after each merge, not on pull requests, so a
+      # release from main waits for this commit's to pass.
+      - name: Wait for the tests
+        if: steps.decide.outputs.release == 'true' && github.ref_type != 'tag'
+        run: |
+          for i in $(seq 1 120); do
+            run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow test.yml --commit "$GITHUB_SHA" \
+              --json status,conclusion --jq '.[0] // empty | "\(.status) \(.conclusion)"')
+            case "$run" in
+              "completed success") echo "The tests passed."; exit 0 ;;
+              completed*) echo "::error::The tests failed on this commit ($run), so it is not released"; exit 1 ;;
+              "") if [ "$i" -gt 10 ]; then echo "::warning::No test run for this commit; releasing without one"; exit 0; fi ;;
+            esac
+            sleep 30
+          done
+          echo "::error::The tests did not finish within an hour"
+          exit 1
+
       - uses: actions/download-artifact@v8
+        if: steps.decide.outputs.release == 'true'
         with:
           path: dist
           merge-multiple: true
 
       - name: Make the release
-        env:
-          GH_TOKEN: ${{ github.token }}
+        if: steps.decide.outputs.release == 'true'
         run: |
           ls -l dist
-          version="${GITHUB_REF_NAME#v}"
+          version="${{ steps.decide.outputs.version }}"
+          tag="${{ steps.decide.outputs.tag }}"
           # How to install it, before the notes GitHub generates from the
           # pull requests. The binaries are not signed, so macOS quarantines
           # them when a browser downloads them, and refuses to open them.
@@ -142,7 +180,7 @@ jobs:
           Download with \`curl\`, not a browser: macOS quarantines unsigned programs a browser downloads, and will not open them.
 
           \`\`\`bash
-          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/e8-$version-aarch64-apple-darwin.tar.gz | tar xz
+          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/e8-$version-aarch64-apple-darwin.tar.gz | tar xz
           \`\`\`
 
           On Linux, take \`x86_64-unknown-linux-gnu\` in place of \`aarch64-apple-darwin\`. The folder holds \`e8\`, the terminal editor, and \`e8-mcp\`.
@@ -150,15 +188,17 @@ jobs:
           The GUI, as an app for Apple silicon, into /Applications:
 
           \`\`\`bash
-          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/E8-$version-aarch64-apple-darwin.app.tar.gz | tar xz -C /Applications
+          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/E8-$version-aarch64-apple-darwin.app.tar.gz | tar xz -C /Applications
           \`\`\`
 
           If a browser downloaded either on a Mac, \`xattr -dr com.apple.quarantine\` on what it unpacked lets it run.
           NOTES
           )
-          gh release create "$GITHUB_REF_NAME" dist/* \
+          # On main this makes the tag, at this commit; a pushed tag must exist.
+          if [ "$GITHUB_REF_TYPE" = tag ]; then where=--verify-tag; else where="--target=$GITHUB_SHA"; fi
+          gh release create "$tag" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "E8 $version" \
             --notes "$notes" \
             --generate-notes \
-            --verify-tag
+            "$where"
