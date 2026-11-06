@@ -53,5 +53,7 @@ jobs:
       - name: The whole of both suites, three times, as CI runs them
         run: |
           for i in 1 2 3; do
-            cargo nextest run --locked -p gnista-script -p gnista-mcp --hide-progress-bar 2>&1 | grep -E "FAIL|TIMEOUT|Summary" || true
+            cargo nextest run --locked -p gnista-script --test all -p gnista-mcp --hide-progress-bar --no-fail-fast 2>&1 > full.txt || true
+            grep -E "Summary" full.txt || true
+            grep -B2 -A30 "panicked at" full.txt | grep -v "^\s*PASS" | head -80 || true
           done

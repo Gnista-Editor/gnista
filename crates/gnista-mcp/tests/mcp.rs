@@ -266,6 +266,20 @@ fn the_binary_passes_messages_to_a_running_editor() {
     };
     request.reply.send(handle_message(&mut ed, Some(&scripting), &request.line)).unwrap();
     drop(stdin);
+    // It ends once its input and the editor's side close; if not, say what it did.
+    let start = std::time::Instant::now();
+    while child.try_wait().unwrap().is_none() {
+        if start.elapsed() > std::time::Duration::from_secs(60) {
+            let _ = child.kill();
+            let output = child.wait_with_output().unwrap();
+            panic!(
+                "it never ended after its input closed: stdout {:?}, stderr {:?}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
     let output = child.wait_with_output().unwrap();
     let reply = String::from_utf8(output.stdout).unwrap();
     assert!(reply.contains(r#""id":5"#), "{reply}");
