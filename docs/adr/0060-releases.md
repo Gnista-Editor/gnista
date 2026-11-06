@@ -16,19 +16,20 @@ Agreed on 2026-11-06, and recorded since only as a note: releases on GitHub, a H
 
 ## Decision
 
-A release is a tag `vX.Y.Z` on `main` matching the workspace version in `Cargo.toml`. Pushing the tag runs `.github/workflows/release.yml`, which:
+A release is a tag `vX.Y.Z` on `main` matching the workspace version in `Cargo.toml`. `.github/workflows/release.yml` runs after each merge to `main` that changes more than the docs, and:
 
-- refuses a tag that does not match the version;
 - builds `e8` (the terminal editor, and `--batch`) and `e8-mcp` in release mode, on V8, for `aarch64-apple-darwin` (Apple silicon) and `x86_64-unknown-linux-gnu` (Linux, as CI runs on);
 - runs `e8 --batch` once, to check that the binary starts and its packages load;
 - packs each platform's binaries with `LICENSE` into `e8-X.Y.Z-TARGET.tar.gz`, with a `.sha256` beside it;
-- makes the GitHub Release, its notes generated from the pull requests merged since the last one.
+- if the version has no tag yet, waits for the tests on the same commit (`test.yml`, which runs on `main`, not on pull requests) to pass, then tags the commit and makes the GitHub Release, its notes generated from the pull requests merged since the last one.
 
-The same workflow builds, without releasing, on a pull request that changes it or the dependencies, so a broken release build shows before a tag.
+So a merge that bumps the version releases it, with nothing more to do, and every other merge builds without releasing: a broken release build shows on `main` before a release is wanted, and the build cache that release builds restore stays warm, as a tag's build can use only caches made on `main`. Pull requests are not built: a version bump cannot break the build, and the tests already wait for `main`. Pushing a tag by hand still releases, after building that tag and refusing a tag that does not match the version; running the workflow by hand builds any branch without releasing.
+
+Releases were made by pushing a tag until 0.3.1. The workflow built again on the tag, from a cold cache, ten to fifteen minutes after the pull request that bumped the version had waited as long for the same build.
 
 A Homebrew tap, [`e8-editor/homebrew-tap`](https://github.com/e8-editor/homebrew-tap), installs a release: `brew install e8-editor/tap/e8` gives `e8` and `e8-mcp` on Apple silicon and Linux, and `E8.app` on macOS. A workflow in the tap rewrites the formula from the newest release each day, with the tap's own token, so a release needs nothing more here. Homebrew downloads with `curl`, so macOS does not quarantine the app, and it opens without a Developer ID: confirmed on 2026-11-06 on a Mac that did not build it.
 
-To release: bump `version` in the workspace `Cargo.toml` in a pull request, merge it, then tag the merge and push the tag. The version is what `e8-version` reports and what a package's manifest compares with ([ADR 0059](0059-packages-are-git-repositories.md)), so it changes when the script API changes in a way a package would notice, as well as at each release.
+To release: bump `version` in the workspace `Cargo.toml` in a pull request and merge it. The version is what `e8-version` reports and what a package's manifest compares with ([ADR 0059](0059-packages-are-git-repositories.md)), so it changes when the script API changes in a way a package would notice, as well as at each release.
 
 Left for later, each when it is wanted:
 
