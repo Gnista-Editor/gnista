@@ -92,7 +92,13 @@ fn killing_ends_it_and_what_it_started() {
     eval(&mut ed, &s, r#"gnista.message(gnista.processStatus("sleeper") ?? "none"); gnista.interruptProcess("sleeper");"#);
     ed.accept_process_output(Duration::from_secs(5));
     assert!(ed.messages().iter().any(|m| m == "run"));
-    assert_eq!(ed.messages().last().map(String::as_str), Some("interrupt\n"));
+    // What was still running, if it never ended, for a failure on CI.
+    let left = || {
+        let ps = std::process::Command::new("ps").args(["-A", "-o", "pid,ppid,pgid,stat,args"]).output().map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
+        let ps = ps.unwrap_or_default().lines().filter(|l| l.contains("sleep 30")).collect::<Vec<_>>().join("\n");
+        format!("processes {:?}, *s* {:?}, ps:\n{ps}", ed.process_list(), buffer_text(&ed, "*s*"))
+    };
+    assert_eq!(ed.messages().last().map(String::as_str), Some("interrupt\n"), "{}", left());
     assert!(!buffer_text(&ed, "*s*").contains("late"));
 }
 

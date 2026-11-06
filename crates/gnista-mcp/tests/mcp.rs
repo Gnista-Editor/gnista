@@ -243,6 +243,7 @@ fn the_binary_passes_messages_to_a_running_editor() {
         .env("GNISTA_SOCKET", &path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .unwrap();
     let mut stdin = child.stdin.take().unwrap();
@@ -253,7 +254,16 @@ fn the_binary_passes_messages_to_a_running_editor() {
     .unwrap();
     // The editor that listens answers, not one of the binary's own.
     let (mut ed, scripting) = setup();
-    let request = requests.recv().unwrap();
+    // A binary that never connects fails here, saying why, rather than hanging.
+    let request = match requests.recv_timeout(std::time::Duration::from_secs(60)) {
+        Ok(request) => request,
+        Err(e) => {
+            drop(stdin);
+            let _ = child.kill();
+            let output = child.wait_with_output().unwrap();
+            panic!("no request on the socket ({e}): stdout {:?}, stderr {:?}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+        }
+    };
     request.reply.send(handle_message(&mut ed, Some(&scripting), &request.line)).unwrap();
     drop(stdin);
     let output = child.wait_with_output().unwrap();
