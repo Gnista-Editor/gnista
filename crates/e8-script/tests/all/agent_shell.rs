@@ -120,6 +120,12 @@ impl Shell {
 
 }
 
+/// A JavaScript expression's value, a string.
+fn js_string(d: &Driven, expression: &str) -> String {
+    let value = d.eval_expression(expression);
+    serde_json::from_str::<String>(&value).unwrap_or(value)
+}
+
 fn shown(path: &Path) -> String {
     path.display().to_string()
 }
@@ -151,22 +157,85 @@ fn a_reply_streams_in_with_its_thinking_tool_calls_and_plan() {
     assert_eq!(
         text,
         "* You\nfix it\n\n* Agent\nThinking:\n#+begin_example\n  Looking at\n  the file\n#+end_example\n\
-         I'll fix it.\n * not a heading\n\
-         → Edit `a.txt`\n#+begin_example\n  --- /x/a.txt\n  +++ /x/a.txt\n  @@ line 2 @@\n  -two\n  +2\n#+end_example\n\
+         I'll fix it.\n- not a heading\n\
+         → ~Edit a.txt~\n#+begin_example\n  --- /x/a.txt\n  +++ /x/a.txt\n  @@ line 2 @@\n  -two\n  +2\n#+end_example\n\
          Plan:\n- [X] Read a.txt\n- [X] Change two\n\
-         Done.\n[1200 of 200000 tokens of context used]\n* You\n"
+         Done.\n\n* You\n"
     );
-    // The diff and the thinking are folded; the reply is not.
-    let folded = |at: &str, offset: usize| {
-        let at = text.find(at).unwrap() + offset;
-        s.d.with(move |ed| {
-            let b = &ed.buffers()[ed.find_buffer("*agent-shell: fake*").unwrap()];
-            ed.invisible_in(b, at).is_some()
-        })
-    };
-    assert!(folded("  --- /x/a.txt", 2), "the diff folds");
-    assert!(folded("  Looking at", 2), "the thinking folds");
-    assert!(!folded("Done.", 0), "the reply shows");
+    // The diff folds into its tool call's line, and the thinking into its
+    // Thinking: line, each from the line's end; the reply does not.
+    let hidden = |at: usize| s.d.with(move |ed| {
+        let b = &ed.buffers()[ed.find_buffer("*agent-shell: fake*").unwrap()];
+        ed.invisible_in(b, at).is_some()
+    });
+    let tool = text.find("→ ~Edit a.txt~").unwrap();
+    let tool_end = text[tool..].find('\n').unwrap() + tool;
+    assert!(!hidden(tool), "the tool call's line shows");
+    assert!(hidden(tool_end), "its diff folds into it, #+begin_example and all");
+    assert!(hidden(text.find("  --- /x/a.txt").unwrap()));
+    assert!(hidden(text.find("Thinking:").unwrap() + "Thinking:".len()), "the thinking folds into its line");
+    assert!(!hidden(text.find("Done.").unwrap()), "the reply shows");
+    // TAB on the tool call's line shows its diff, and folds it again.
+    s.d.eval(&format!("e8.gotoChar({})", tool + 2));
+    s.d.press("TAB");
+    assert!(!hidden(tool_end), "TAB shows the diff");
+    s.d.press("TAB");
+    assert!(hidden(tool_end), "TAB folds it again");
+    // How much of its context the conversation fills shows on the mode line, not in the conversation.
+    assert_eq!(js_string(&s.d, "e8.variable(\"mode-line-process\")"), " 1k/200k");
+    assert!(js_string(&s.d, "e8.variable(\"header-line-format\")").contains("C-c RET"));
+}
+
+#[test]
+fn the_agents_markdown_becomes_org_however_it_is_cut_into_chunks() {
+    let mut steps = opening("explain");
+    steps.extend([
+        chunk("Here is **bo"),
+        chunk("ld** and `co"),
+        chunk("de`\n## What chan"),
+        chunk("ged\n* one\n* two with [a link](https://e8.dev/a_b)\n```sh\n* not a heading\nls\n``"),
+        chunk("`\nThe end, "),
+        chunk("~~struck~~"),
+        end_turn("end_turn"),
+    ]);
+    let Some(s) = setup(steps, "explain") else { return };
+    s.d.press("C-c RET");
+    let text = s.finished();
+    assert_eq!(
+        text,
+        "* You\nexplain\n\n* Agent\n\
+         Here is *bold* and ~code~\n*What changed*\n- one\n- two with [[https://e8.dev/a_b][a link]]\n\
+         #+begin_src sh\n,* not a heading\nls\n#+end_src\nThe end, +struck+\n\n* You\n"
+    );
+}
+
+#[test]
+fn markdown_lines_become_org() {
+    let d = Driven::new(
+        r#"import("agent-shell").then((m: any) => {
+          (globalThis as any).toOrg = (text: string) => { const state = {}; return text.split("\n").map((l) => m.markdownLineToOrg(l, state)).join("\n"); };
+        });"#,
+    );
+    let cases = [
+        ("Some **bold**, *italic*, _also_ and `code`.", "Some *bold*, /italic/, /also/ and ~code~."),
+        ("snake_case_name, a * b * c, 2*3*4", "snake_case_name, a * b * c, 2*3*4"),
+        ("__strong__ and ~~gone~~", "*strong* and +gone+"),
+        ("`a~b` and `a~b=c` and `**not bold**`", "=a~b= and `a~b=c` and ~**not bold**~"),
+        ("# Title", "*Title*"),
+        ("### **Bold** heading ###", "*Bold heading*"),
+        ("* item\n  + nested\n1. first", "- item\n  - nested\n1. first"),
+        ("See [the docs](https://x.org/a_b_c \"t\"), ![img](p.png) and <https://y.org>.", "See [[https://x.org/a_b_c][the docs]], [[p.png]] and [[https://y.org]]."),
+        ("---\n***", "-----\n-----"),
+        ("| a | b |\n|---|:-:|\n| 1 | 2 |", "| a | b |\n|---+---|\n| 1 | 2 |"),
+        ("```rust\n* x\n#+end_src\n````\n```", "#+begin_src rust\n,* x\n,#+end_src\n#+end_src\n#+begin_example"),
+        ("```\nplain\n```", "#+begin_example\nplain\n#+end_example"),
+        ("  ```py\n  x = 1\n  ```", "  #+begin_src py\n  x = 1\n  #+end_src"),
+        ("#+TITLE: not a keyword\n** not a heading", " #+TITLE: not a keyword\n ** not a heading"),
+    ];
+    for (markdown, org) in cases {
+        let got = js_string(&d, &format!("toOrg({})", json!(markdown)));
+        assert_eq!(got, org, "{markdown:?}");
+    }
 }
 
 #[test]
@@ -183,7 +252,7 @@ fn the_agent_asks_and_the_user_allows() {
     assert_eq!(s.wait_asked(), "Let fake edit a.txt? (y, ! for always or n) ");
     s.d.press("y");
     let text = s.finished();
-    assert!(text.contains("→ Edit `a.txt`\n[Allow: Edit `a.txt`]\n"), "{text}");
+    assert!(text.contains("→ ~Edit a.txt~\n[Allow: Edit `a.txt`]\n"), "{text}");
 }
 
 #[test]
@@ -365,7 +434,7 @@ fn c_c_c_k_stops_the_turn() {
     s.d.until(|t| t.contains("[Cancelled: Run `make`]"));
     s.d.press("C-c C-k");
     let text = s.finished();
-    assert!(text.ends_with("[Cancelled: Run `make`]\n[Stopped.]\n* You\n"), "{text}");
+    assert!(text.ends_with("[Cancelled: Run `make`]\n[Stopped.]\n\n* You\n"), "{text}");
 }
 
 #[test]
@@ -379,9 +448,10 @@ fn c_c_c_k_tells_the_agent_to_cancel() {
     let Some(s) = setup(steps, "go") else { return };
     s.d.press("C-c RET");
     s.d.until(|t| t.contains("Working"));
+    assert_eq!(js_string(&s.d, "e8.variable(\"mode-line-process\")"), ":working", "the mode line says the agent is working");
     s.d.press("C-c C-k");
     let text = s.finished();
-    assert!(text.ends_with("Working\n[Stopped.]\n* You\n"), "{text}");
+    assert!(text.ends_with("Working\n[Stopped.]\n\n* You\n"), "{text}");
 }
 
 #[test]
@@ -469,6 +539,33 @@ fn live_claude_code_answers() {
     eprintln!("{text}");
     let reply = &text[text.find("* Agent\n").unwrap()..];
     assert!(reply.to_lowercase().contains("pong") && !reply.contains("[Error"), "{text}");
+}
+
+/// The real Claude Code answering in Markdown, which the buffer shows as
+/// Org: `cargo test -- --ignored live`.
+#[test]
+#[ignore]
+fn live_claude_code_s_markdown_becomes_org() {
+    let d = Driven::new(
+        r#"e8.setVariable("agent-shell-agents", [["claude", ["npx", "-y", "@agentclientprotocol/claude-agent-acp"]]]);
+        e8.setVariable("agent-shell-default-agent", "claude");"#,
+    );
+    d.mx("agent-shell");
+    d.type_text(
+        "Use no tools. Reply in Markdown with a ## heading, a sentence with **bold** and `inline code`, \
+         a bulleted list using * bullets, and a ```sh fenced block holding: ls -la | grep -E '^d+'",
+    );
+    d.press("C-c RET");
+    let start = std::time::Instant::now();
+    while d.text().matches("* You\n").count() < 2 {
+        assert!(start.elapsed() < std::time::Duration::from_secs(180), "{}", d.text());
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    let text = d.text();
+    eprintln!("{text}");
+    let reply = &text[text.find("* Agent\n").unwrap()..text.rfind("\n* You\n").unwrap()];
+    assert!(reply.contains("#+begin_src sh") && reply.contains("#+end_src"), "{text}");
+    assert!(!reply.contains("```") && !reply.contains("**") && !reply.contains("\n## ") && !reply.contains("\n* "), "{text}");
 }
 
 /// The real Claude Code writing a file, answering yes if it asks: `cargo

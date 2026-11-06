@@ -5,9 +5,10 @@
 // to it in an Org buffer, as E8's own agent buffer does (ADR 0019):
 //
 //   * You       what you ask, sent with C-c RET
-//   * Agent     its reply as it streams in; each tool call a line, its
-//               output or diff in a block below, folded once the turn ends,
-//               and its plan as a checklist
+//   * Agent     its reply as it streams in, its Markdown made Org a line
+//               at a time; each tool call a line, its output or diff in a
+//               block under it, folded into the line once the turn ends
+//               (TAB shows it), and its plan as a checklist
 //
 // The agent asks before its tools act, and E8 asks you, when nothing
 // else is asking. It reads files through the buffers visiting them, so it
@@ -21,6 +22,7 @@
 
 import * as acp from "acp";
 import { findBufferVisiting } from "files";
+import { flag, folded } from "org-fold";
 import { current as projectRoot } from "project";
 import { executableFind, truthy } from "subr";
 
@@ -94,6 +96,11 @@ interface Shell {
   cancelled: boolean;
   /** What is open at the buffer's end: the agent's text, its thinking in a block, or nothing. */
   open: "text" | "thought" | undefined;
+  /** The agent's text since its last full line, shown as it came, and where it starts. */
+  partial: string;
+  partialAt?: e8.Marker;
+  /** Where the agent's Markdown is: in a code block or not. */
+  markdown: MarkdownState;
   toolCalls: Map<string, ToolCall>;
   plan?: { start: e8.Marker; end: e8.Marker };
   /** Where this turn's blocks start, to fold them once it ends. */
@@ -116,15 +123,56 @@ e8.defineMajorMode({
   doc:
     "The mode of a conversation with a coding agent, started with M-x agent-shell.\n\n" +
     "Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under " +
-    "* Agent; each tool call is a line, with its output or diff in the block below it, folded once the turn ends " +
-    "(TAB shows it). The agent asks before its tools act. C-c C-k stops the turn.",
+    "* Agent, its Markdown made Org; each tool call is a line, with its output or diff folded under it once the " +
+    "turn ends (TAB on the line shows it). The agent asks before its tools act. C-c C-k stops the turn. The mode " +
+    "line shows whether the agent is working and how much of its context the conversation fills.",
   bindings: { "C-c RET": "agent-shell-send", "C-c C-k": "agent-shell-interrupt" },
   setup: () => {
     e8.call("visual-line-mode");
     // Agents' tools, e8-mcp's included, act in other windows than this one.
     e8.setVariable("agent-buffer", true);
+    e8.setVariable("header-line-format", " C-c RET sends what is under the last * You, C-c C-k stops the agent, TAB on a tool's line shows its output");
+    e8.addHook("org-cycle-tab-first-hook", toggleBlockBelow, { local: true });
   },
 });
+
+/** Positions as a line start and its end, and the line's text. */
+function lineAround(pos: number): { start: number; end: number; text: string } {
+  const start = e8.lineBeginningPosition(pos);
+  const end = e8.lineEndPosition(pos);
+  return { start, end, text: e8.bufferText(start, end) };
+}
+
+/**
+ * The block under a tool call's line or a Thinking: line, the line at
+ * `pos`: from that line's end to its #+end_example line's end, which is
+ * what folds into the line.
+ */
+function blockBelow(pos: number): [number, number] | undefined {
+  const line = lineAround(pos);
+  if (!line.text.startsWith("→ ") && line.text !== "Thinking:") return undefined;
+  if (line.end >= e8.bufferSize()) return undefined;
+  let next = lineAround(line.end + 1);
+  if (next.text !== "#+begin_example") return undefined;
+  while (next.end < e8.bufferSize()) {
+    next = lineAround(next.end + 1);
+    if (next.text === "#+end_example") return [line.end, next.end];
+  }
+  return undefined;
+}
+
+/** Folds or shows the block under the line at `pos`, if it has one, or folds it when `hide` says so. */
+function foldBlockBelow(pos: number, hide?: boolean): boolean {
+  const block = blockBelow(pos);
+  if (block === undefined) return false;
+  flag(block[0], block[1], hide ?? !folded(block[0], "org-hide-block"), "org-hide-block");
+  return true;
+}
+
+/** TAB on a tool call's line or a Thinking: line: shows the block folded into it, or folds it. */
+function toggleBlockBelow(): boolean {
+  return foldBlockBelow(e8.point());
+}
 
 // --- The buffer -----------------------------------------------------------------
 
@@ -179,16 +227,129 @@ function startLine(shell: Shell): void {
   if (!atLineStart(shell)) put(shell, "\n");
 }
 
-/** The agent's text, a line that starts with * indented so it makes no heading. */
+/**
+ * The agent's text as it streams in: each full line made Org from
+ * Markdown, and the line still coming shown as it is until its end comes.
+ */
 function putReply(shell: Shell, text: string): void {
-  let lineStart = atLineStart(shell);
-  let out = "";
-  for (const c of text) {
-    if (lineStart && c === "*") out += " ";
-    out += c;
-    lineStart = c === "\n";
+  const lines = (shell.partial + text).split("\n");
+  const rest = lines.pop()!;
+  const done = lines.map((l) => `${markdownLineToOrg(l, shell.markdown)}\n`).join("");
+  replacePartial(shell, done, rest);
+}
+
+/** Replaces the line still coming with `done`, and `rest` as the line still coming after it. */
+function replacePartial(shell: Shell, done: string, rest: string): void {
+  const end = inBuffer(shell, () => e8.bufferSize()) ?? 0;
+  const at = shell.partialAt === undefined ? end : Math.min(e8.markerPosition(shell.partialAt) ?? end, end);
+  if (at < end) inBuffer(shell, () => e8.deleteRegion(at, end));
+  // Shown as it came, but never as a heading or a block's line meanwhile.
+  const shown = /^\s*(\*|#\+)/.test(rest) ? ` ${rest}` : rest;
+  put(shell, done + shown);
+  if (shell.partialAt === undefined) shell.partialAt = e8.makeMarker(at + done.length, { buffer: shell.buffer });
+  else e8.setMarker(shell.partialAt, at + done.length, shell.buffer);
+  shell.partial = rest;
+}
+
+/** Ends the agent's text: the line still coming made Org, and a code block it left open closed. */
+function flushReply(shell: Shell): void {
+  let done = shell.partial === "" ? "" : `${markdownLineToOrg(shell.partial, shell.markdown)}\n`;
+  if (shell.markdown.fence !== undefined) done += `${shell.markdown.indent ?? ""}#+end_${shell.markdown.block}\n`;
+  if (done !== "" || shell.partialAt !== undefined) replacePartial(shell, done, "");
+  shell.markdown = {};
+  if (shell.partialAt !== undefined) e8.deleteMarker(shell.partialAt);
+  shell.partialAt = undefined;
+}
+
+// --- Markdown --------------------------------------------------------------------
+
+/** Where a Markdown reply is, from one line to the next: in a fenced code block, or not. */
+export interface MarkdownState {
+  /** The fence that opened the code block, ``` or ~~~, which a fence at least as long closes. */
+  fence?: string;
+  /** The Org block it became, src or example, and how far it is indented. */
+  block?: "src" | "example";
+  indent?: string;
+}
+
+/**
+ * A line of Markdown as Org, as gptel converts its replies in Org buffers:
+ * fenced code a src block, headings bold lines (Org's headings are the
+ * conversation's), * and + bullets -, emphasis, code and links in Org's
+ * markup, and table rules Org's.
+ */
+export function markdownLineToOrg(line: string, state: MarkdownState): string {
+  if (state.fence !== undefined) {
+    const close = /^(\s*)(`{3,}|~{3,})\s*$/.exec(line);
+    if (close && close[2][0] === state.fence[0] && close[2].length >= state.fence.length) {
+      const end = `${state.indent ?? ""}#+end_${state.block}`;
+      state.fence = undefined;
+      return end;
+    }
+    // Org's escape for a line its block would otherwise take for a heading or its own end.
+    return line.replace(/^(\s*)(,*(\*|#\+))/, "$1,$2");
   }
-  put(shell, out);
+  const open = /^(\s*)(`{3,}|~{3,})\s*([^`\s]*)/.exec(line);
+  if (open) {
+    state.fence = open[2];
+    state.indent = open[1];
+    state.block = open[3] === "" ? "example" : "src";
+    return open[3] === "" ? `${open[1]}#+begin_example` : `${open[1]}#+begin_src ${open[3]}`;
+  }
+  const heading = /^ {0,3}#{1,6}\s+(.*?)(\s+#+)?\s*$/.exec(line);
+  if (heading) {
+    const title = inlineMarkdownToOrg(heading[1].replace(/\*\*|__/g, "")).trim();
+    return title === "" ? "" : `*${title}*`;
+  }
+  if (/^ {0,3}([-*_])( *\1){2,} *$/.test(line)) return "-----";
+  if (/^\s*\|(\s*:?-+:?\s*\|)+\s*$/.test(line)) {
+    const indent = /^\s*/.exec(line)![0];
+    const cells = line.trim().slice(1, -1).split("|").map((c) => "-".repeat(Math.max(c.length, 1)));
+    return `${indent}|${cells.join("+")}|`;
+  }
+  const bullet = /^(\s*)[*+](\s+)(.*)$/.exec(line);
+  const org = bullet ? `${bullet[1]}-${bullet[2]}${inlineMarkdownToOrg(bullet[3])}` : inlineMarkdownToOrg(line);
+  // What is left that Org would read as a heading or a block's line.
+  return /^(\*+\s|\s*#\+)/.test(org) ? ` ${org}` : org;
+}
+
+/** Code in Org's markup: ~code~, or =code= when it holds a ~, or as it came when it holds both. */
+function orgCode(code: string): string {
+  const c = code.trim();
+  if (c === "") return code;
+  if (!c.includes("~")) return `~${c}~`;
+  if (!c.includes("=")) return `=${c}=`;
+  return `\`${code}\``;
+}
+
+/** A line's code spans, links, emphasis and strike-through as Org's. */
+export function inlineMarkdownToOrg(text: string): string {
+  // What is made Org is kept aside, so nothing later matches inside it.
+  const kept: string[] = [];
+  const keep = (org: string) => `\u0000${kept.push(org) - 1}\u0000`;
+  let out = text.replace(/(`+)(?!`)(.+?)(?<!`)\1(?!`)/g, (_m, _ticks, code) => keep(orgCode(code)));
+  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, _alt, url) => keep(`[[${url}]]`));
+  out = out.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, label, url) => keep(`[[${url}][${emphasis(label)}]]`));
+  out = out.replace(/<(https?:\/\/[^>\s]+)>/g, (_m, url) => keep(`[[${url}]]`));
+  out = emphasis(out);
+  for (let i = 0; i < 3 && out.includes("\u0000"); i++) out = out.replace(/\u0000(\d+)\u0000/g, (_m, n) => kept[Number(n)]);
+  return out;
+}
+
+/** **bold** and __bold__ as *bold*, *italic* and _italic_ as /italic/, ~~struck~~ as +struck+. */
+function emphasis(text: string): string {
+  const kept: string[] = [];
+  const keep = (org: string) => `\u0001${kept.push(org) - 1}\u0001`;
+  const italic = (t: string) =>
+    t
+      .replace(/(?<![\w*\\])\*(?=\S)([^*]*?\S)\*(?![\w*])/g, "/$1/")
+      .replace(/(?<![\w\\])_(?=\S)([^_]*?\S)_(?!\w)/g, "/$1/");
+  let out = text
+    .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, (_m, t) => keep(`*${italic(t)}*`))
+    .replace(/(?<!\w)__(?=\S)(.+?)(?<=\S)__(?!\w)/g, (_m, t) => keep(`*${italic(t)}*`))
+    .replace(/~~(?=\S)(.+?)(?<=\S)~~/g, (_m, t) => keep(`+${t}+`));
+  out = italic(out);
+  return out.replace(/\u0001(\d+)\u0001/g, (_m, n) => kept[Number(n)]);
 }
 
 /** Text in an example block, each line indented, so nothing in it reads as Org or ends the block. */
@@ -205,6 +366,7 @@ function closeOpen(shell: Shell): void {
     startLine(shell);
     put(shell, "#+end_example\n");
   } else if (shell.open === "text") {
+    flushReply(shell);
     startLine(shell);
   }
   shell.open = undefined;
@@ -250,10 +412,23 @@ function toolContent(content: unknown): string {
   return parts.filter((p) => p !== "").join("\n");
 }
 
-const STATUS: { [status: string]: string } = { pending: " …", in_progress: " …", completed: "", failed: " [failed]" };
+const STATUS: { [status: string]: string } = { pending: " …", in_progress: " …", completed: "", failed: " (failed)" };
+
+/**
+ * A tool call's title as Org code, ~title~, or =title= when it holds a ~,
+ * so a shell command's slashes and pluses are not read as Org's emphasis;
+ * as it is when it holds both.
+ */
+function quoteTitle(title: string): string {
+  const t = title.replace(/\n/g, " ").replace(/`/g, "").trim();
+  if (t === "") return title;
+  if (!t.includes("~")) return `~${t}~`;
+  if (!t.includes("=")) return `=${t}=`;
+  return t;
+}
 
 function renderToolCall(call: ToolCall): string {
-  const line = `→ ${call.title.replace(/\n/g, " ")}${STATUS[call.status] ?? ""}\n`;
+  const line = `→ ${quoteTitle(call.title)}${STATUS[call.status] ?? ""}\n`;
   return call.content === "" ? line : line + exampleBlock(call.content, call.status === "failed" ? "Failed:\n" : "");
 }
 
@@ -372,7 +547,10 @@ function onUpdate(shell: Shell, notification: acp.Json): void {
       showPlan(shell, update.entries);
       break;
     case "usage_update":
-      if (typeof update.used === "number") shell.usage = { used: update.used, size: Number(update.size ?? 0) };
+      if (typeof update.used === "number") {
+        shell.usage = { used: update.used, size: Number(update.size ?? 0) };
+        showState(shell);
+      }
       break;
     case "current_mode_update":
       if (update.currentModeId) shell.mode = String(update.currentModeId);
@@ -585,34 +763,39 @@ function describe(shell: Shell, error: acp.RpcError | undefined): string {
   return tail !== "" && message.startsWith("Agent process ended") ? `${message}\n${tail.split("\n").slice(-5).join("\n")}` : message;
 }
 
+/** A count of tokens, short: 950, 46k, 1M or 1.5M. */
+function tokens(n: number): string {
+  if (n < 1000) return String(n);
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
+  return `${Number((n / 1_000_000).toFixed(1))}M`;
+}
+
+/** Shows on the mode line whether the agent is working and how much of its context the conversation fills. */
+function showState(shell: Shell): void {
+  const usage = shell.usage && shell.usage.size > 0 ? ` ${tokens(shell.usage.used)}/${tokens(shell.usage.size)}` : "";
+  inBuffer(shell, () => e8.setVariable("mode-line-process", `${shell.busy ? ":working" : ""}${usage}`));
+}
+
 /** Ends the turn: a note if it did not end as asked, its blocks folded, and a heading for the next request. */
 function finish(shell: Shell, text?: string): void {
   shell.busy = false;
   shell.cancelled = false;
+  showState(shell);
   cancelPermissions(shell);
   closeOpen(shell);
   if (text) note(shell, text);
-  if (shell.usage) note(shell, `${shell.usage.used} of ${shell.usage.size} tokens of context used`);
   startLine(shell);
-  put(shell, "* You\n");
+  put(shell, "\n* You\n");
   inBuffer(shell, () => {
-    e8.saveExcursion(() => {
-      for (const call of shell.toolCalls.values()) {
-        const start = e8.markerPosition(call.start);
-        if (start !== undefined && call.content !== "") {
-          // The block starts on the line after the call's.
-          e8.gotoChar(start + renderToolCall({ ...call, content: "" }).length);
-          e8.call("org-cycle");
-        }
-      }
-      for (const block of shell.blocks) {
-        const at = e8.markerPosition(block);
-        if (at !== undefined) {
-          e8.gotoChar(at);
-          e8.call("org-cycle");
-        }
-      }
-    });
+    for (const call of shell.toolCalls.values()) {
+      const start = e8.markerPosition(call.start);
+      if (start !== undefined && call.content !== "") foldBlockBelow(start, true);
+    }
+    for (const block of shell.blocks) {
+      const at = e8.markerPosition(block);
+      // The block's #+begin_example line, under its Thinking: line.
+      if (at !== undefined && at > 0) foldBlockBelow(at - 1, true);
+    }
   });
   for (const call of shell.toolCalls.values()) {
     e8.deleteMarker(call.start);
@@ -753,6 +936,8 @@ export function start(name: string): string {
       busy: false,
       cancelled: false,
       open: undefined,
+      partial: "",
+      markdown: {},
       toolCalls: new Map(),
       blocks: [],
       permissions: [],
@@ -802,13 +987,16 @@ e8.defineCommand({
   run: () => {
     const shell = currentShell();
     const text = e8.bufferText(0, e8.bufferSize());
-    const at = text.lastIndexOf("* You\n");
+    // The heading, at a line's start, not text in a line or a deeper heading.
+    const after = text.lastIndexOf("\n* You\n");
+    const at = after >= 0 ? after + 1 : text.startsWith("* You\n") ? 0 : -1;
     if (at < 0) e8.userError("Type a request under a * You heading");
     const request = text.slice(at + "* You\n".length).trim();
     if (request === "") e8.userError("Type a request under the last * You heading first");
     if (shell.busy) e8.userError("The agent is still working; C-c C-k stops it");
     shell.busy = true;
     shell.cancelled = false;
+    showState(shell);
     startLine(shell);
     put(shell, "\n* Agent\n");
     e8.gotoChar(e8.bufferSize());

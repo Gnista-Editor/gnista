@@ -485,6 +485,7 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::List(vec![
                 s("%[("),
                 sym("mode-name"),
+                sym("mode-line-process"),
                 sym("minor-mode-alist"),
                 s("%n"),
                 Value::List(vec![sym("defining-kbd-macro"), s(" Def")]),
@@ -533,6 +534,14 @@ pub(crate) fn install(ed: &mut Editor) {
         "How many columns the line numbers take left of the text, which a header line's `:align-to` positions can add to line titles up with the text, as header-line-indent-mode keeps it.",
         Value::Number(0.0),
     ).local());
+    ed.define_variable(
+        Variable::new(
+            "mode-line-process",
+            "What the mode line shows of the buffer's process after the mode's name, a mode line construct, as shell and compilation buffers show \":run\"; nil for nothing.",
+            Value::Null,
+        )
+        .local(),
+    );
     ed.define_variable(Variable::new("minor-mode-alist", "The minor modes' lighters in the mode line, as [mode, lighter] pairs: each lighter shows while its mode's variable is true.", Value::List(Vec::new())));
     ed.define_variable(Variable::new("defining-kbd-macro", "Whether a keyboard macro is being defined, which the mode line shows as Def.", false));
 }
