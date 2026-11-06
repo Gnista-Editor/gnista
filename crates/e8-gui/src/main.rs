@@ -34,7 +34,13 @@ fn main() -> eframe::Result {
         }
     }
 
-    let mut viewport = egui::ViewportBuilder::default().with_title("E8").with_inner_size([960.0, 680.0]).with_min_inner_size([360.0, 200.0]);
+    // An empty icon keeps eframe from putting egui's logo in the Dock over
+    // E8.app's own, which macOS shows from the bundle.
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_title("E8")
+        .with_icon(egui::IconData::default())
+        .with_inner_size([960.0, 680.0])
+        .with_min_inner_size([360.0, 200.0]);
     // On macOS the title bar takes the theme's background.
     let title_bar = cfg!(target_os = "macos");
     if title_bar {
