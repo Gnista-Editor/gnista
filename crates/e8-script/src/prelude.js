@@ -624,6 +624,11 @@
       // input that comes is put back to be read as a command.
       if (native.inputPendingP()) return false;
       if (seconds <= 0) return true;
+      // In batch mode there is no input to wait for: it sleeps, as subr.el's does there.
+      if (e8.variable("noninteractive") === true) {
+        native.sleepFor(Number(seconds));
+        return true;
+      }
       const key = e8.readEvent(undefined, { seconds });
       if (key === undefined) return true;
       e8.unreadKeys(key);
