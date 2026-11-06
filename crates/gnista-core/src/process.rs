@@ -614,9 +614,13 @@ impl Editor {
             use std::os::fd::AsRawFd;
             gate.fd.as_raw_fd()
         };
+        // Without poll the reader cannot wait outside its lock, so elsewhere
+        // a process keeps the 200 ms rule.
         #[cfg(not(unix))]
-        let raw = -1;
-        read_stream(id, std::mem::replace(&mut output, Box::new(std::io::empty())), self.processes.tx.clone(), Some((gate.lock.clone(), raw)), self.processes.read_delay);
+        let (raw, gate) = { let _ = gate; (-1, None::<OutputGate>) };
+        #[cfg(unix)]
+        let gate = Some(gate);
+        read_stream(id, std::mem::replace(&mut output, Box::new(std::io::empty())), self.processes.tx.clone(), gate.as_ref().map(|g| (g.lock.clone(), raw)), self.processes.read_delay);
         let open_streams = 1;
         let coding = spec.coding.unwrap_or_else(|| self.default_process_coding());
         let (buffer_id, mark) = match buffer {
@@ -645,7 +649,7 @@ impl Editor {
             kind,
             coding,
             pending: Vec::new(),
-            gate: Some(gate),
+            gate,
         });
         Ok(name)
     }
