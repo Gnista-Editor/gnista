@@ -49,8 +49,12 @@ jobs:
           rustup toolchain install stable --profile minimal --component clippy
           rustup default stable
           case "$RUNNER_OS" in macOS) platform=mac ;; *) platform=linux ;; esac
-          curl -LsSf "https://get.nexte.st/latest/$platform" | tar zxf - -C "${CARGO_HOME:-$HOME/.cargo}/bin"
-          cargo nextest --version
+          # macOS runners have no ~/.cargo/bin until something makes it.
+          bin="${CARGO_HOME:-$HOME/.cargo}/bin"
+          mkdir -p "$bin"
+          echo "$bin" >> "$GITHUB_PATH"
+          curl -LsSf "https://get.nexte.st/latest/$platform" | tar zxf - -C "$bin"
+          PATH="$bin:$PATH" cargo nextest --version
 
       # Tests make git repositories and commits of their own.
       - name: Set up git
