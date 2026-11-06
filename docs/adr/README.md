@@ -61,3 +61,4 @@ One record per decision, in the order they were made; a later one can change an 
 - [0057](0057-script-objects-as-values.md) Script objects as values
 - [0058](0058-the-name-gnista.md) The name Gnista
 - [0059](0059-packages-are-git-repositories.md) Packages are git repositories
+- [0060](0060-releases.md) Releases

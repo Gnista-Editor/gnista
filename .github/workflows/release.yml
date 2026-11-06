@@ -1,0 +1,121 @@
+# Builds Gnista's terminal editor and gnista-mcp for each platform, and on a
+# version tag makes a GitHub Release of them (docs/adr/0060-releases.md).
+#
+# To release: bump `version` in the workspace Cargo.toml in a pull request,
+# merge it, then tag the merge and push the tag:
+#
+#   git tag v0.2.0 origin/main && git push origin v0.2.0
+#
+# A pull request that changes this file or the dependencies builds without
+# releasing, so a broken release build shows before a tag.
+
+name: Release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - Cargo.toml
+      - Cargo.lock
+      - crates/*/Cargo.toml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the version
+        id: version
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match the version in Cargo.toml, $version"
+            exit 1
+          fi
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: release-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: release-${{ matrix.target }}-
+
+      - name: Build
+        run: cargo build --release --locked -p gnista -p gnista-mcp
+
+      - name: Check that it starts
+        run: |
+          out=$(GNISTA_CONFIG_DIR="$RUNNER_TEMP/gnista" target/release/gnista --batch --eval 'gnista.message("gnista " + gnista.variable("gnista-version"))' 2>&1)
+          echo "$out"
+          [ "$out" = "gnista ${{ steps.version.outputs.version }}" ]
+
+      - name: Pack
+        run: |
+          name="gnista-${{ steps.version.outputs.version }}-${{ matrix.target }}"
+          mkdir -p "dist/$name"
+          cp target/release/gnista target/release/gnista-mcp LICENSE "dist/$name/"
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          cd dist
+          if command -v sha256sum >/dev/null; then sha256sum "$name.tar.gz"; else shasum -a 256 "$name.tar.gz"; fi > "$name.tar.gz.sha256"
+          cat "$name.tar.gz.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Make the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Gnista ${GITHUB_REF_NAME#v}" \
+            --generate-notes \
+            --verify-tag
