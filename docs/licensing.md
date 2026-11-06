@@ -26,6 +26,7 @@ Known to be derived, from the sessions that ported them:
 - `packages/simple.ts`: parts follow simple.el, such as `transpose-chars`, `transpose-words`, `transpose-lines`, `newline`, `open-line` and `electric-newline-and-maybe-indent`.
 - `packages/outline.ts`: `outline-up-heading` follows outline.el.
 - `packages/acp.ts`: from acp.el 0.18.2 (GPL-3.0-or-later, copyright Alvaro Ramirez), closely, function by function; its header carries that copyright and says it is a port, as [ADR 0059](adr/0059-packages-are-git-repositories.md)'s rules for ports ask.
+- Not derived: `packages/agent-shell.ts` follows agent-shell's design, its commands' names and its permission keys, written for Gnista's Org agent buffer without its code.
 - `crates/gnista-core/src/buffer.rs`: undo in a region (from simple.el's `undo-make-selective-list`, `undo-adjust-elt`, `undo-elt-in-region`, `undo-delta` and `primitive-undo`), point records after undo (from undo.c's `record_point`) and marks put back by undo (`record_marker_adjustments`).
 - `crates/gnista-core/src/editor.rs` and `commands.rs`: undo amalgamation (`undo-auto-amalgamate`), `current-column` and the landing rule of `move-to-column`, and `insert-and-inherit`'s sticky properties. These follow Emacs's code to varying degrees.
 
