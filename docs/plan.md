@@ -84,6 +84,11 @@ Done ([ADR 0012](adr/0012-org-mode.md)). `org.ts` and `org-table.ts` follow Emac
 
 Started: `gnista-mcp` serves the command registry over MCP, so an agent such as Claude Code can drive the editor the user has open ([ADR 0015](adr/0015-mcp-server.md)). Commands can now ask questions partway through, which asking before an agent acts will need ([ADR 0018](adr/0018-files-and-saving.md)). Then the agent buffer ([ADR 0019](adr/0019-agent-buffer.md)): `M-x agent` talks to Claude in an Org buffer, the model calls commands as tools in the user's window, writing files, discarding unsaved work, quitting and running code wait for the user's approval, enforced by the core, and each turn undoes in one step. Sixteen scripted scenarios run headless. Next: token use on the mode line and spending caps, explaining the last action, region commands, and the same permissions for agents over MCP.
 
+Agents over ACP ([ADR 0061](adr/0061-agents-over-acp.md)): Gnista talks to Claude Code, Gemini CLI and other coding agents over the Agent Client Protocol, launching the adapter a configuration names and leaving its login to it. In order:
+1. `packages/acp.ts`, a port of Emacs's `acp.el`, with `make-process`'s `:stderr` buffer in the core.
+2. `packages/agent-shell.ts`: `M-x agent-shell` in ADR 0019's Org buffer, serving permission requests and file reads and writes through buffers.
+3. Terminals for the agent; `gnista-mcp` given to each session; one `M-x agent` with `gnista-agent` as one backend; edits to review by hunk; the frame as what the agent sees; porting Emacs Lisp packages with an agent, as drafts.
+
 **Since then**, outside the milestones:
 - Windows as window.el has them: `display-buffer`, the `C-x 4` commands, resizing and balancing ([ADR 0009](adr/0009-windows.md)), and frames on `C-x 5`, each a native window in the GUI ([ADR 0017](adr/0017-frames.md)).
 - Large files: a benchmark of a 50,000-line Org file and a 100 MB text file, and the fixes it led to ([docs/performance.md](performance.md)).
