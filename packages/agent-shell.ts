@@ -6,10 +6,17 @@
 //
 //   * You       what you ask, sent with C-c RET
 //   * Agent     its reply as it streams in, its Markdown made Org a line
-//               at a time; each tool call a line, its output or diff in a
-//               block under it, folded into the line as it comes (TAB
+//               at a time; its thinking in a #+begin_thinking block; each
+//               tool call a line, its output or diff in a src block named
+//               by what it holds, folded into the line as it comes (TAB
 //               shows it), and its plan as a checklist; Claude Code's own
 //               bookkeeping calls left out (agent-shell-hidden-tools)
+//
+// The conversation above the request being typed is a transcript, as a
+// shell's is: the agent's turns and the requests sent are read-only, and
+// undo reaches only the request being typed. The session lives in the
+// agent, which can take nothing back, so the buffer never says what the
+// agent does not remember.
 //
 // The session starts as the buffer opens, and the header line shows its
 // model, mode and thought level: C-c C-v picks the model, C-c C-t the
@@ -28,7 +35,7 @@
 
 import * as acp from "acp";
 import { findBufferVisiting } from "files";
-import { flag, folded } from "org-fold";
+import { BLOCK_BEGIN, BLOCK_END, flag, folded, toggleDrawerOrBlock, withoutFoldChecks } from "org-fold";
 import { current as projectRoot } from "project";
 import { executableFind, truthy } from "subr";
 
@@ -82,6 +89,10 @@ interface ToolCall {
   /** The tool's own name, as Claude Code's adapter gives it, and what it was called with. */
   toolName?: string;
   input?: { [key: string]: unknown };
+  /** What it does, as ACP's kinds: read, edit, execute and the rest. */
+  kind?: string;
+  /** The language its output's src block is named with, where its content says. */
+  lang?: string;
   /** Whether its block is folded into its line: at first, and until TAB opens it. */
   folded: boolean;
   /** Whether it is one of agent-shell-hidden-tools, which the buffer leaves out. */
@@ -124,9 +135,8 @@ interface Shell {
   markdown: MarkdownState;
   toolCalls: Map<string, ToolCall>;
   plan?: { start: e8.Marker; end: e8.Marker };
-  /** Where the thinking being written starts, its #+begin_example line, and whether it is folded. */
+  /** Where the thinking being written starts, its #+begin_thinking line. */
   thought?: e8.Marker;
-  thoughtFolded: boolean;
   permissions: Permission[];
   asking: boolean;
   askTimer?: number;
@@ -173,8 +183,9 @@ e8.defineMajorMode({
     "The mode of a conversation with a coding agent, started with M-x agent-shell.\n\n" +
     "Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under " +
     "* Agent, its Markdown made Org; each tool call is a line, with its output or diff folded into it as it comes " +
-    "(TAB on the line shows it, and a call the agent asks about shows its diff while it asks), as is its thinking. " +
-    "The tools agent-shell-hidden-tools names are left out. The agent asks before its tools act. C-c C-k stops the turn. The mode " +
+    "(TAB on the line shows it, and a call the agent asks about shows its diff while it asks); its thinking is a #+begin_thinking block, folded as it comes, which TAB on its first line opens as any Org block. " +
+    "The tools agent-shell-hidden-tools names are left out. The conversation above the request you are typing is " +
+    "read-only, as a shell's: the agent's turns and the requests sent, which undo never reaches. The agent asks before its tools act. C-c C-k stops the turn. The mode " +
     "line shows whether the agent is working and how much of its context the conversation fills.\n\n" +
     "The header line shows the session's model, mode and thought level. C-c TAB, or C-<tab> as in Emacs's " +
     "agent-shell where tab-bar-mode does not take it, moves to the next mode, C-c C-v " +
@@ -222,22 +233,22 @@ function lineAround(pos: number): { start: number; end: number; text: string } {
 }
 
 /**
- * The block under a tool call's line or a Thinking: line, the line at
- * `pos`: from that line's end to its #+end_example line's end, which is
- * what folds into the line.
+ * The block under a tool call's line, the line at `pos`: from that line's
+ * end to its block's #+end line's end, which is what folds into the line.
  */
 function blockBelow(pos: number): [number, number] | undefined {
   const line = lineAround(pos);
-  if (!line.text.startsWith("→ ") && line.text !== "Thinking:") return undefined;
-  if (line.end >= e8.bufferSize()) return undefined;
+  if (!line.text.startsWith("→ ") || line.end >= e8.bufferSize()) return undefined;
   let next = lineAround(line.end + 1);
-  if (next.text !== "#+begin_example") return undefined;
+  const begin = BLOCK_BEGIN.exec(next.text);
+  if (!begin) return undefined;
+  const name = begin[1].toLowerCase();
   while (next.end < e8.bufferSize()) {
     next = lineAround(next.end + 1);
-    if (next.text === "#+end_example") return [line.end, next.end];
+    const end = BLOCK_END.exec(next.text);
+    if (end && end[1].toLowerCase() === name) return [line.end, next.end];
   }
-  // Thinking still coming: the block so far.
-  return [line.end, e8.bufferSize()];
+  return undefined;
 }
 
 /** Folds or shows the block under the line at `pos`, if it has one, or folds it when `hide` says so. */
@@ -248,17 +259,15 @@ function foldBlockBelow(pos: number, hide?: boolean): boolean {
   return true;
 }
 
-/** TAB on a tool call's line or a Thinking: line: shows the block folded into it, or folds it. */
+/** TAB on a tool call's line: shows the block folded into it, or folds it. A block's own first line is Org's. */
 function toggleBlockBelow(): boolean {
   if (!foldBlockBelow(e8.point())) return false;
-  // Remembered, so the call's next update, or more thinking, keeps it so.
+  // Remembered, so the call's next update keeps it so.
   const shell = shells.get(e8.bufferName() ?? "");
   if (shell !== undefined) {
     const line = e8.lineBeginningPosition();
     const shown = !folded(e8.lineEndPosition(), "org-hide-block");
     for (const call of shell.toolCalls.values()) if (e8.markerPosition(call.start) === line) call.folded = !shown;
-    const thought = shell.thought && e8.markerPosition(shell.thought);
-    if (thought !== undefined && thought > 0 && e8.lineBeginningPosition(thought - 1) === line) shell.thoughtFolded = !shown;
   }
   return true;
 }
@@ -272,19 +281,47 @@ function inBuffer<T>(shell: Shell, fn: () => T): T | undefined {
 }
 
 /**
+ * Runs `fn` in the shell's buffer as the agent writing it: read-only text
+ * gives way, nothing is recorded for undo, as a shell's output is not, and
+ * Org's checks of the folds near a change stand aside, as they do for its
+ * own code's edits, since the agent writes into a block still folding.
+ */
+function writing<T>(shell: Shell, fn: () => T): T | undefined {
+  return inBuffer(shell, () => withoutFoldChecks(() => e8.letBind({ "inhibit-read-only": true, "buffer-undo-list": true }, fn)));
+}
+
+/** Makes text the transcript's: read-only, from its first character on, so nothing is typed before it either. */
+function lock(start: number, end: number): void {
+  if (end <= start) return;
+  e8.putTextProperty(start, end, "read-only", true);
+  e8.putTextProperty(start, end, "front-sticky", ["read-only"]);
+}
+
+/**
+ * A * You heading for the next request, typed after it: the heading is the
+ * transcript's, and typing after its newline is allowed, as after a shell's prompt.
+ */
+function putPrompt(shell: Shell, before = ""): void {
+  const text = `${before}* You\n`;
+  const at = put(shell, text);
+  writing(shell, () => e8.putTextProperty(at + text.length - 1, at + text.length, "rear-nonsticky", ["read-only"]));
+}
+
+/**
  * Puts text in the shell's buffer at `at`, its end by default, keeping
  * point and the windows that were at the end there, as output follows in a
  * shell. Returns where it went.
  */
 function put(shell: Shell, text: string, at?: number): number {
   return (
-    inBuffer(shell, () => {
+    writing(shell, () => {
       const end = e8.bufferSize();
       const where = at ?? end;
       const point = e8.point();
       const following = e8.windowList().filter((w) => e8.windowBuffer(w) === shell.buffer && e8.windowPoint(w) === end);
       e8.gotoChar(where);
       e8.insert(text);
+      lock(where, where + text.length);
       const after = point === end || point > where ? point + text.length : point;
       e8.gotoChar(point === end ? e8.bufferSize() : after);
       for (const w of following) {
@@ -297,11 +334,12 @@ function put(shell: Shell, text: string, at?: number): number {
 
 /** Replaces the text from `start` to `end` in the shell's buffer, keeping point after it where it was. */
 function replace(shell: Shell, start: number, end: number, text: string): void {
-  inBuffer(shell, () => {
+  writing(shell, () => {
     const point = e8.point();
     e8.deleteRegion(start, end);
     e8.gotoChar(start);
     e8.insert(text);
+    lock(start, start + text.length);
     const moved = point >= end ? point - (end - start) + text.length : Math.min(point, start + text.length);
     e8.gotoChar(moved);
   });
@@ -331,7 +369,7 @@ function putReply(shell: Shell, text: string): void {
 function replacePartial(shell: Shell, done: string, rest: string): void {
   const end = inBuffer(shell, () => e8.bufferSize()) ?? 0;
   const at = shell.partialAt === undefined ? end : Math.min(e8.markerPosition(shell.partialAt) ?? end, end);
-  if (at < end) inBuffer(shell, () => e8.deleteRegion(at, end));
+  if (at < end) writing(shell, () => e8.deleteRegion(at, end));
   // Shown as it came, but never as a heading or a block's line meanwhile.
   const shown = /^\s*(\*|#\+)/.test(rest) ? ` ${rest}` : rest;
   put(shell, done + shown);
@@ -375,8 +413,7 @@ export function markdownLineToOrg(line: string, state: MarkdownState): string {
       state.fence = undefined;
       return end;
     }
-    // Org's escape for a line its block would otherwise take for a heading or its own end.
-    return line.replace(/^(\s*)(,*(\*|#\+))/, "$1,$2");
+    return escapeCode(line);
   }
   const open = /^(\s*)(`{3,}|~{3,})\s*([^`\s]*)/.exec(line);
   if (open) {
@@ -441,21 +478,29 @@ function emphasis(text: string): string {
   return out.replace(/\u0001(\d+)\u0001/g, (_m, n) => kept[Number(n)]);
 }
 
-/** Text in an example block, each line indented, so nothing in it reads as Org or ends the block. */
-function exampleBlock(text: string, label = ""): string {
+/** A line of code as Org keeps it in a block: a comma before what would read as a heading or a block's end, as org-escape-code-in-region. */
+function escapeCode(line: string): string {
+  return line.replace(/^(\s*)(,*(\*|#\+))/, "$1,$2");
+}
+
+/** Text in a src block named by its language, diff, console, json or text, its lines escaped so none ends the block. */
+function srcBlock(lang: string, text: string, label = ""): string {
   let shown = [...text].slice(0, SHOWN_OUTPUT).join("");
   if ([...text].length > SHOWN_OUTPUT) shown += "…";
-  const lines = shown.replace(/\n$/, "").split("\n").map((l) => `  ${l}`);
-  return `#+begin_example\n${label}${lines.join("\n")}\n#+end_example\n`;
+  const lines = shown.replace(/\n$/, "").split("\n").map(escapeCode);
+  return `#+begin_src ${lang}\n${label}${lines.join("\n")}\n#+end_src\n`;
 }
 
 /** Closes what is open at the end: the agent's paragraph, or its thinking's block. */
 function closeOpen(shell: Shell): void {
   if (shell.open === "thought") {
+    flushReply(shell);
     startLine(shell);
-    put(shell, "#+end_example\n");
-    const at = shell.thought && e8.markerPosition(shell.thought);
-    if (at !== undefined && at > 0) inBuffer(shell, () => foldBlockBelow(at - 1, shell.thoughtFolded));
+    const begin = shell.thought && e8.markerPosition(shell.thought);
+    const hidden = begin === undefined || (inBuffer(shell, () => folded(e8.lineEndPosition(begin), "org-hide-block")) ?? true);
+    put(shell, "#+end_thinking\n");
+    // Folded as Org folds a block, from its first line, so TAB there opens it.
+    if (begin !== undefined) inBuffer(shell, () => toggleDrawerOrBlock(e8.lineOf(begin), hidden));
     if (shell.thought) e8.deleteMarker(shell.thought);
     shell.thought = undefined;
   } else if (shell.open === "text") {
@@ -492,17 +537,34 @@ export function diffLines(path: string, oldText: string | null | undefined, newT
   return lines.join("\n");
 }
 
-/** What a tool call's content shows: its text, diffs and terminals, one after another. */
-function toolContent(content: unknown): string {
-  if (!Array.isArray(content)) return "";
+/** Text that is one Markdown code fence, as Claude Code's adapter wraps a command's output: what it fences, and the language it names. */
+function unfenced(text: string): { text: string; lang?: string } | undefined {
+  const m = /^\s*(`{3,}|~{3,})[ \t]*(\S*)[^\n]*\n([\s\S]*?)\n?[ \t]*\1\s*$/.exec(text);
+  return m ? { text: m[3], lang: m[2] === "" ? undefined : m[2] } : undefined;
+}
+
+/**
+ * What a tool call's content shows: its text, diffs and terminals, one
+ * after another, with the language that names its block: diff for a diff,
+ * else what a fence around its text says.
+ */
+function toolContent(content: unknown): { text: string; lang?: string } {
+  if (!Array.isArray(content)) return { text: "" };
   const parts: string[] = [];
+  let lang: string | undefined;
   for (const c of content) {
-    if (c?.type === "content" && c.content?.type === "text") parts.push(String(c.content.text ?? ""));
-    else if (c?.type === "content" && c.content?.type === "resource_link") parts.push(String(c.content.uri ?? c.content.name ?? ""));
-    else if (c?.type === "diff") parts.push(diffLines(String(c.path ?? ""), c.oldText, String(c.newText ?? "")));
-    else if (c?.type === "terminal") parts.push(`[terminal ${c.terminalId}]`);
+    if (c?.type === "content" && c.content?.type === "text") {
+      const text = String(c.content.text ?? "");
+      const fenced = unfenced(text);
+      parts.push(fenced ? fenced.text : text);
+      if (lang === undefined && fenced?.lang !== undefined) lang = fenced.lang;
+    } else if (c?.type === "content" && c.content?.type === "resource_link") parts.push(String(c.content.uri ?? c.content.name ?? ""));
+    else if (c?.type === "diff") {
+      parts.push(diffLines(String(c.path ?? ""), c.oldText, String(c.newText ?? "")));
+      lang = "diff";
+    } else if (c?.type === "terminal") parts.push(`[terminal ${c.terminalId}]`);
   }
-  return parts.filter((p) => p !== "").join("\n");
+  return { text: parts.filter((p) => p !== "").join("\n"), lang };
 }
 
 const STATUS: { [status: string]: string } = { pending: " …", in_progress: " …", completed: "", failed: " (failed)" };
@@ -553,7 +615,9 @@ function renderToolCall(shell: Shell, call: ToolCall): string {
   // A command's description, as Claude Code's Bash tool gives one, after it.
   const description = typeof call.input?.description === "string" ? ` — ${call.input.description.replace(/\n/g, " ")}` : "";
   const line = `→ ${quoteTitle(toolTitle(shell, call))}${STATUS[call.status] ?? ""}${description}\n`;
-  return call.content === "" ? line : line + exampleBlock(call.content, call.status === "failed" ? "Failed:\n" : "");
+  // Named by what it holds: a diff, a command's output, JSON, or text.
+  const lang = call.lang ?? (call.kind === "execute" ? "console" : "text");
+  return call.content === "" ? line : line + srcBlock(lang, call.content, call.status === "failed" ? "Failed:\n" : "");
 }
 
 /** Shows a tool call, or brings one shown up to date. */
@@ -570,6 +634,7 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
       title: String(update.title ?? update.kind ?? "tool"),
       status: String(update.status ?? "pending"),
       toolName,
+      kind: update.kind ? String(update.kind) : undefined,
       folded: true,
       hidden: toolName !== undefined && Array.isArray(hiddenTools) && hiddenTools.includes(toolName),
       content: "",
@@ -587,9 +652,19 @@ function showToolCall(shell: Shell, update: acp.Json, first: boolean): void {
   if (update.status) call.status = String(update.status);
   for (const c of Array.isArray(update.content) ? update.content : []) if (c?.type === "diff" && c.path) call.paths.add(String(c.path));
   for (const l of Array.isArray(update.locations) ? update.locations : []) if (l?.path) call.paths.add(String(l.path));
-  if (update.content !== undefined && update.content !== null) call.content = toolContent(update.content);
-  else if (update.rawOutput !== undefined && call.content === "" && (call.status === "completed" || call.status === "failed")) {
-    call.content = typeof update.rawOutput === "string" ? update.rawOutput : JSON.stringify(update.rawOutput, null, 2);
+  if (update.content !== undefined && update.content !== null) {
+    const shown = toolContent(update.content);
+    call.content = shown.text;
+    call.lang = shown.lang;
+  } else if (update.rawOutput !== undefined && call.content === "" && (call.status === "completed" || call.status === "failed")) {
+    if (typeof update.rawOutput === "string") {
+      const fenced = unfenced(update.rawOutput);
+      call.content = fenced ? fenced.text : update.rawOutput;
+      call.lang = fenced?.lang;
+    } else {
+      call.content = JSON.stringify(update.rawOutput, null, 2);
+      call.lang = "json";
+    }
   }
   const start = e8.markerPosition(call.start) ?? 0;
   const end = e8.markerPosition(call.end) ?? start;
@@ -655,23 +730,24 @@ function onUpdate(shell: Shell, notification: acp.Json): void {
       break;
     case "agent_thought_chunk":
       if (update.content?.type === "text") {
+        let first = false;
         if (shell.open !== "thought") {
           closeOpen(shell);
           startLine(shell);
-          put(shell, "Thinking:\n");
-          const at = put(shell, "#+begin_example\n");
+          const at = put(shell, "#+begin_thinking\n");
           shell.thought = e8.makeMarker(at, { buffer: shell.buffer, advances: true });
-          shell.thoughtFolded = true;
           shell.open = "thought";
+          first = true;
         }
-        // Indented, as in every example block, so a line of it cannot end the block.
-        const text = String(update.content.text ?? "");
-        const indented = text.replace(/\n(?!$)/g, "\n  ");
-        put(shell, atLineStart(shell) ? `  ${indented}` : indented);
-        // Folded into its line as it comes, unless TAB opened it.
+        // Its Markdown made Org as the reply's is: the block is Org, not verbatim.
+        putReply(shell, String(update.content.text ?? ""));
+        // Folded from its first line as it comes, as Org folds a block, unless TAB opened it.
         const begin = shell.thought && e8.markerPosition(shell.thought);
-        if (begin !== undefined && begin > 0 && shell.thoughtFolded) {
-          inBuffer(shell, () => flag(begin - 1, e8.bufferSize(), true, "org-hide-block"));
+        if (begin !== undefined) {
+          inBuffer(shell, () => {
+            const from = e8.lineEndPosition(begin);
+            if (first || folded(from, "org-hide-block")) flag(from, e8.bufferSize(), true, "org-hide-block");
+          });
         }
       }
       break;
@@ -937,7 +1013,7 @@ function finish(shell: Shell, text?: string): void {
   closeOpen(shell);
   if (text) note(shell, text);
   startLine(shell);
-  put(shell, "\n* You\n");
+  putPrompt(shell, "\n");
   for (const call of shell.toolCalls.values()) {
     e8.deleteMarker(call.start);
     e8.deleteMarker(call.end);
@@ -1292,8 +1368,6 @@ export function start(name: string): string {
     e8.call("agent-shell-mode");
     e8.makeLocalVariable("default-directory");
     e8.setVariable("default-directory", e8.fileNameAsDirectory(directory));
-    e8.insert("* You\n");
-    e8.setBufferModified(false);
     const shell: Shell = {
       agent: name,
       command: agent![1],
@@ -1307,7 +1381,6 @@ export function start(name: string): string {
       partial: "",
       markdown: {},
       toolCalls: new Map(),
-      thoughtFolded: true,
       permissions: [],
       asking: false,
       stderrTail: "",
@@ -1315,6 +1388,8 @@ export function start(name: string): string {
       starting: false,
       waiting: [],
     };
+    putPrompt(shell);
+    e8.setBufferModified(false);
     shell.client = makeShellClient(shell);
     shells.set(buffer, shell);
     // Started now, so its settings can be picked before the first request;
@@ -1368,6 +1443,11 @@ e8.defineCommand({
     const request = text.slice(at + "* You\n".length).trim();
     if (request === "") e8.userError("Type a request under the last * You heading first");
     if (shell.busy) e8.userError("The agent is still working; C-c C-k stops it");
+    // Sent, the request is the transcript's: read-only as the agent's turns, and
+    // with no undo history, as nothing above it can change any more.
+    const requestStart = [...text.slice(0, at + "* You\n".length)].length;
+    writing(shell, () => lock(requestStart, e8.bufferSize()));
+    e8.setVariable("buffer-undo-list", null);
     shell.busy = true;
     shell.cancelled = false;
     showState(shell);
