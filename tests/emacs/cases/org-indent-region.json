@@ -1,0 +1,44 @@
+[
+  {
+    "name": "org-indent-region-paragraphs",
+    "text": "* Heading\n   one\n\n two\n      three\n\nfour\n** Sub\n  five\n\n    six\n",
+    "keys": "C-x h C-M-\\",
+    "point": 0,
+    "modes": ["org-mode"]
+  },
+  {
+    "name": "org-indent-region-a-list-between-paragraphs",
+    "text": "* Heading\n   before\n\n - one\n continues\n   - nested\n - two\n\n    after\n   last\n",
+    "keys": "C-x h C-M-\\",
+    "point": 0,
+    "modes": ["org-mode"]
+  },
+  {
+    "name": "org-indent-region-blocks-and-drawers",
+    "text": "* Heading\n  :PROPERTIES:\n    :ID: x\n  :END:\n   text\n #+begin_src sh\n   echo hi\n #+end_src\n  #+begin_example\n    kept\n  #+end_example\n   #+begin_quote\n quoted\n   #+end_quote\n end\n",
+    "keys": "C-x h C-M-\\",
+    "point": 0,
+    "modes": ["org-mode"]
+  },
+  {
+    "name": "org-indent-region-in-a-list-item",
+    "text": "- item\n     body one\n\n         body two\n  - inner\n        inner body\n- second\n   text\n",
+    "keys": "C-x h C-M-\\",
+    "point": 0,
+    "modes": ["org-mode"]
+  },
+  {
+    "name": "org-indent-region-part-of-a-section",
+    "text": "* Heading\n   a\n\n   b\n\n   c\n\n   d\n",
+    "keys": "C-n C-n C-n C-SPC C-n C-n C-n C-M-\\",
+    "point": 0,
+    "modes": ["org-mode"]
+  },
+  {
+    "name": "org-indent-region-footnotes-and-tables",
+    "text": "* Heading\n   text[fn:1]\n\n[fn:1] note\n   more of the note\n\n  | a | b |\n    | c | d |\n   after\n",
+    "keys": "C-x h C-M-\\",
+    "point": 0,
+    "modes": ["org-mode"]
+  }
+]

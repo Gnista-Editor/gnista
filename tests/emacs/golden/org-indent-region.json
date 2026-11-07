@@ -1,0 +1,132 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "org-indent-region-paragraphs",
+      "input": {
+        "text": "* Heading\n   one\n\n two\n      three\n\nfour\n** Sub\n  five\n\n    six\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Heading\none\n\ntwo\nthree\n\nfour\n** Sub\nfive\n\nsix\n",
+      "visible": "* Heading\none\n\ntwo\nthree\n\nfour\n** Sub\nfive\n\nsix\n",
+      "point": 0,
+      "mark": 48,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "org-indent-region-a-list-between-paragraphs",
+      "input": {
+        "text": "* Heading\n   before\n\n - one\n continues\n   - nested\n - two\n\n    after\n   last\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Heading\nbefore\n\n- one\n  continues\n  - nested\n  - two\n\n    after\n    last\n",
+      "visible": "* Heading\nbefore\n\n- one\n  continues\n  - nested\n  - two\n\n    after\n    last\n",
+      "point": 0,
+      "mark": 75,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "org-indent-region-blocks-and-drawers",
+      "input": {
+        "text": "* Heading\n  :PROPERTIES:\n    :ID: x\n  :END:\n   text\n #+begin_src sh\n   echo hi\n #+end_src\n  #+begin_example\n    kept\n  #+end_example\n   #+begin_quote\n quoted\n   #+end_quote\n end\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Heading\n:PROPERTIES:\n:ID:       x\n:END:\ntext\n#+begin_src sh\n  echo hi\n#+end_src\n#+begin_example\n  kept\n#+end_example\n#+begin_quote\nquoted\n#+end_quote\nend\n",
+      "visible": "* Heading\n:PROPERTIES:\n:ID:       x\n:END:\ntext\n#+begin_src sh\n  echo hi\n#+end_src\n#+begin_example\n  kept\n#+end_example\n#+begin_quote\nquoted\n#+end_quote\nend\n",
+      "point": 0,
+      "mark": 156,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "org-indent-region-in-a-list-item",
+      "input": {
+        "text": "- item\n     body one\n\n         body two\n  - inner\n        inner body\n- second\n   text\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- item\n  body one\n\n  body two\n  - inner\n    inner body\n- second\n  text\n",
+      "visible": "- item\n  body one\n\n  body two\n  - inner\n    inner body\n- second\n  text\n",
+      "point": 0,
+      "mark": 71,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "org-indent-region-part-of-a-section",
+      "input": {
+        "text": "* Heading\n   a\n\n   b\n\n   c\n\n   d\n",
+        "point": 0,
+        "keys": "C-n C-n C-n C-SPC C-n C-n C-n C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Heading\n   a\n\n   b\n\n   c\n\n   d\n",
+      "visible": "* Heading\n   a\n\n   b\n\n   c\n\n   d\n",
+      "point": 27,
+      "mark": 16,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "org-indent-region-footnotes-and-tables",
+      "input": {
+        "text": "* Heading\n   text[fn:1]\n\n[fn:1] note\n   more of the note\n\n  | a | b |\n    | c | d |\n   after\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Heading\ntext[fn:1]\n\n[fn:1] note\nmore of the note\n\n| a | b |\n| c | d |\nafter\n",
+      "visible": "* Heading\ntext[fn:1]\n\n[fn:1] note\nmore of the note\n\n| a | b |\n| c | d |\nafter\n",
+      "point": 0,
+      "mark": 78,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}
