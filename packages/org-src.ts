@@ -222,12 +222,13 @@ function returnPoint(edit: Edit, at: [number, number] | undefined): void {
 }
 
 /**
- * Runs `command` on the block at point in its language's mode, unseen, and
- * puts the text back, as org-babel-do-key-sequence-in-edit-buffer does with
- * org-src-window-setup switch-invisibly: how TAB indents a source block's
- * line with org-src-tab-acts-natively.
+ * Runs `body` in the block at point's edit buffer, in its language's mode,
+ * unseen, and puts the text back, point following it, as
+ * org-babel-do-in-edit-buffer does with org-src-window-setup
+ * switch-invisibly. Nothing happens outside a source block, or for a
+ * language whose mode E8 lacks.
  */
-e8.defun("org-babel-do-key-sequence-in-edit-buffer", (command: e8.Value) => {
+function doInEditBuffer(body: () => void): void {
   const block = blockAt();
   if (!block || block.kind !== "src") return;
   const outside = e8.lineBeginningPosition() <= e8.lineStart(block.begin) ? e8.makeMarker(e8.point()) : undefined;
@@ -243,7 +244,7 @@ e8.defun("org-babel-do-key-sequence-in-edit-buffer", (command: e8.Value) => {
   let text = "";
   e8.withCurrentBuffer(name, () => {
     try {
-      e8.call(String(command) as e8.CommandName);
+      body();
     } finally {
       const line = e8.lineOf(e8.point());
       at = [line, e8.point() - e8.lineStart(line)];
@@ -259,7 +260,17 @@ e8.defun("org-babel-do-key-sequence-in-edit-buffer", (command: e8.Value) => {
     e8.gotoChar(e8.markerPosition(outside) ?? e8.point());
     e8.deleteMarker(outside);
   }
-});
+}
+
+/**
+ * Runs `command` on the block at point in its language's mode, unseen, and
+ * puts the text back, as org-babel-do-key-sequence-in-edit-buffer does:
+ * how TAB indents a source block's line with org-src-tab-acts-natively.
+ */
+e8.defun("org-babel-do-key-sequence-in-edit-buffer", (command: e8.Value) => doInEditBuffer(() => e8.call(String(command) as e8.CommandName)));
+
+/** Calls `fn` in the block at point's edit buffer, as org-babel-do-in-edit-buffer: how org-indent-region indents a source block's code. */
+e8.defun("org-babel-do-in-edit-buffer", (fn: string | ((...args: unknown[]) => unknown)) => doInEditBuffer(() => e8.funcall(fn)));
 
 const exitCommand = e8.defineCommand({
   name: "org-edit-src-exit",

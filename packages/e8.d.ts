@@ -8930,6 +8930,12 @@ declare global {
        */
       "indent-line-ignored-functions": Value;
       /**
+       * A function of the region's start and end that indents it, as the major mode says, as Org mode's org-indent-region; nil to indent it a line at a time with indent-line-function.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-region-function": Value;
+      /**
        * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
        */
       "indent-tabs-mode": Value;
