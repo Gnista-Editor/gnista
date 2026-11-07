@@ -22,7 +22,7 @@ What works today, in a terminal (`e8`) or a window (`e8-gui`). Where it differs 
 - Compiling and grepping in the background (`M-x compile`, `M-x grep`, `recompile`, `C-x p c`) and visiting each message's place (`next-error` on `M-g n`, `M-g p`).
 - Finding a regexp in a project (`C-x p g`, into `*xref*`).
 - Comments (`M-;`, `C-x C-;`, `C-x ;`, `M-j`).
-- Indentation (TAB as the mode says, `C-M-\`, `C-x TAB`, RET and closing braces reindenting in code modes).
+- Indentation (TAB as the mode says, `C-M-\` through `indent-region-function` where the mode has one, as Org mode's `org-indent-region`, `C-x TAB`, RET and closing braces reindenting in code modes).
 - The message log (`C-h e` shows `*Messages*`).
 - The active region with shift selection (transient-mark-mode and shift-select-mode, both on).
 - Prefix arguments (`C-u`, `M-<digit>`, `C--`).

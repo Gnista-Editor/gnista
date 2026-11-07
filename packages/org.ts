@@ -1818,10 +1818,19 @@ function indentRigidly(start: number, end: number, offset: number): void {
   dropMarker(endM);
 }
 
+/** Indents the whole of the current buffer, as (indent-region (point-min) (point-max)). */
+function indentWholeBuffer(): void {
+  e8.setMark(e8.pointMin());
+  e8.gotoChar(e8.pointMax());
+  e8.call("indent-region");
+}
+
 /** Indents the non-blank lines from start to end, each element as a whole, as org-indent-region does. */
 function orgIndentRegion(start: number, end: number): void {
   keepingParse(() => indentRegionElements(start, end));
 }
+
+e8.defun("org-indent-region", (start: number, end: number) => orgIndentRegion(start, end));
 
 function indentRegionElements(start: number, end: number): void {
   const endM = marker(end);
@@ -1843,7 +1852,9 @@ function indentRegionElements(start: number, end: number): void {
   while (p < endM.pos) {
     const line = lineAt(p);
     const el = isHeadingLine(e8.lineText(line)) ? undefined : elementAt(p);
-    if (!el) {
+    // A blank line after a heading is the headline's: Org indents it, which
+    // leaves it blank, then the section, as the lines after it come.
+    if (!el || el.type === "headline") {
       p = line + 1 < e8.lineCount() ? e8.lineStart(line + 1) : size();
       continue;
     }
@@ -1856,10 +1867,24 @@ function indentRegionElements(start: number, end: number): void {
       if (offset !== 0) indentRigidly(el.begin, el.end, offset);
       p = elementEnd.pos;
     } else if (type === "src-block" || type === "example-block") {
-      // The lines between the block's first and last are left alone: Org
-      // hands a source block's to its language's mode, which E8 lacks.
+      // A source block's code is indented in its edit buffer, as its
+      // language's mode indents it, with org-src-tab-acts-natively, and goes
+      // back org-edit-src-content-indentation in from the block; an example
+      // block that keeps its indentation is left alone.
       const lastLine = lineAt(endBeforeBlank(el));
       indentTo(ind, Math.min(lineStartOrEnd(lineAt(el.begin) + 1), endM.pos));
+      if (
+        type === "src-block" &&
+        p < Math.min(e8.lineStart(lastLine), endM.pos) &&
+        truthy(e8.variable("org-src-tab-acts-natively")) &&
+        e8.fboundp("org-babel-do-in-edit-buffer")
+      ) {
+        const pm = marker(p);
+        e8.gotoChar(p);
+        e8.funcall("org-babel-do-in-edit-buffer", indentWholeBuffer);
+        p = pm.pos;
+        dropMarker(pm);
+      }
       p = Math.max(p, Math.min(e8.lineStart(lastLine), endM.pos));
       if (p < endM.pos) indentTo(ind, Math.min(elementEnd.pos, endM.pos));
     } else if (["paragraph", "table", "table-row"].includes(type) || el.contentsBegin === undefined) {
@@ -5890,6 +5915,9 @@ e8.defineMajorMode({
       }
     }
     if (indented) e8.callWithPrefix(1, "org-indent-mode");
+    // C-M-\ indents the region as Org does, as org-mode sets it.
+    e8.makeLocalVariable("indent-region-function");
+    e8.setVariable("indent-region-function", "org-indent-region");
     e8.addHook("jit-lock-functions", fontify, { local: true });
     e8.addHook("after-change-functions", foldsAfterChange, { local: true });
     e8.addHook("after-change-functions", headingsAfterChange, { local: true });

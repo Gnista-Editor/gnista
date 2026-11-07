@@ -127,6 +127,27 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "org-indent-region-a-blank-line-under-a-heading",
+      "input": {
+        "text": "* notes notes\n\n+ [ ] alpha\n  read\n\n   para\n** sub\n\n   text\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* notes notes\n\n+ [ ] alpha\n  read\n\n  para\n** sub\n\ntext\n",
+      "visible": "* notes notes\n\n+ [ ] alpha\n  read\n\n  para\n** sub\n\ntext\n",
+      "point": 0,
+      "mark": 55,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

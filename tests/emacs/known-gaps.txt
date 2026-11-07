@@ -42,14 +42,3 @@ everyday-3/undo-only-chain  # position entries in buffer-undo-list
 org-folding/blank-entry-tab-twice  # TAB folds a shown blank entry
 org-folding/blank-entry-tab-twice-with-separator-lines-0  # TAB folds a shown blank entry
 org-folding/blank-entry-tab-twice-with-separator-lines-1  # TAB folds a shown blank entry
-
-# org-indent-region, found when these cases were added: E8 gives a list
-# item's body, and a nested list, the item's column rather than its body's;
-# leaves source and example block contents at the block's column rather
-# than org-edit-src-content-indentation further in; does not align a
-# property drawer's values; and indents the first lines of a region from
-# the heading rather than from the paragraph before them.
-org-indent-region/org-indent-region-a-list-between-paragraphs  # list bodies not indented
-org-indent-region/org-indent-region-in-a-list-item  # list bodies not indented
-org-indent-region/org-indent-region-blocks-and-drawers  # block contents, property values
-org-indent-region/org-indent-region-part-of-a-section  # region's first lines from the heading

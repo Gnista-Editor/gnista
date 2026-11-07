@@ -12,6 +12,12 @@ e8.defineVariable({
   local: true,
 });
 e8.defineVariable({
+  name: "indent-region-function",
+  doc: "A function of the region's start and end that indents it, as the major mode says, as Org mode's org-indent-region; nil to indent it a line at a time with indent-line-function.",
+  value: null,
+  local: true,
+});
+e8.defineVariable({
   name: "indent-line-ignored-functions",
   doc: "Values of indent-line-function that only tab, so indent-according-to-mode indents as the line before instead.",
   value: ["indent-relative", "indent-relative-maybe", "indent-relative-first-indent-point"],
@@ -144,6 +150,8 @@ function indentRigidly(first: number, last: number, n: number): void {
   e8.deleteMarker(p);
 }
 
+const regionFunction = () => e8.variable("indent-region-function");
+
 e8.defineCommand({
   name: "indent-region",
   doc:
@@ -155,6 +163,13 @@ e8.defineCommand({
     if (arg !== null) {
       const column = e8.prefixNumericValue(arg);
       for (let line = first; line <= last; line++) indentRigidly(line, line, column - currentIndentation(line));
+    } else if (typeof regionFunction() === "string" || typeof regionFunction() === "function") {
+      // The mode's own, given the region as Emacs gives it.
+      const mark = e8.mark() as number;
+      const pt = e8.makeMarker();
+      e8.funcall(regionFunction() as string, Math.min(mark, e8.point()), Math.max(mark, e8.point()));
+      e8.gotoChar(e8.markerPosition(pt)!);
+      e8.deleteMarker(pt);
     } else {
       indentRegion(first, last);
     }
