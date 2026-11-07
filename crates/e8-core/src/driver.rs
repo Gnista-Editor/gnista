@@ -26,7 +26,7 @@ use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError, channel}
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::Result;
 use crate::editor::Editor;
@@ -228,7 +228,22 @@ impl Drop for Driver {
 pub trait NestedLoop {
     /// Takes input until `done` says, or fails with `quit` when the editor closes.
     fn wait(&self, ed: &mut Editor, done: &dyn Fn(&Editor) -> bool) -> Result<()>;
+
+    /// Shows the frames as they are now, in the middle of running code, as
+    /// Emacs's `redisplay` function does.
+    fn show(&self, ed: &mut Editor);
+
+    /// Shows a message just put in the echo area while code runs, as
+    /// Emacs's `message` redisplays the echo area at once, so a long
+    /// command, or init.ts installing packages, says what it is doing.
+    /// Code that has run only briefly shows it when it finishes, as usual.
+    fn message_shown(&self, ed: &mut Editor);
 }
+
+/// How long code runs before a message it shows is drawn at once.
+const SHOW_MESSAGES_AFTER: Duration = Duration::from_millis(100);
+/// How often messages shown in a row are drawn, at most.
+const SHOW_MESSAGES_EVERY: Duration = Duration::from_millis(50);
 
 /// The editor thread's command loop: input in order, timers when due, and
 /// a redisplay and publication once nothing waits, as Emacs redisplays
@@ -242,11 +257,16 @@ struct CommandLoop<D> {
     published: Arc<Mutex<Published>>,
     closing: Cell<bool>,
     idle: Arc<Idle>,
+    /// When the loop last stopped waiting for input and started running code.
+    busy_since: Cell<Instant>,
+    /// When frames were last published.
+    published_at: Cell<Instant>,
 }
 
 impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
     /// Redisplays and publishes what each frame shows, and tells the front end.
     fn publish(&self, ed: &mut Editor) {
+        self.published_at.set(Instant::now());
         // A describe that panics, or that publishes again from inside
         // itself, leaves the frames last published rather than none.
         let frames = self
@@ -291,6 +311,16 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
 }
 
 impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<D> {
+    fn show(&self, ed: &mut Editor) {
+        self.publish(ed);
+    }
+
+    fn message_shown(&self, ed: &mut Editor) {
+        if self.busy_since.get().elapsed() >= SHOW_MESSAGES_AFTER && self.published_at.get().elapsed() >= SHOW_MESSAGES_EVERY {
+            self.publish(ed);
+        }
+    }
+
     fn wait(&self, ed: &mut Editor, done: &dyn Fn(&Editor) -> bool) -> Result<()> {
         loop {
             if done(ed) {
@@ -324,6 +354,7 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<
                     let timeout = ed.next_timer_in().unwrap_or(Duration::from_secs(3600));
                     self.idle.set(|s| s.1 = true);
                     let input = self.rx.recv_timeout(timeout);
+                    self.busy_since.set(Instant::now());
                     self.idle.set(|s| {
                         s.1 = false;
                         s.0 += input.as_ref().map_or(0, counted);
@@ -370,6 +401,8 @@ fn run(
         published,
         closing: Cell::new(false),
         idle,
+        busy_since: Cell::new(Instant::now()),
+        published_at: Cell::new(Instant::now()),
     });
     ed.command_loop = Some(command_loop.clone());
     // Setup runs with the loop there, so what init.ts and the startup hooks

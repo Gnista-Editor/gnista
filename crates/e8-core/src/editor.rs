@@ -2443,6 +2443,19 @@ impl Editor {
         }
         self.log_message(&text, false);
         self.message = Some(text);
+        if let Some(command_loop) = self.command_loop.clone() {
+            command_loop.message_shown(self);
+        }
+    }
+
+    /// Shows the frames as they are now, in the middle of running code, as
+    /// Emacs's `redisplay` function does: at startup, before init.ts runs,
+    /// so the window shows the editor rather than nothing while it loads.
+    /// Does nothing where no window shows the editor.
+    pub fn redisplay_now(&mut self) {
+        if let Some(command_loop) = self.command_loop.clone() {
+            command_loop.show(self);
+        }
     }
 
     /// Shows text in the echo area without logging it, as Emacs shows the

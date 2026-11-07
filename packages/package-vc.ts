@@ -8,7 +8,10 @@
 // M-x package-vc-install, package-vc-upgrade, package-vc-upgrade-all and
 // package-delete manage them by hand. Only these commands, and installing a
 // package a configuration names that is not there yet, use the network:
-// starting E8 with its packages installed runs no git at all.
+// starting E8 with its packages installed runs no git at all. On a machine
+// that has the lock file but not the packages, the first package asked for
+// clones every package the lock file names at once, as cloning them one by
+// one would hold startup up for seconds each.
 //
 // Preloaded, for its commands, which Emacs autoloads; it runs nothing until
 // one is used.
@@ -408,7 +411,64 @@ function versionLabel(name: string): string {
  * commit the lock file records, without the network unless it has to
  * fetch, and activates it, giving its name.
  */
+/** Whether this session has cloned what the lock file names and is missing. */
+let lockedCloned = false;
+
+/**
+ * Clones, all at once, the packages the lock file names that are not
+ * installed, as when a configuration and its lock file come to a new
+ * machine: each is then checked out at its locked commit when the
+ * configuration asks for it. One at a time, each clone took about two
+ * seconds, nearly all of it reaching the host, so fourteen held startup up
+ * for half a minute. A clone that fails is left for installPackage to try
+ * again and report. Gives how many were cloned.
+ */
+export function cloneLockedPackages(): number {
+  const missing = Object.entries(readLock().packages).filter(([name]) => !e8.fileExists(packageDir(name)));
+  if (missing.length === 0) return 0;
+  e8.makeDirectory(packageUserDir(), { parents: true });
+  const progress = (done: number) => e8.message(`Installing ${missing.length} packages from e8-lock.json...${done > 0 ? ` ${done}/${missing.length}` : ""}`);
+  progress(0);
+  // Each clone's sentinel says how it ended, "finished\n" when it worked.
+  const ended: { name: string; temporary: string; ok: boolean }[] = [];
+  for (const [name, entry] of missing) {
+    const temporary = `${packageUserDir()}.installing-${name}-${Date.now()}`;
+    try {
+      e8.makeProcess({
+        name: `git clone ${name}`,
+        command: ["env", "GIT_TERMINAL_PROMPT=0", gitProgram(), "clone", "--quiet", "--", entry.url, temporary],
+        connectionType: "pipe",
+        filter: () => {},
+        sentinel: (_process, event) => ended.push({ name, temporary, ok: event === "finished\n" }),
+      });
+    } catch {
+      // As a clone that failed: installPackage tries it again and says why.
+      ended.push({ name, temporary, ok: false });
+    }
+  }
+  let cloned = 0;
+  let done = 0;
+  while (done < missing.length) {
+    e8.acceptProcessOutput(undefined, 0.05);
+    for (const { name, temporary, ok } of ended.splice(0)) {
+      done++;
+      if (ok && !e8.fileExists(packageDir(name))) {
+        e8.renameFile(temporary, packageDir(name));
+        cloned++;
+      } else if (e8.fileExists(temporary)) {
+        e8.deleteDirectory(temporary, { recursive: true, trash: false });
+      }
+      progress(done);
+    }
+  }
+  return cloned;
+}
+
 export function ensurePackage(source: string, options: { rev?: string; name?: string; url?: string } = {}): string {
+  if (!lockedCloned) {
+    lockedCloned = true;
+    cloneLockedPackages();
+  }
   const url = options.url ?? sourceUrl(source);
   const lock = readLock();
   const name = Object.keys(lock.packages).find((n) => lock.packages[n].url === url);

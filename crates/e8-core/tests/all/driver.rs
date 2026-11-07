@@ -275,3 +275,59 @@ fn what_setup_asks_waits_for_an_answer() {
     let answer = d.with(|ed| ed.variable("answer").and_then(|v| v.as_str().map(String::from)));
     assert_eq!(answer.as_deref(), Some("Ok(true)"));
 }
+
+/// The message the echo area shows in the newest frame published.
+fn echo_published(d: &Driver) -> Vec<String> {
+    match d.published().frames.first().map(|f| &f.echo) {
+        Some(e8_core::frame_description::Echo::Message(lines)) => lines.clone(),
+        _ => Vec::new(),
+    }
+}
+
+/// Code that runs a while, as init.ts installing packages: the frame is
+/// shown before it starts, and each message it shows is drawn as it comes,
+/// as Emacs's message redisplays at once, rather than only once it is done.
+#[test]
+fn messages_from_code_that_runs_a_while_are_drawn_as_they_come() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicU8, Ordering};
+    // The step the test lets the editor's code go on to.
+    let step = Arc::new(AtomicU8::new(0));
+    let go = step.clone();
+    let wait_for = move |n: u8| {
+        let until = Instant::now() + Duration::from_secs(10);
+        while go.load(Ordering::SeqCst) < n {
+            assert!(Instant::now() < until, "the test did not go on");
+            std::thread::sleep(Duration::from_millis(1));
+        }
+    };
+    let d = Driver::spawn(
+        move |ed| {
+            ed.redisplay_now();
+            wait_for(1);
+            // Long enough that its messages are not those of a quick command.
+            std::thread::sleep(Duration::from_millis(150));
+            ed.message("Installing 2 packages... 1/2");
+            wait_for(2);
+            std::thread::sleep(Duration::from_millis(60));
+            ed.message("Installing 2 packages... 2/2");
+            wait_for(3);
+            Box::new(())
+        },
+        |ed| {
+            ed.redisplay();
+            vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+        },
+        || {},
+    );
+    let shown = published_after(&d, 0);
+    assert!(echo_published(&d).is_empty());
+    step.store(1, Ordering::SeqCst);
+    let shown = published_after(&d, shown);
+    assert_eq!(echo_published(&d), ["Installing 2 packages... 1/2"]);
+    step.store(2, Ordering::SeqCst);
+    published_after(&d, shown);
+    assert_eq!(echo_published(&d), ["Installing 2 packages... 2/2"]);
+    step.store(3, Ordering::SeqCst);
+    d.with(|_| ());
+}

@@ -112,6 +112,50 @@ fn the_lock_file_reproduces_the_commit_until_an_upgrade() {
     assert_eq!(ed.echo(), Some("alpha is up to date"));
 }
 
+/// On a machine with the lock file but not the packages, the first package
+/// asked for clones every package the lock file names, all at once, rather
+/// than one clone after another as init.ts reaches each; each is then at
+/// its locked commit. A repository that is gone is left for its own
+/// usePackage to report.
+#[test]
+fn the_packages_the_lock_file_names_are_cloned_at_once() {
+    let root = tempfile::tempdir().unwrap();
+    let config = root.path().join("config");
+    let names = ["alpha", "beta", "gamma", "delta"];
+    let repos: Vec<PathBuf> = names.iter().map(|n| repository(root.path(), &format!("e8-{n}"), n, &["0.1.0"], simple(n))).collect();
+    {
+        let (mut ed, s) = editor(&config);
+        for (name, repo) in names.iter().zip(&repos) {
+            eval(&mut ed, &s, &use_package(name, repo, None)).unwrap();
+        }
+    }
+    // Upstream moves on, delta's repository goes, and another machine has only init.ts and the lock file.
+    for (name, repo) in names.iter().zip(&repos) {
+        tag(repo, name, "0.2.0", &format!("{{ \"name\": \"{name}\" }}"));
+    }
+    fs::remove_dir_all(&repos[3]).unwrap();
+    fs::remove_dir_all(config.join("repos")).unwrap();
+    let (mut ed, s) = editor(&config);
+    eval(&mut ed, &s, &use_package("alpha", &repos[0], None)).unwrap();
+    for name in ["alpha", "beta", "gamma"] {
+        assert!(config.join(format!("repos/{name}/{name}.ts")).is_file(), "{name} is cloned with the first");
+    }
+    assert!(!config.join("repos/delta").exists());
+    let log = ed.messages().join("\n");
+    assert!(log.contains("Installing 4 packages from e8-lock.json... 4/4"), "{log}");
+    for (name, repo) in names.iter().zip(&repos).skip(1).take(2) {
+        eval(&mut ed, &s, &use_package(name, repo, None)).unwrap();
+    }
+    for name in ["alpha", "beta", "gamma"] {
+        assert_eq!(ed.variable(&format!("{name}-version")), Some(Value::Str("0.1.0".into())), "{name} is at its locked commit");
+    }
+    // No clone was left half made.
+    let left: Vec<_> = fs::read_dir(config.join("repos")).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+    assert!(left.iter().all(|f| !f.starts_with(".installing")), "{left:?}");
+    let missing = eval(&mut ed, &s, &use_package("delta", &repos[3], None)).unwrap_err().to_string();
+    assert!(missing.contains("git clone") && missing.contains("failed"), "{missing}");
+}
+
 #[test]
 fn starting_with_packages_installed_runs_no_git() {
     let root = tempfile::tempdir().unwrap();
