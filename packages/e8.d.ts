@@ -2223,6 +2223,82 @@ declare global {
        */
       "duplicate-line": [n?: number];
       /**
+       * Compare two buffers in Ediff, as they are, saved or not.
+       *
+       * @param buffer-A buffer name
+       * @param buffer-B buffer name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-buffers": [bufferA: string, bufferB: string];
+      /**
+       * Compare three buffers in Ediff, as they are.
+       *
+       * @param buffer-A buffer name
+       * @param buffer-B buffer name
+       * @param buffer-C buffer name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-buffers3": [bufferA: string, bufferB: string, bufferC: string];
+      /**
+       * Compare two files in Ediff, visiting them.
+       *
+       * @param file-A file name
+       * @param file-B file name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-files": [fileA: string, fileB: string];
+      /**
+       * Compare three files in Ediff, visiting them.
+       *
+       * @param file-A file name
+       * @param file-B file name
+       * @param file-C file name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-files3": [fileA: string, fileB: string, fileC: string];
+      /**
+       * Merge two buffers in Ediff, as ediff-merge-files merges files.
+       *
+       * @param buffer-A buffer name
+       * @param buffer-B buffer name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-merge-buffers": [bufferA: string, bufferB: string];
+      /**
+       * Merge two buffers that each changed a third, their ancestor, in Ediff, as ediff-merge-files-with-ancestor merges files.
+       *
+       * @param buffer-A buffer name
+       * @param buffer-B buffer name
+       * @param buffer-ancestor buffer name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-merge-buffers-with-ancestor": [bufferA: string, bufferB: string, bufferAncestor: string];
+      /**
+       * Merge two files in Ediff, into a buffer of its own that starts with every difference combined.
+       *
+       * @param file-A file name
+       * @param file-B file name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-merge-files": [fileA: string, fileB: string];
+      /**
+       * Merge two files that each changed a third, their ancestor, in Ediff: what only one changed is taken from it, and what both changed is combined.
+       *
+       * @param file-A file name
+       * @param file-B file name
+       * @param file-ancestor file name
+       *
+       * Defined in packages/ediff-hook.ts.
+       */
+      "ediff-merge-files-with-ancestor": [fileA: string, fileB: string, fileAncestor: string];
+      /**
        * Edit the abbrevs in *Abbrevs*; C-c C-c makes them the abbrevs again.
        *
        * Defined in packages/abbrev.ts.
