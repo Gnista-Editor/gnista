@@ -316,7 +316,7 @@ fn messages_from_code_that_runs_a_while_are_drawn_as_they_come() {
         },
         |ed| {
             ed.redisplay();
-            vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+            vec![ed.describe_frame(ed.selected_frame(), 1.0)]
         },
         || {},
     );
