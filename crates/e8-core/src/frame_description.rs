@@ -180,7 +180,8 @@ impl Editor {
     /// Describes a frame as a front end draws it, after `redisplay`:
     /// styles for a dark or light background, and images' pixels at
     /// `scale` device pixels to a unit.
-    pub fn describe_frame(&self, frame: FrameId, dark: bool, scale: f32) -> FrameDescription {
+    pub fn describe_frame(&self, frame: FrameId, scale: f32) -> FrameDescription {
+        let dark = self.dark_background();
         let style = |faces: &[&str]| self.style_for(&faces.iter().map(|f| f.to_string()).collect::<Vec<_>>(), dark);
         let mut bitmaps = HashMap::new();
         let mut images = HashMap::new();

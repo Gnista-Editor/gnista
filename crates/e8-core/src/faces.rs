@@ -64,6 +64,14 @@ pub fn color_values(spec: &str) -> Option<[u16; 3]> {
     Some([r, g, b])
 }
 
+/// Whether a colour reads better against white than black, as Emacs's
+/// `color-dark-p` judges it: its components from 0 to 65535 made linear
+/// with a gamma of 2.2, and their luminance under a grey of 0.6's.
+pub fn color_dark_p(rgb: [u16; 3]) -> bool {
+    let [r, g, b] = rgb.map(|v| (f64::from(v) / 65535.0).powf(2.2));
+    0.2126 * r + 0.7152 * g + 0.0722 * b < 0.6f64.powf(2.2)
+}
+
 /// The names of the colours Emacs knows, as `defined-colors` lists them.
 pub fn color_names() -> impl Iterator<Item = &'static str> {
     crate::colors_data::COLOR_NAMES.iter().map(|(n, ..)| *n)
@@ -732,10 +740,32 @@ impl Editor {
         self.faces.get(name)
     }
 
-    /// Whether the frame's background is dark, as `frame-background-mode`
-    /// says: dark unless it is `light`.
+    /// Whether the frame's background is dark, for choosing faces' colours:
+    /// as `frame-background-mode` says, or, unset, as Emacs judges the
+    /// frame's background colour, here the `default` face's own background,
+    /// with `color_dark_p`; without one, as the system looks to the front
+    /// end (`set_system_dark`), dark until it says.
     pub fn dark_background(&self) -> bool {
-        self.variable("frame-background-mode").is_none_or(|v| v.as_str() != Some("light"))
+        match self.variable("frame-background-mode").as_ref().and_then(Value::as_str) {
+            Some("light") => false,
+            Some("dark") => true,
+            _ => self
+                .faces
+                .get("default")
+                .and_then(|f| f.attrs.background.as_deref())
+                .and_then(|spec| Color::parse(spec, true))
+                .map_or(self.system_dark, |c| color_dark_p([c.r, c.g, c.b].map(|v| u16::from(v) * 257))),
+        }
+    }
+
+    /// Tells the editor whether the system looks dark, as a graphical
+    /// front end knows: what `dark_background` answers while no theme
+    /// gives the default face a background.
+    pub fn set_system_dark(&mut self, dark: bool) {
+        if self.system_dark != dark {
+            self.system_dark = dark;
+            self.style_cache.borrow_mut().clear();
+        }
     }
 
     /// One of a face's attributes as Emacs's `face-attribute` gives it, on
