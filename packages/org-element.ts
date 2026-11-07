@@ -47,6 +47,15 @@ export interface Elem {
   contentsEnd?: number;
   children: Elem[];
   parent?: Elem;
+  /**
+   * Shifts the kept parse owes this element's children, as shiftParse
+   * defers them: the i-th change moves the children from index `from[i]`
+   * on by `sums[i + 1] - sums[i]`. The indexes never go down, so the
+   * changes a child is owed are the first of them.
+   */
+  shifts?: { from: number[]; sums: number[] };
+  /** How many of its parent's `shifts` this element has been moved by. */
+  applied?: number;
 }
 
 export const PLANNING = /^[ \t]*(?:SCHEDULED|DEADLINE|CLOSED):/;
@@ -264,11 +273,19 @@ function indentationSensitive(root: Elem, pos: number): boolean {
   const fragile = ["plain-list", "item", "footnote-definition"];
   let node = root;
   for (;;) {
-    if (node.children.some((c) => fragile.includes(c.type) && c.end <= pos && pos <= lineStartOrEnd(lineAt(c.end) + 1))) return true;
-    const child = node.children.find((c) => c.begin <= pos && pos < c.end);
-    if (!child) return false;
-    if (fragile.includes(child.type)) return true;
-    node = child;
+    // The children that end at or before pos, the last first, while pos is
+    // on or before the line after one ends.
+    const after = firstEndingAfter(node, pos);
+    for (let i = after - 1; i >= 0; i--) {
+      const c = child(node, i);
+      if (pos > lineStartOrEnd(lineAt(c.end) + 1)) break;
+      if (fragile.includes(c.type)) return true;
+    }
+    if (after >= node.children.length) return false;
+    const c = child(node, after);
+    if (!(c.begin <= pos && pos < c.end)) return false;
+    if (fragile.includes(c.type)) return true;
+    node = c;
   }
 }
 
@@ -284,29 +301,103 @@ export function keepingParse(body: () => void): void {
   }
 }
 
-/** Moves the parse's positions by changes, each as after-change-functions gave it. */
-function shiftParse(root: Elem, changes: [number, number, number][]): void {
-  const from = changes.reduce((low, c) => Math.min(low, c[0]), Infinity);
-  const move = (x: number): number => {
-    for (const [beg, end, oldLen] of changes) {
-      if (x <= beg) continue;
-      x = x >= beg + oldLen ? x + (end - beg) - oldLen : beg;
+/** Moves an element and everything in it by `delta`, as one shift owed to all of it. */
+function addDelta(e: Elem, delta: number): void {
+  e.begin += delta;
+  e.end += delta;
+  if (e.contentsBegin !== undefined) e.contentsBegin += delta;
+  if (e.contentsEnd !== undefined) e.contentsEnd += delta;
+  for (const c of e.children) addDelta(c, delta);
+}
+
+/** How many of `shifts` a child at index `i` is owed: those whose first index is i or less. */
+function owedCount(shifts: { from: number[] }, i: number): number {
+  let lo = 0;
+  for (let hi = shifts.from.length; lo < hi; ) {
+    const mid = (lo + hi) >> 1;
+    if (shifts.from[mid] <= i) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** What child `i` is owed of the shifts deferred on `parent`, without moving it. */
+function owed(parent: Elem, i: number): number {
+  const s = parent.shifts;
+  if (!s) return 0;
+  const k = parent.children[i].applied ?? 0;
+  const n = owedCount(s, i);
+  return n > k ? s.sums[n] - s.sums[k] : 0;
+}
+
+/** Child `i` of `parent`, moved by the shifts it is owed, so its positions are where its text is. */
+function child(parent: Elem, i: number): Elem {
+  const c = parent.children[i];
+  const s = parent.shifts;
+  if (s) {
+    const n = owedCount(s, i);
+    const k = c.applied ?? 0;
+    if (n > k) {
+      addDelta(c, s.sums[n] - s.sums[k]);
+      c.applied = n;
     }
-    return x;
-  };
+  }
+  return c;
+}
+
+/** Moves every child by what it is owed and forgets the deferred shifts. */
+function settleChildren(e: Elem): void {
+  if (!e.shifts) return;
+  for (let i = 0; i < e.children.length; i++) child(e, i).applied = 0;
+  e.shifts = undefined;
+}
+
+/** The index of the first child that ends after `pos`, as its text stands. */
+function firstEndingAfter(e: Elem, pos: number): number {
+  let lo = 0;
+  for (let hi = e.children.length; lo < hi; ) {
+    const mid = (lo + hi) >> 1;
+    if (e.children[mid].end + owed(e, mid) <= pos) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * Moves the parse's positions by a change, as after-change-functions gave
+ * it: the elements it is in or touches at once, and the children wholly
+ * after it as a shift deferred on their parent, which a child takes when
+ * it is next looked at. Moving every later element at each change cost
+ * the length of the section for each line org-indent-region indented.
+ */
+function shiftParse(root: Elem, change: [number, number, number]): void {
+  const [beg, end, oldLen] = change;
+  const delta = end - beg - oldLen;
+  const move = (x: number): number => (x <= beg ? x : x >= beg + oldLen ? x + delta : beg);
   const walk = (e: Elem): void => {
     e.begin = move(e.begin);
     e.end = move(e.end);
     if (e.contentsBegin !== undefined) e.contentsBegin = move(e.contentsBegin);
     if (e.contentsEnd !== undefined) e.contentsEnd = move(e.contentsEnd);
-    // Those wholly before every change stay where they are.
-    let k = 0;
-    for (let lo = 0, hi = e.children.length; lo < hi; ) {
-      const mid = (lo + hi) >> 1;
-      if (e.children[mid].end <= from) lo = k = mid + 1;
-      else hi = mid;
+    // Those wholly before the change stay where they are; those it is in
+    // or touches move now; those wholly after it are owed the delta.
+    let i = firstEndingAfter(e, beg);
+    for (; i < e.children.length; i++) {
+      const begin = e.children[i].begin + owed(e, i);
+      if (begin > beg && begin >= beg + oldLen) break;
+      walk(child(e, i));
     }
-    for (; k < e.children.length; k++) walk(e.children[k]);
+    if (delta === 0 || i >= e.children.length) return;
+    let s = e.shifts;
+    // A change before one already deferred, as org-indent-region going
+    // back into a list, settles the deferred shifts first.
+    if (s && i < s.from[s.from.length - 1]) {
+      settleChildren(e);
+      s = undefined;
+    }
+    s ??= e.shifts = { from: [], sums: [0] };
+    s.from.push(i);
+    s.sums.push(s.sums[s.sums.length - 1] + delta);
   };
   walk(root);
 }
@@ -332,9 +423,9 @@ function parseFor(pos: number): Elem {
     // what is the item's: those the parse is made again for.
     const kept = changes.every((change) => {
       if (indentationSensitive(cache.root, change[0])) return false;
-      shiftParse(cache.root, [change]);
+      shiftParse(cache.root, change);
       const moved = { begin: cache.min, end: cache.max, children: [] } as unknown as Elem;
-      shiftParse(moved, [change]);
+      shiftParse(moved, change);
       [cache.min, cache.max] = [moved.begin, moved.end];
       return true;
     });
@@ -400,12 +491,20 @@ function elementAt_(pos: number): Elem | undefined {
   // At the end of the accessible portion, the element that ends there.
   const size = e8.pointMax();
   for (;;) {
-    const child =
-      node.children.find((c) => c.begin <= pos && pos < c.end) ??
-      (pos === size ? node.children.find((c) => c.end === size && c.begin < size) : undefined);
-    if (!child) return node.type === "org-data" || node.type === "section" ? undefined : node;
-    if (child.type !== "section" && pos === child.begin) return child;
-    node = child;
+    // Children do not overlap and come in order: the one that holds pos is
+    // the first that ends after it, if it starts at or before it.
+    const i = firstEndingAfter(node, pos);
+    let found = i < node.children.length ? child(node, i) : undefined;
+    if (found && found.begin > pos) found = undefined;
+    // At the end of the accessible portion, the one that ends there.
+    for (let j = node.children.length - 1; !found && pos === size && j >= 0; j--) {
+      const c = child(node, j);
+      if (c.end !== size) break;
+      if (c.begin < size) found = c;
+    }
+    if (!found) return node.type === "org-data" || node.type === "section" ? undefined : node;
+    if (found.type !== "section" && pos === found.begin) return found;
+    node = found;
   }
 }
 
