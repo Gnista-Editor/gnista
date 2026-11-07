@@ -90,9 +90,21 @@ fn killing_ends_it_and_what_it_started() {
     assert_eq!(ed.process_list(), ["sleeper"]);
     assert!(ed.next_timer_in().is_some_and(|d| d <= Duration::from_millis(30)), "front ends wake to take output in");
     eval(&mut ed, &s, r#"e8.message(e8.processStatus("sleeper") ?? "none"); e8.interruptProcess("sleeper");"#);
-    // It returns as soon as the process has ended; the time is for a
-    // runner busy with the whole suite, where 5 s was sometimes too little.
-    ed.accept_process_output(Duration::from_secs(20));
+    // Interrupted again while it runs on, as C-c C-c is pressed again:
+    // dash, CI's sh, catches SIGINT under -c and loses one that comes while
+    // it is starting or between commands rather than waiting for one, and
+    // then the shell and its sleep both ran on. In a Linux container,
+    // interrupted the moment it started, dash lost the first in 43 runs of
+    // 500, and every run ended by the interrupt within the second.
+    // accept_process_output returns as soon as the process has ended; the
+    // time is for a runner busy with the whole suite.
+    for _ in 0..10 {
+        ed.accept_process_output(Duration::from_secs(2));
+        if ed.process_list().is_empty() {
+            break;
+        }
+        eval(&mut ed, &s, r#"e8.interruptProcess("sleeper");"#);
+    }
     assert!(ed.messages().iter().any(|m| m == "run"));
     // What was still running, if it never ended, for a failure on CI.
     let left = || {
