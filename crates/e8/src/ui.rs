@@ -147,7 +147,7 @@ fn text_area(area: Rect, gutter: u16) -> Rect {
 }
 
 fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
-    let rows = ed.rows_of_window(view.id, area.height as usize, dark(ed));
+    let rows = ed.rows_of_window(view.id, area.height as usize, ed.dark_background());
     let numbers = ed.line_numbers(view.id, &rows);
     let width = (area.width - gutter(&numbers, area)) as usize;
     let tab_width = ed.tab_width_in(view.buffer);
@@ -179,13 +179,9 @@ fn rtl_offset(row: &Row, glyphs: &[Glyph], width: usize) -> i64 {
 }
 
 /// What the terminal draws from: the selected frame, described after
-/// redisplay, its styles for the background `frame-background-mode` says.
+/// redisplay, its styles for the background the editor judges it has.
 pub fn describe(ed: &Editor) -> FrameDescription {
-    ed.describe_frame(ed.selected_frame(), dark(ed), 1.0)
-}
-
-fn dark(ed: &Editor) -> bool {
-    ed.variable("frame-background-mode").is_none_or(|v| v.as_str() != Some("light"))
+    ed.describe_frame(ed.selected_frame(), 1.0)
 }
 
 /// What is under a cell of the screen, for a mouse event: a window, and the

@@ -42,10 +42,10 @@ fn cursor_type_nil_hides_the_cursor_in_the_buffers_windows() {
     ed.make_local_variable("cursor-type");
     ed.set_variable("cursor-type", e8_core::Value::Null);
     let frame = ed.selected_frame();
-    let fd = ed.describe_frame(frame, true, 1.0);
+    let fd = ed.describe_frame(frame, 1.0);
     assert!(fd.windows.iter().all(|w| !w.cursor_shown), "both windows show the buffer, so neither has a cursor");
     ed.set_variable("cursor-type", e8_core::Value::Bool(true));
-    let fd = ed.describe_frame(frame, true, 1.0);
+    let fd = ed.describe_frame(frame, 1.0);
     assert!(fd.windows.iter().all(|w| w.cursor_shown));
 }
 
@@ -55,8 +55,8 @@ fn frame_titles_follow_frame_title_format() {
     ed.set_frame_size(80, 24);
     ed.redisplay();
     let frame = ed.selected_frame();
-    assert_eq!(ed.describe_frame(frame, true, 1.0).title, "*scratch* \u{2014} E8");
+    assert_eq!(ed.describe_frame(frame, 1.0).title, "*scratch* \u{2014} E8");
     ed.set_variable("frame-title-format", e8_core::Value::Str("%b".into()));
     ed.redisplay();
-    assert_eq!(ed.describe_frame(frame, true, 1.0).title, "*scratch*");
+    assert_eq!(ed.describe_frame(frame, 1.0).title, "*scratch*");
 }

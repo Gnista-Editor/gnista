@@ -32,7 +32,7 @@ fn load_theme_gives_faces_the_themes_colours_and_disable_takes_them_back() {
     assert_eq!(attribute(&ed, "link", "foreground"), Value::Str("unspecified".into()));
     // The frame's description carries what the GUI draws its own parts in.
     let frame = ed.selected_frame();
-    let fd = ed.describe_frame(frame, true, 1.0);
+    let fd = ed.describe_frame(frame, 1.0);
     assert!(fd.default_style.background.is_some());
     assert!(fd.chrome.mode_line.as_ref().is_some_and(|m| m.background.is_some()));
     ed.call("disable-theme", vec![e8_core::Arg::Str("example".into())]).unwrap();

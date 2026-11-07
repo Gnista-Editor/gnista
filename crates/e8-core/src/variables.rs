@@ -718,8 +718,8 @@ pub(crate) fn install(ed: &mut Editor) {
         .local(),
         Variable::new(
             "frame-background-mode",
-            "Whether the terminal's background is \"dark\" or \"light\", for choosing face colours there. The graphical front end follows the system instead.",
-            "dark",
+            "Whether the background is \"dark\" or \"light\", for choosing face colours: a face can have colours for each.\n\nUnset, it is judged from the default face's background, as Emacs judges a frame's, so a theme's faces are drawn for the background it sets whatever the system's appearance; where no theme gives one, the graphical front end follows the system and the terminal is dark.",
+            Value::Null,
         ),
         Variable::new(
             "overwrite-mode",

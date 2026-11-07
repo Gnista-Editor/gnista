@@ -3,7 +3,7 @@
 //! inheritance from a list of faces, anonymous faces in text, inverse
 //! video, and backgrounds that extend past a line's end.
 
-use e8_core::{Editor, Value, color_distance, color_gray_p, color_values, color_values_from_spec};
+use e8_core::{Background, Color, Editor, FaceAttrs, Value, color_dark_p, color_distance, color_gray_p, color_values, color_values_from_spec};
 
 fn s(text: &str) -> Value {
     Value::Str(text.into())
@@ -137,4 +137,67 @@ fn remapped_styles_are_kept_for_each_remapping() {
     ed.set_variable("face-remapping-alist", remap(1.25));
     assert_eq!(scale_in(&mut ed, "two"), 1.25);
     assert_eq!(scale_in(&mut ed, "one"), 1.5);
+}
+
+#[test]
+fn color_dark_p_answers_as_faces_el_does() {
+    // What Emacs 30.2's color-dark-p says of these: a grey of 0.6, #999999,
+    // is the first that is not dark, and pure green is not while red and blue are.
+    for (spec, dark) in [
+        ("#000000", true),
+        ("#ffffff", false),
+        ("grey20", true),
+        ("grey95", false),
+        ("#232B36", true),
+        ("#2E3440", true),
+        ("#808080", true),
+        ("#989898", true),
+        ("#999999", false),
+        ("#ff0000", true),
+        ("#00ff00", false),
+        ("#0000ff", true),
+    ] {
+        assert_eq!(color_dark_p(color_values(spec).unwrap()), dark, "{spec}");
+    }
+}
+
+#[test]
+fn the_background_is_judged_from_the_default_face_unless_frame_background_mode_says() {
+    let mut ed = Editor::new();
+    assert!(ed.dark_background(), "dark without a theme, until a front end says how the system looks");
+    ed.set_system_dark(false);
+    assert!(!ed.dark_background());
+    let default = |ed: &mut Editor, background: &str| {
+        ed.set_face_attributes("default", FaceAttrs { background: Some(background.into()), ..FaceAttrs::default() }, Background::Both);
+    };
+    default(&mut ed, "#ffffff");
+    assert!(!ed.dark_background(), "a light theme");
+    default(&mut ed, "#232B36");
+    assert!(ed.dark_background(), "a dark theme, whatever the system looks like");
+    ed.set_variable("frame-background-mode", s("light"));
+    assert!(!ed.dark_background(), "the variable wins");
+    default(&mut ed, "#ffffff");
+    ed.set_variable("frame-background-mode", s("dark"));
+    assert!(ed.dark_background());
+    ed.set_variable("frame-background-mode", Value::Null);
+    assert!(!ed.dark_background(), "unset, judged again");
+}
+
+#[test]
+fn a_frame_is_described_for_the_background_the_editor_judges() {
+    let mut ed = Editor::new();
+    // A face with colours for each background, as Magit's section highlight has.
+    ed.set_face_attributes("two-faced", FaceAttrs { background: Some("grey95".into()), ..FaceAttrs::default() }, Background::Light);
+    ed.set_face_attributes("two-faced", FaceAttrs { background: Some("grey20".into()), ..FaceAttrs::default() }, Background::Dark);
+    ed.type_text("text");
+    ed.buffer_mut().put_text_property(0..4, "face", s("two-faced"));
+    let described = |ed: &mut Editor| {
+        ed.redisplay();
+        let fd = ed.describe_frame(ed.selected_frame(), 1.0);
+        let background = fd.windows[0].rows[0].row.segments.iter().find(|seg| seg.text == "text").unwrap().style.background;
+        (fd.dark, background)
+    };
+    assert_eq!(described(&mut ed), (true, Color::parse("grey20", true)));
+    ed.set_face_attributes("default", FaceAttrs { background: Some("#ffffff".into()), ..FaceAttrs::default() }, Background::Both);
+    assert_eq!(described(&mut ed), (false, Color::parse("grey95", false)), "a light theme's frame takes the light colours");
 }

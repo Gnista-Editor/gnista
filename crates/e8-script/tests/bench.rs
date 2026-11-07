@@ -465,7 +465,7 @@ fn key_to_frame() {
                     if describe {
                         ed.advance_clock(Duration::from_millis(200));
                         ed.redisplay();
-                        std::hint::black_box(ed.describe_frame(ed.selected_frame(), true, 2.0));
+                        std::hint::black_box(ed.describe_frame(ed.selected_frame(), 2.0));
                     } else {
                         gui_frame(&mut ed);
                     }

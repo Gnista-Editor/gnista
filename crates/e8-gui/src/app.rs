@@ -81,8 +81,9 @@ pub struct E8App {
     /// Whether frames' windows draw under a transparent title bar, in the
     /// theme's background, as Emacs's `ns-transparent-titlebar` has them.
     title_bar: bool,
-    /// Whether each frame's window was last told to look dark, so its
-    /// title and buttons show against the background drawn under them.
+    /// Whether each frame's window was last told to look dark, as the
+    /// editor judges its background, so its title and buttons show against
+    /// the background drawn under them.
     appearance: std::collections::HashMap<FrameId, bool>,
 }
 
@@ -164,6 +165,7 @@ impl E8App {
             },
             move |editor| {
                 let (dark, scale) = *described.lock().unwrap_or_else(|e| e.into_inner());
+                editor.set_system_dark(dark);
                 // The echo area grows for a minibuffer of several lines, as
                 // vertico's list makes it, before the frame is described: the
                 // window is told sizes only when they change, and the
@@ -171,7 +173,7 @@ impl E8App {
                 let frame_lines = editor.frame_lines();
                 editor.mini_window_height(frame_lines);
                 editor.redisplay();
-                editor.frame_list().into_iter().map(|f| editor.describe_frame(f, dark, scale)).collect()
+                editor.frame_list().into_iter().map(|f| editor.describe_frame(f, scale)).collect()
             },
             move || wake.request_repaint(),
         );
@@ -459,8 +461,7 @@ impl E8App {
         let mut inner = ui.new_child(egui::UiBuilder::new().max_rect(below));
         let t = self.show_frame_below(&mut inner, frame).unwrap_or_else(|| Tokens::get(&ctx));
         ui.painter().rect_filled(bar, 0.0, t.bg);
-        let [r, g, b, _] = t.bg.to_normalized_gamma_f32();
-        let dark = 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.5;
+        let dark = t.dark;
         if self.appearance.get(&frame) != Some(&dark) {
             self.appearance.insert(frame, dark);
             ctx.send_viewport_cmd(ViewportCommand::SetTheme(if dark { egui::SystemTheme::Dark } else { egui::SystemTheme::Light }));
@@ -512,20 +513,22 @@ impl E8App {
         if frame_selected {
             self.scroll(&ctx, &layout);
         }
-        let t = Tokens::get(&ctx);
         let description = match &mut self.backend {
             Backend::Inline { editor, .. } => {
+                editor.set_system_dark(Tokens::get(&ctx).dark);
                 editor.redisplay();
                 self.exit = editor.should_quit();
-                editor.describe_frame(frame, t.dark, ctx.pixels_per_point())
+                editor.describe_frame(frame, ctx.pixels_per_point())
             }
             Backend::Thread { .. } => match self.frames.iter().find(|f| f.frame == frame) {
                 Some(fd) => fd.clone(),
                 None => return None,
             },
         };
-        // A theme's colours, where its faces give them.
-        let t = t.themed(&description);
+        // The palette for the background the editor judges the frame has,
+        // a theme's rather than the system's, and the theme's colours over
+        // it where its faces give them.
+        let t = Tokens::new(description.dark).themed(&description);
         // The view moved some other way than by the wheel, as by C-v or
         // switching buffers: no offset.
         if frame_selected {

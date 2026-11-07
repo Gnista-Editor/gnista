@@ -77,7 +77,7 @@ pub use command::{Arg, Command, Param, ParamKind};
 pub use editor::{Editor, LoggedMessage, Resume};
 pub use error::{Error, Result, define_error, error_conditions};
 pub use faces::{
-    Background, Color, Decoration, FACE_ATTRIBUTES, Face, FaceAttrs, FaceBox, FaceHeight, Style, anonymous_face, color_distance, color_gray_p,
+    Background, Color, Decoration, FACE_ATTRIBUTES, Face, FaceAttrs, FaceBox, FaceHeight, Style, anonymous_face, color_dark_p, color_distance, color_gray_p,
     color_names, color_values, color_values_from_spec, face_names, is_fixed_family, palette, palette_names,
 };
 pub use fileio::{auto_save_file_name, backup_file_name};

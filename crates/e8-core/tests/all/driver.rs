@@ -12,7 +12,7 @@ use e8_core::{Editor, Key, KeyCode};
 fn driver() -> Driver {
     Driver::spawn(|_| Box::new(()), |ed| {
         ed.redisplay();
-        vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+        vec![ed.describe_frame(ed.selected_frame(), 1.0)]
     }, || {})
 }
 
@@ -207,7 +207,7 @@ fn a_describe_that_panics_leaves_the_last_frames() {
             panic!("describe broke");
         }
         ed.redisplay();
-        vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+        vec![ed.describe_frame(ed.selected_frame(), 1.0)]
     }, || {});
     let first = published_after(&d, 0);
     assert!(!d.published().frames.is_empty());
@@ -261,7 +261,7 @@ fn what_setup_asks_waits_for_an_answer() {
         },
         |ed| {
             ed.redisplay();
-            vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+            vec![ed.describe_frame(ed.selected_frame(), 1.0)]
         },
         || {},
     );

@@ -226,6 +226,10 @@ pub struct Editor {
     /// Every symbol's value, function, properties and advice.
     pub(crate) symbols: BTreeMap<String, crate::symbols::Symbol>,
     pub(crate) faces: BTreeMap<String, Face>,
+    /// Whether the system the front end runs on looks dark, for choosing
+    /// faces' colours where no theme gives the default face a background
+    /// and `frame-background-mode` is unset; dark until a front end says.
+    pub(crate) system_dark: bool,
     /// Whether quitting was asked for, which other threads may set.
     pub(crate) quitting: std::sync::Arc<crate::quit::QuitState>,
     /// The command loop the editor runs in, which a primitive waiting for
@@ -423,6 +427,7 @@ impl Editor {
             minor_modes: Vec::new(),
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
+            system_dark: true,
             quitting: Default::default(),
             command_loop: None,
             specpdl: Default::default(),

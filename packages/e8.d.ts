@@ -8559,7 +8559,9 @@ declare global {
        */
       "forward-sexp-function": Value;
       /**
-       * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
+       * Whether the background is "dark" or "light", for choosing face colours: a face can have colours for each.
+       *
+       * Unset, it is judged from the default face's background, as Emacs judges a frame's, so a theme's faces are drawn for the background it sets whatever the system's appearance; where no theme gives one, the graphical front end follows the system and the terminal is dark.
        */
       "frame-background-mode": Value;
       /**
