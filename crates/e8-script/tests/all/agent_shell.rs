@@ -156,31 +156,32 @@ fn a_reply_streams_in_with_its_thinking_tool_calls_and_plan() {
     let text = s.finished();
     assert_eq!(
         text,
-        "* You\nfix it\n\n* Agent\nThinking:\n#+begin_example\n  Looking at\n  the file\n#+end_example\n\
+        "* You\nfix it\n\n* Agent\n#+begin_thinking\nLooking at\nthe file\n#+end_thinking\n\
          I'll fix it.\n- not a heading\n\
-         → ~Edit a.txt~\n#+begin_example\n  --- /x/a.txt\n  +++ /x/a.txt\n  @@ line 2 @@\n  -two\n  +2\n#+end_example\n\
+         → ~Edit a.txt~\n#+begin_src diff\n--- /x/a.txt\n+++ /x/a.txt\n@@ line 2 @@\n-two\n+2\n#+end_src\n\
          Plan:\n- [X] Read a.txt\n- [X] Change two\n\
          Done.\n\n* You\n"
     );
-    // The diff folds into its tool call's line, and the thinking into its
-    // Thinking: line, each from the line's end; the reply does not.
-    let hidden = |at: usize| s.d.with(move |ed| {
-        let b = &ed.buffers()[ed.find_buffer("*agent-shell: fake*").unwrap()];
-        ed.invisible_in(b, at).is_some()
-    });
+    // The diff folds into its tool call's line, from the line's end; the
+    // thinking folds as any Org block, after its #+begin_thinking line; the reply does not.
     let tool = text.find("→ ~Edit a.txt~").unwrap();
     let tool_end = text[tool..].find('\n').unwrap() + tool;
-    assert!(!hidden(tool), "the tool call's line shows");
-    assert!(hidden(tool_end), "its diff folds into it, #+begin_example and all");
-    assert!(hidden(text.find("  --- /x/a.txt").unwrap()));
-    assert!(hidden(text.find("Thinking:").unwrap() + "Thinking:".len()), "the thinking folds into its line");
-    assert!(!hidden(text.find("Done.").unwrap()), "the reply shows");
-    // TAB on the tool call's line shows its diff, and folds it again.
+    assert!(!hidden_in(&s.d, &text, tool), "the tool call's line shows");
+    assert!(hidden_in(&s.d, &text, tool_end), "its diff folds into it, #+begin_src and all");
+    assert!(hidden_in(&s.d, &text, text.find("--- /x/a.txt").unwrap()));
+    let thinking = text.find("#+begin_thinking").unwrap();
+    assert!(!hidden_in(&s.d, &text, thinking), "the block's first line shows");
+    assert!(hidden_in(&s.d, &text, text.find("Looking at").unwrap()), "its text folds");
+    assert!(!hidden_in(&s.d, &text, text.find("Done.").unwrap()), "the reply shows");
+    // TAB on the tool call's line shows its diff, and folds it again; on the block's first line it is Org's own.
     s.d.eval(&format!("e8.gotoChar({})", tool + 2));
     s.d.press("TAB");
-    assert!(!hidden(tool_end), "TAB shows the diff");
+    assert!(!hidden_in(&s.d, &text, tool_end), "TAB shows the diff");
     s.d.press("TAB");
-    assert!(hidden(tool_end), "TAB folds it again");
+    assert!(hidden_in(&s.d, &text, tool_end), "TAB folds it again");
+    s.d.eval(&format!("e8.gotoChar({thinking})"));
+    s.d.press("TAB");
+    assert!(!hidden_in(&s.d, &text, text.find("Looking at").unwrap()), "TAB opens the thinking");
     // How much of its context the conversation fills shows on the mode line, not in the conversation.
     assert_eq!(js_string(&s.d, "e8.variable(\"mode-line-process\")"), " 1k/200k");
     assert!(js_string(&s.d, "e8.variable(\"header-line-format\")").contains("C-c RET"));
@@ -623,7 +624,7 @@ fn live_claude_code_s_tool_calls_fold_as_they_come() {
     while d.text().matches("* You\n").count() < 2 {
         assert!(start.elapsed() < std::time::Duration::from_secs(180), "{}", d.text());
         let t = d.text();
-        if let Some(i) = t.find("#+begin_example\n") {
+        if let Some(i) = t.find("#+begin_src ") {
             if t.matches("* You\n").count() < 2 && hidden_in(&d, &t, i) {
                 seen_folded = true;
             }
@@ -864,25 +865,25 @@ fn tool_output_and_thinking_fold_as_they_stream_and_tab_keeps_one_open() {
     let Some(s) = setup(steps, "go") else { return };
     s.d.press("C-c RET");
     // The thinking folds into its line while it is still coming.
-    s.d.until(|t| t.contains("  hard"));
+    s.d.until(|t| t.contains("hard"));
     let t = s.d.text();
-    assert!(hidden_in(&s.d, &t, t.find("  hard").unwrap()), "{t}");
+    assert!(hidden_in(&s.d, &t, t.find("hard").unwrap()), "{t}");
     // So does the tool's output, as soon as there is some.
-    s.d.until(|t| t.contains("  line one"));
+    s.d.until(|t| t.contains("line one"));
     let t = s.d.text();
     let line = t.find("→ ").unwrap();
-    assert!(hidden_in(&s.d, &t, t.find("  line one").unwrap()), "{t}");
-    assert!(t.contains("Thinking:\n#+begin_example\n  Thinking\n  hard\n#+end_example\n"), "{t}");
-    assert!(hidden_in(&s.d, &t, t.find("#+end_example").unwrap()), "the thinking's end folds with it");
+    assert!(hidden_in(&s.d, &t, t.find("line one").unwrap()), "{t}");
+    assert!(t.contains("#+begin_thinking\nThinking\nhard\n#+end_thinking\n"), "{t}");
+    assert!(hidden_in(&s.d, &t, t.find("#+end_thinking").unwrap()), "the thinking's end folds with it");
     // TAB opens it, and the next update keeps it open.
     s.d.eval(&format!("e8.gotoChar({})", line + 2));
     s.d.press("TAB");
-    assert!(!hidden_in(&s.d, &t, t.find("  line one").unwrap()));
-    s.d.until(|t| t.contains("  line two"));
+    assert!(!hidden_in(&s.d, &t, t.find("line one").unwrap()));
+    s.d.until(|t| t.contains("line two"));
     let t = s.d.text();
-    assert!(!hidden_in(&s.d, &t, t.find("  line two").unwrap()), "still open after the update");
+    assert!(!hidden_in(&s.d, &t, t.find("line two").unwrap()), "still open after the update");
     let t = s.finished();
-    assert!(!hidden_in(&s.d, &t, t.find("  line two").unwrap()), "and once the turn ends");
+    assert!(!hidden_in(&s.d, &t, t.find("line two").unwrap()), "and once the turn ends");
 }
 
 #[test]
@@ -901,10 +902,10 @@ fn a_call_s_diff_shows_while_its_permission_is_asked() {
     s.d.press("C-c RET");
     s.wait_asked();
     let t = s.d.text();
-    assert!(!hidden_in(&s.d, &t, t.find("  +two").unwrap()), "the diff shows while it asks: {t}");
+    assert!(!hidden_in(&s.d, &t, t.find("+two").unwrap()), "the diff shows while it asks: {t}");
     s.d.press("y");
     let t = s.finished();
-    assert!(hidden_in(&s.d, &t, t.find("  +two").unwrap()), "and folds once answered");
+    assert!(hidden_in(&s.d, &t, t.find("+two").unwrap()), "and folds once answered");
 }
 
 #[test]
@@ -936,4 +937,58 @@ fn tool_lines_are_short_and_claude_s_bookkeeping_is_left_out() {
     assert!(hidden_at(&s.d, at) && !hidden_at(&s.d, at + 1), "{t}");
     // Quitting asks nothing about the agent's process.
     assert_eq!(js_string(&s.d, "String(e8.processList().filter((p) => e8.processQueryOnExitFlag(p)).length)"), "0");
+}
+
+#[test]
+fn the_transcript_is_read_only_and_undo_reaches_only_the_request() {
+    let mut steps = opening("hi");
+    steps.extend([
+        chunk("Hello"),
+        end_turn("end_turn"),
+        json!({"expect": {"method": "session/prompt", "id": 4, "params": {"prompt": [{"type": "text", "text": "next"}]}}}),
+        chunk("Again"),
+        json!({"send": {"id": 4, "result": {"stopReason": "end_turn"}}}),
+    ]);
+    let Some(s) = setup(steps, "hi") else { return };
+    s.d.press("C-c RET");
+    let text = s.finished();
+    assert_eq!(text, "* You\nhi\n\n* Agent\nHello\n\n* You\n");
+    // Nothing above the new heading can be typed into, deleted, or undone.
+    let hello = text.find("Hello").unwrap();
+    s.d.eval(&format!("e8.gotoChar({hello})"));
+    s.d.type_text("x");
+    assert!(s.d.message().is_some_and(|m| m.contains("read-only")), "{:?}", s.d.message());
+    s.d.press("C-d");
+    s.d.press("DEL");
+    assert_eq!(s.d.text(), text, "the agent's text is read-only");
+    s.d.eval("e8.gotoChar(0)");
+    s.d.type_text("x");
+    assert_eq!(s.d.text(), text, "nothing goes before the transcript");
+    s.d.eval("e8.gotoChar(e8.bufferSize())");
+    s.d.press("C-/");
+    assert_eq!(s.d.text(), text, "undo takes nothing back");
+    assert!(s.d.message().is_some_and(|m| m.contains("No further undo")), "{:?}", s.d.message());
+    // The request is typed, and undone, as any text.
+    s.d.type_text("next");
+    assert!(s.d.text().ends_with("* You\nnext"), "{}", s.d.text());
+    for _ in 0..4 {
+        if s.d.text().ends_with("* You\n") {
+            break;
+        }
+        s.d.press("C-/");
+    }
+    assert_eq!(s.d.text(), text, "undo takes back the typing, and only that");
+    s.d.type_text("next");
+    s.d.press("C-c RET");
+    s.d.until(|t| t.matches("* You\n").count() == 3);
+    let text = s.d.text();
+    assert!(text.ends_with("* You\nnext\n\n* Agent\nAgain\n\n* You\n"), "{text}");
+    // Sent, the request is the transcript's too, and the undo history starts afresh.
+    s.d.eval(&format!("e8.gotoChar({})", text.find("next").unwrap()));
+    s.d.type_text("x");
+    assert_eq!(s.d.text(), text, "a sent request is read-only");
+    s.d.eval("e8.gotoChar(e8.bufferSize())");
+    s.d.press("C-/");
+    assert_eq!(s.d.text(), text);
+    assert!(s.d.message().is_some_and(|m| m.contains("No further undo")), "{:?}", s.d.message());
 }
